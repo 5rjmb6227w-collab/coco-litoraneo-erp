@@ -173,6 +173,21 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Banner de Coqueiros */}
+        <div className="relative w-full h-48 md:h-64 rounded-xl overflow-hidden shadow-lg">
+          <img 
+            src="/coqueiros-banner.webp" 
+            alt="Plantação de coqueiros - Coco Litorâneo" 
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent flex items-center">
+            <div className="px-6 md:px-10">
+              <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">Coco Litorâneo</h1>
+              <p className="text-white/90 text-lg md:text-xl mt-2 drop-shadow">Sistema de Gestão Integrada</p>
+            </div>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
