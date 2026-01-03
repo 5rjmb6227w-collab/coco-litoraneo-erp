@@ -1770,14 +1770,14 @@ export async function getDashboardStats(startDate?: Date, endDate?: Date) {
   const start = startDate || new Date(new Date().setDate(new Date().getDate() - 30));
   const end = endDate || new Date();
 
-  // Produção total
+  // Produção total - usar quantityProduced e converter datas para string ISO
+  const startStr = start.toISOString().split('T')[0];
+  const endStr = end.toISOString().split('T')[0];
+  
   const productionResult = await db.select({
-    total: sql<number>`COALESCE(SUM(${productionEntries}.quantity), 0)`,
+    total: sql<number>`COALESCE(SUM(${productionEntries.quantityProduced}), 0)`,
   }).from(productionEntries)
-    .where(and(
-      gte(productionEntries.productionDate, start),
-      lte(productionEntries.productionDate, end)
-    ));
+    .where(sql`${productionEntries.productionDate} >= ${startStr} AND ${productionEntries.productionDate} <= ${endStr}`);
 
   // Cargas recebidas
   const loadsResult = await db.select({
@@ -1789,11 +1789,11 @@ export async function getDashboardStats(startDate?: Date, endDate?: Date) {
       lte(coconutLoads.receivedAt, end)
     ));
 
-  // A pagar produtores
+  // A pagar produtores - usar totalValue em vez de totalAmount
   const payablesResult = await db.select({
-    total: sql<number>`COALESCE(SUM(${producerPayables}.totalAmount), 0)`,
-    pending: sql<number>`COALESCE(SUM(CASE WHEN ${producerPayables}.status IN ('pendente', 'aprovado', 'programado') THEN ${producerPayables}.totalAmount ELSE 0 END), 0)`,
-    overdue: sql<number>`COALESCE(SUM(CASE WHEN ${producerPayables}.status != 'pago' AND ${producerPayables}.dueDate < CURRENT_DATE THEN ${producerPayables}.totalAmount ELSE 0 END), 0)`,
+    total: sql<number>`COALESCE(SUM(${producerPayables.totalValue}), 0)`,
+    pending: sql<number>`COALESCE(SUM(CASE WHEN ${producerPayables.status} IN ('pendente', 'aprovado', 'programado') THEN ${producerPayables.totalValue} ELSE 0 END), 0)`,
+    overdue: sql<number>`COALESCE(SUM(CASE WHEN ${producerPayables.status} != 'pago' AND ${producerPayables.dueDate} < CURRENT_DATE THEN ${producerPayables.totalValue} ELSE 0 END), 0)`,
   }).from(producerPayables);
 
   // Compras pendentes
@@ -1845,16 +1845,15 @@ export async function getProductionBySkuVariation(startDate?: Date, endDate?: Da
 
   const start = startDate || new Date(new Date().setDate(new Date().getDate() - 30));
   const end = endDate || new Date();
+  const startStr = start.toISOString().split('T')[0];
+  const endStr = end.toISOString().split('T')[0];
 
   const result = await db.select({
     sku: productionEntries.skuId,
     variation: productionEntries.variation,
-    total: sql<number>`SUM(${productionEntries}.quantity)`,
+    total: sql<number>`SUM(${productionEntries.quantityProduced})`,
   }).from(productionEntries)
-    .where(and(
-      gte(productionEntries.productionDate, start),
-      lte(productionEntries.productionDate, end)
-    ))
+    .where(sql`${productionEntries.productionDate} >= ${startStr} AND ${productionEntries.productionDate} <= ${endStr}`)
     .groupBy(productionEntries.skuId, productionEntries.variation);
 
   return result;
@@ -1866,15 +1865,14 @@ export async function getProductionByShift(startDate?: Date, endDate?: Date) {
 
   const start = startDate || new Date(new Date().setDate(new Date().getDate() - 30));
   const end = endDate || new Date();
+  const startStr = start.toISOString().split('T')[0];
+  const endStr = end.toISOString().split('T')[0];
 
   const result = await db.select({
     shift: productionEntries.shift,
-    total: sql<number>`SUM(${productionEntries}.quantity)`,
+    total: sql<number>`SUM(${productionEntries.quantityProduced})`,
   }).from(productionEntries)
-    .where(and(
-      gte(productionEntries.productionDate, start),
-      lte(productionEntries.productionDate, end)
-    ))
+    .where(sql`${productionEntries.productionDate} >= ${startStr} AND ${productionEntries.productionDate} <= ${endStr}`)
     .groupBy(productionEntries.shift);
 
   return result;
@@ -1912,16 +1910,16 @@ export async function getLoadsEvolution(startDate?: Date, endDate?: Date) {
   const end = endDate || new Date();
 
   const result = await db.select({
-    date: sql<string>`DATE(${coconutLoads}.loadDate)`,
-    totalWeight: sql<number>`SUM(${coconutLoads}.netWeight)`,
+    date: sql<string>`DATE(${coconutLoads.receivedAt})`,
+    totalWeight: sql<number>`SUM(${coconutLoads.netWeight})`,
     count: sql<number>`COUNT(*)`,
   }).from(coconutLoads)
     .where(and(
       gte(coconutLoads.receivedAt, start),
       lte(coconutLoads.receivedAt, end)
     ))
-    .groupBy(sql`DATE(${coconutLoads}.loadDate)`)
-    .orderBy(sql`DATE(${coconutLoads}.loadDate)`);
+    .groupBy(sql`DATE(${coconutLoads.receivedAt})`)
+    .orderBy(sql`DATE(${coconutLoads.receivedAt})`);
 
   return result;
 }
@@ -1932,7 +1930,7 @@ export async function getPaymentsByStatus() {
 
   const result = await db.select({
     status: producerPayables.status,
-    total: sql<number>`SUM(${producerPayables}.totalAmount)`,
+    total: sql<number>`SUM(${producerPayables.totalValue})`,
     count: sql<number>`COUNT(*)`,
   }).from(producerPayables)
     .groupBy(producerPayables.status);

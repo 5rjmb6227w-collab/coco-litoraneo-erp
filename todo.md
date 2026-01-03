@@ -151,3 +151,11 @@
 - [ ] Upload de comprovante de pagamento (requer configuração de storage S3)
 - [ ] Modo escuro/claro (toggle no header)
 - [ ] Notificações em tempo real (WebSocket)
+
+
+## BUG FIXES
+- [x] Corrigir query getPaymentsByStatus - nome da coluna totalAmount incorreto (corrigido para totalValue)
+- [x] Corrigir query getLoadsEvolution - nome da coluna netWeight incorreto (corrigido para usar receivedAt)
+- [x] Corrigir query getProductionByShift - formato de data incorreto (convertido para ISO string)
+- [x] Corrigir query getProductionBySkuVariation - formato de data incorreto (convertido para ISO string)
+- [x] Corrigir query getDashboardStats - formato de data incorreto (convertido para ISO string)
