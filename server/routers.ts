@@ -1583,6 +1583,280 @@ export const appRouter = router({
         return db.getAbsenteeismReport(input);
       }),
   }),
+
+  // ============================================================================
+  // TAREFA 3: ADMINISTRAÇÃO E SEGURANÇA
+  // ============================================================================
+  admin: router({
+    // Gestão de Usuários (apenas CEO/Admin)
+    users: router({
+      list: protectedProcedure
+        .input(z.object({
+          status: z.string().optional(),
+          role: z.string().optional(),
+          search: z.string().optional(),
+        }).optional())
+        .query(async ({ ctx, input }) => {
+          // Verificar se é admin/ceo
+          if (ctx.user?.role !== 'ceo' && ctx.user?.role !== 'admin') {
+            await db.createAuditLog({
+              userId: ctx.user?.id,
+              userName: ctx.user?.name || 'Desconhecido',
+              action: 'ACCESS_DENIED',
+              module: 'administracao',
+              entityType: 'users',
+            });
+            throw new Error('Acesso negado');
+          }
+          return db.getAllUsers(input);
+        }),
+
+      getById: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .query(async ({ ctx, input }) => {
+          if (ctx.user?.role !== 'ceo' && ctx.user?.role !== 'admin') {
+            throw new Error('Acesso negado');
+          }
+          return db.getUserById(input.id);
+        }),
+
+      update: protectedProcedure
+        .input(z.object({
+          id: z.number(),
+          name: z.string().optional(),
+          email: z.string().email().optional(),
+          phone: z.string().optional(),
+          role: z.enum(['user', 'admin', 'ceo', 'recebimento', 'producao', 'almox_prod', 'almox_geral', 'qualidade', 'compras', 'financeiro', 'rh', 'consulta']).optional(),
+          sector: z.string().optional(),
+          status: z.enum(['ativo', 'inativo', 'bloqueado']).optional(),
+          accessStartDate: z.string().optional(),
+          accessExpirationDate: z.string().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          if (ctx.user?.role !== 'ceo' && ctx.user?.role !== 'admin') {
+            throw new Error('Acesso negado');
+          }
+          
+          const { id, ...data } = input;
+          await db.updateUser(id, data as any);
+          
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || 'Desconhecido',
+            action: 'UPDATE',
+            module: 'administracao',
+            entityType: 'user',
+            entityId: id,
+            newValue: JSON.stringify(data),
+          });
+          
+          return { success: true };
+        }),
+
+      block: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          if (ctx.user?.role !== 'ceo' && ctx.user?.role !== 'admin') {
+            throw new Error('Acesso negado');
+          }
+          
+          await db.blockUser(input.id);
+          
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || 'Desconhecido',
+            action: 'BLOCK_USER',
+            module: 'administracao',
+            entityType: 'user',
+            entityId: input.id,
+          });
+          
+          // Criar alerta de segurança
+          await db.createSecurityAlert({
+            alertType: 'login_bloqueado',
+            priority: 'alta',
+            userId: input.id,
+            description: `Usuário bloqueado manualmente por ${ctx.user?.name}`,
+          });
+          
+          return { success: true };
+        }),
+
+      unblock: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          if (ctx.user?.role !== 'ceo' && ctx.user?.role !== 'admin') {
+            throw new Error('Acesso negado');
+          }
+          
+          await db.unblockUser(input.id);
+          
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || 'Desconhecido',
+            action: 'UNBLOCK_USER',
+            module: 'administracao',
+            entityType: 'user',
+            entityId: input.id,
+          });
+          
+          return { success: true };
+        }),
+    }),
+
+    // Usuários Online
+    onlineUsers: router({
+      list: protectedProcedure
+        .query(async ({ ctx }) => {
+          if (ctx.user?.role !== 'ceo' && ctx.user?.role !== 'admin') {
+            throw new Error('Acesso negado');
+          }
+          return db.getOnlineUsers();
+        }),
+
+      forceLogout: protectedProcedure
+        .input(z.object({ sessionId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+          if (ctx.user?.role !== 'ceo' && ctx.user?.role !== 'admin') {
+            throw new Error('Acesso negado');
+          }
+          
+          await db.endSession(input.sessionId, 'forcado');
+          
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || 'Desconhecido',
+            action: 'FORCE_LOGOUT',
+            module: 'administracao',
+            entityType: 'session',
+            newValue: input.sessionId,
+          });
+          
+          return { success: true };
+        }),
+    }),
+
+    // Logs de Auditoria
+    auditLogs: router({
+      list: protectedProcedure
+        .input(z.object({
+          userId: z.number().optional(),
+          module: z.string().optional(),
+          action: z.string().optional(),
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+          limit: z.number().optional(),
+        }).optional())
+        .query(async ({ ctx, input }) => {
+          if (ctx.user?.role !== 'ceo' && ctx.user?.role !== 'admin') {
+            throw new Error('Acesso negado');
+          }
+          return db.getAuditLogs(input);
+        }),
+    }),
+
+    // Alertas de Segurança
+    securityAlerts: router({
+      list: protectedProcedure
+        .input(z.object({
+          isRead: z.boolean().optional(),
+          priority: z.string().optional(),
+          limit: z.number().optional(),
+        }).optional())
+        .query(async ({ ctx, input }) => {
+          if (ctx.user?.role !== 'ceo' && ctx.user?.role !== 'admin') {
+            throw new Error('Acesso negado');
+          }
+          return db.getSecurityAlerts(input);
+        }),
+
+      unreadCount: protectedProcedure
+        .query(async ({ ctx }) => {
+          if (ctx.user?.role !== 'ceo' && ctx.user?.role !== 'admin') {
+            return 0;
+          }
+          return db.getUnreadAlertsCount();
+        }),
+
+      markAsRead: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          if (ctx.user?.role !== 'ceo' && ctx.user?.role !== 'admin') {
+            throw new Error('Acesso negado');
+          }
+          await db.markAlertAsRead(input.id, ctx.user?.id || 0);
+          return { success: true };
+        }),
+    }),
+
+    // Configurações do Sistema
+    settings: router({
+      list: protectedProcedure
+        .input(z.object({ category: z.string().optional() }).optional())
+        .query(async ({ ctx, input }) => {
+          if (ctx.user?.role !== 'ceo' && ctx.user?.role !== 'admin') {
+            throw new Error('Acesso negado');
+          }
+          return db.getSystemSettings(input?.category);
+        }),
+
+      get: protectedProcedure
+        .input(z.object({ key: z.string() }))
+        .query(async ({ ctx, input }) => {
+          if (ctx.user?.role !== 'ceo' && ctx.user?.role !== 'admin') {
+            throw new Error('Acesso negado');
+          }
+          return db.getSystemSetting(input.key);
+        }),
+
+      update: protectedProcedure
+        .input(z.object({
+          key: z.string(),
+          value: z.string(),
+          type: z.enum(['string', 'number', 'boolean', 'json']).optional(),
+          category: z.string().optional(),
+          description: z.string().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          if (ctx.user?.role !== 'ceo' && ctx.user?.role !== 'admin') {
+            throw new Error('Acesso negado');
+          }
+          
+          await db.upsertSystemSetting({
+            settingKey: input.key,
+            settingValue: input.value,
+            settingType: input.type || 'string',
+            category: input.category || 'geral',
+            description: input.description,
+            updatedBy: ctx.user?.id,
+          });
+          
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || 'Desconhecido',
+            action: 'UPDATE',
+            module: 'administracao',
+            entityType: 'system_setting',
+            fieldName: input.key,
+            newValue: input.value,
+          });
+          
+          return { success: true };
+        }),
+    }),
+
+    // Sessões
+    sessions: router({
+      list: protectedProcedure
+        .input(z.object({ userId: z.number().optional() }).optional())
+        .query(async ({ ctx, input }) => {
+          if (ctx.user?.role !== 'ceo' && ctx.user?.role !== 'admin') {
+            throw new Error('Acesso negado');
+          }
+          return db.getActiveSessions(input);
+        }),
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

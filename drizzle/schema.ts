@@ -594,3 +594,246 @@ export const employeeNotes = mysqlTable("employee_notes", {
 
 export type EmployeeNote = typeof employeeNotes.$inferSelect;
 export type InsertEmployeeNote = typeof employeeNotes.$inferInsert;
+
+
+// ============================================================================
+// TAREFA 3: RBAC E SEGURANÇA
+// ============================================================================
+
+// ============================================================================
+// USER_SESSIONS TABLE (Sessões de usuários)
+// ============================================================================
+export const userSessions = mysqlTable("user_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("sessionId", { length: 64 }).notNull().unique(),
+  userId: int("userId").notNull(),
+  loginAt: timestamp("loginAt").defaultNow().notNull(),
+  logoutAt: timestamp("logoutAt"),
+  lastActivityAt: timestamp("lastActivityAt").defaultNow().notNull(),
+  durationMinutes: int("durationMinutes"),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+  currentModule: varchar("currentModule", { length: 100 }),
+  logoutReason: mysqlEnum("logoutReason", ["manual", "timeout", "forcado", "expirado"]),
+  isActive: boolean("isActive").default(true).notNull(),
+});
+
+export type UserSession = typeof userSessions.$inferSelect;
+export type InsertUserSession = typeof userSessions.$inferInsert;
+
+// ============================================================================
+// PASSWORD_HISTORY TABLE (Histórico de senhas)
+// ============================================================================
+export const passwordHistory = mysqlTable("password_history", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PasswordHistory = typeof passwordHistory.$inferSelect;
+export type InsertPasswordHistory = typeof passwordHistory.$inferInsert;
+
+// ============================================================================
+// LOGIN_ATTEMPTS TABLE (Tentativas de login)
+// ============================================================================
+export const loginAttempts = mysqlTable("login_attempts", {
+  id: int("id").autoincrement().primaryKey(),
+  email: varchar("email", { length: 320 }).notNull(),
+  success: boolean("success").notNull(),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+  failReason: varchar("failReason", { length: 100 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type LoginAttempt = typeof loginAttempts.$inferSelect;
+export type InsertLoginAttempt = typeof loginAttempts.$inferInsert;
+
+// ============================================================================
+// SECURITY_ALERTS TABLE (Alertas de segurança)
+// ============================================================================
+export const securityAlerts = mysqlTable("security_alerts", {
+  id: int("id").autoincrement().primaryKey(),
+  alertType: mysqlEnum("alertType", ["login_bloqueado", "login_fora_horario", "acesso_negado", "multiplas_sessoes", "reset_senha"]).notNull(),
+  priority: mysqlEnum("priority", ["baixa", "media", "alta"]).notNull(),
+  userId: int("userId"),
+  userName: varchar("userName", { length: 255 }),
+  description: text("description").notNull(),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  isRead: boolean("isRead").default(false).notNull(),
+  readAt: timestamp("readAt"),
+  readBy: int("readBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SecurityAlert = typeof securityAlerts.$inferSelect;
+export type InsertSecurityAlert = typeof securityAlerts.$inferInsert;
+
+// ============================================================================
+// SYSTEM_SETTINGS TABLE (Configurações do sistema)
+// ============================================================================
+export const systemSettings = mysqlTable("system_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  settingKey: varchar("settingKey", { length: 100 }).notNull().unique(),
+  settingValue: text("settingValue").notNull(),
+  settingType: mysqlEnum("settingType", ["string", "number", "boolean", "json"]).default("string").notNull(),
+  category: varchar("category", { length: 50 }).notNull(),
+  description: text("description"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertSystemSetting = typeof systemSettings.$inferInsert;
+
+// ============================================================================
+// PERMISSIONS CONSTANTS (Constantes de permissões - não é tabela)
+// ============================================================================
+// Permissões são definidas em código, não em banco de dados
+// Isso simplifica a implementação e evita joins desnecessários
+
+export const PERMISSIONS = {
+  // Módulos
+  MODULES: [
+    "dashboard",
+    "recebimento",
+    "produtores",
+    "pagamentos",
+    "producao",
+    "problemas",
+    "almox_producao",
+    "almox_geral",
+    "estoque_pa",
+    "compras",
+    "financeiro",
+    "qualidade",
+    "rh",
+    "administracao",
+    "logs",
+  ],
+  
+  // Ações
+  ACTIONS: ["visualizar", "criar", "editar", "excluir", "aprovar", "exportar"],
+  
+  // Matriz de permissões por perfil
+  ROLE_PERMISSIONS: {
+    ceo: {
+      dashboard: ["visualizar", "exportar"],
+      recebimento: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      produtores: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      pagamentos: ["visualizar", "criar", "editar", "aprovar", "excluir", "exportar"],
+      producao: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      problemas: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      almox_producao: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      almox_geral: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      estoque_pa: ["visualizar", "criar", "editar", "aprovar", "excluir", "exportar"],
+      compras: ["visualizar", "criar", "editar", "aprovar", "excluir", "exportar"],
+      financeiro: ["visualizar", "criar", "editar", "aprovar", "excluir", "exportar"],
+      qualidade: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      rh: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      administracao: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      logs: ["visualizar", "exportar"],
+    },
+    admin: {
+      dashboard: ["visualizar", "exportar"],
+      recebimento: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      produtores: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      pagamentos: ["visualizar", "criar", "editar", "aprovar", "excluir", "exportar"],
+      producao: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      problemas: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      almox_producao: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      almox_geral: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      estoque_pa: ["visualizar", "criar", "editar", "aprovar", "excluir", "exportar"],
+      compras: ["visualizar", "criar", "editar", "aprovar", "excluir", "exportar"],
+      financeiro: ["visualizar", "criar", "editar", "aprovar", "excluir", "exportar"],
+      qualidade: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      rh: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      administracao: ["visualizar", "criar", "editar", "excluir", "exportar"],
+      logs: ["visualizar", "exportar"],
+    },
+    recebimento: {
+      dashboard: ["visualizar"],
+      recebimento: ["visualizar", "criar", "editar", "exportar"],
+      produtores: ["visualizar", "criar", "editar"],
+      pagamentos: ["visualizar"],
+      problemas: ["visualizar", "criar", "editar"],
+    },
+    producao: {
+      dashboard: ["visualizar"],
+      recebimento: ["visualizar"],
+      producao: ["visualizar", "criar", "editar", "exportar"],
+      problemas: ["visualizar", "criar", "editar", "exportar"],
+      almox_producao: ["visualizar"],
+      estoque_pa: ["visualizar", "editar"],
+      qualidade: ["visualizar"],
+    },
+    almox_prod: {
+      dashboard: ["visualizar"],
+      almox_producao: ["visualizar", "criar", "editar", "exportar"],
+      compras: ["visualizar", "criar"],
+      problemas: ["visualizar", "criar", "editar"],
+      qualidade: ["visualizar"],
+    },
+    almox_geral: {
+      dashboard: ["visualizar"],
+      almox_geral: ["visualizar", "criar", "editar", "exportar"],
+      compras: ["visualizar", "criar"],
+      problemas: ["visualizar", "criar", "editar"],
+    },
+    qualidade: {
+      dashboard: ["visualizar"],
+      recebimento: ["visualizar"],
+      producao: ["visualizar"],
+      qualidade: ["visualizar", "criar", "editar", "exportar"],
+      problemas: ["visualizar", "criar", "editar"],
+    },
+    compras: {
+      dashboard: ["visualizar"],
+      almox_producao: ["visualizar"],
+      almox_geral: ["visualizar"],
+      compras: ["visualizar", "criar", "editar", "exportar"],
+      financeiro: ["visualizar"],
+    },
+    financeiro: {
+      dashboard: ["visualizar"],
+      recebimento: ["visualizar"],
+      produtores: ["visualizar"],
+      pagamentos: ["visualizar", "criar", "editar", "aprovar", "exportar"],
+      compras: ["visualizar", "aprovar"],
+      financeiro: ["visualizar", "criar", "editar", "aprovar", "exportar"],
+    },
+    rh: {
+      dashboard: ["visualizar"],
+      rh: ["visualizar", "criar", "editar", "exportar"],
+    },
+    consulta: {
+      dashboard: ["visualizar"],
+      recebimento: ["visualizar"],
+      produtores: ["visualizar"],
+      pagamentos: ["visualizar"],
+      producao: ["visualizar"],
+      problemas: ["visualizar"],
+      almox_producao: ["visualizar"],
+      almox_geral: ["visualizar"],
+      estoque_pa: ["visualizar"],
+      compras: ["visualizar"],
+      financeiro: ["visualizar"],
+      qualidade: ["visualizar"],
+    },
+    user: {
+      dashboard: ["visualizar"],
+    },
+  },
+} as const;
+
+// Helper function to check permission
+export function hasPermission(role: string, module: string, action: string): boolean {
+  const rolePerms = PERMISSIONS.ROLE_PERMISSIONS[role as keyof typeof PERMISSIONS.ROLE_PERMISSIONS];
+  if (!rolePerms) return false;
+  
+  const modulePerms = rolePerms[module as keyof typeof rolePerms];
+  if (!modulePerms) return false;
+  
+  return (modulePerms as readonly string[]).includes(action);
+}

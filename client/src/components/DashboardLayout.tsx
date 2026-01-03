@@ -43,6 +43,12 @@ import {
   FlaskConical,
   ClipboardList,
   UserCog,
+  Shield,
+  UserCheck,
+  Activity,
+  FileText,
+  Settings,
+  Bell,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -55,7 +61,11 @@ import {
 } from "@/components/ui/collapsible";
 
 // Menu items organizados por grupos
-const menuGroups = [
+const menuGroups: Array<{
+  label: string;
+  adminOnly?: boolean;
+  items: Array<{ icon: any; label: string; path: string }>;
+}> = [
   {
     label: "Principal",
     items: [
@@ -107,7 +117,19 @@ const menuGroups = [
   {
     label: "Pessoas",
     items: [
-      { icon: UserCog, label: "Gente & Cultura", path: "/rh" },
+      { icon: UserCog, label: "Colaboradores", path: "/rh/colaboradores" },
+      { icon: ClipboardList, label: "Ocorrências", path: "/rh/ocorrencias" },
+    ],
+  },
+  {
+    label: "Administração",
+    adminOnly: true,
+    items: [
+      { icon: Users, label: "Usuários", path: "/admin/usuarios" },
+      { icon: Activity, label: "Usuários Online", path: "/admin/online" },
+      { icon: FileText, label: "Logs de Auditoria", path: "/admin/logs" },
+      { icon: Bell, label: "Alertas", path: "/admin/alertas" },
+      { icon: Settings, label: "Configurações", path: "/admin/configuracoes" },
     ],
   },
 ];
@@ -274,7 +296,9 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0 py-2">
-            {menuGroups.map((group) => (
+            {menuGroups
+              .filter(group => !group.adminOnly || user?.role === 'ceo' || user?.role === 'admin')
+              .map((group) => (
               <Collapsible
                 key={group.label}
                 open={openGroups.includes(group.label)}

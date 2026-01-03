@@ -1,4 +1,4 @@
-import { eq, desc, and, gte, lte, like, sql, asc } from "drizzle-orm";
+import { eq, desc, and, gte, lte, like, sql, asc, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, 
@@ -1443,4 +1443,318 @@ export async function getCashFlowProjection(days: number = 30) {
   }
 
   return weeks;
+}
+
+
+// ============================================================================
+// TAREFA 3: RBAC E SEGURANÇA
+// ============================================================================
+
+import { 
+  userSessions, 
+  InsertUserSession, 
+  UserSession,
+  loginAttempts,
+  InsertLoginAttempt,
+  securityAlerts,
+  InsertSecurityAlert,
+  systemSettings,
+  InsertSystemSetting,
+} from "../drizzle/schema";
+
+// ============================================================================
+// USER SESSIONS QUERIES
+// ============================================================================
+export async function createUserSession(session: Omit<InsertUserSession, "id">): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(userSessions).values(session);
+  return result[0].insertId;
+}
+
+export async function getActiveSessions(filters?: { userId?: number }): Promise<UserSession[]> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const conditions = [eq(userSessions.isActive, true)];
+  
+  if (filters?.userId) {
+    conditions.push(eq(userSessions.userId, filters.userId));
+  }
+  
+  const query = db.select().from(userSessions).where(and(...conditions)).orderBy(desc(userSessions.loginAt));
+  
+  return query;
+}
+
+export async function updateSessionActivity(sessionId: string, currentModule?: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  
+  await db.update(userSessions)
+    .set({ 
+      lastActivityAt: new Date(),
+      currentModule: currentModule || undefined,
+    })
+    .where(eq(userSessions.sessionId, sessionId));
+}
+
+export async function endSession(sessionId: string, reason: "manual" | "timeout" | "forcado" | "expirado"): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  
+  const session = await db.select().from(userSessions).where(eq(userSessions.sessionId, sessionId)).limit(1);
+  if (session.length === 0) return;
+  
+  const loginAt = session[0].loginAt;
+  const now = new Date();
+  const durationMinutes = Math.floor((now.getTime() - loginAt.getTime()) / 60000);
+  
+  await db.update(userSessions)
+    .set({ 
+      isActive: false,
+      logoutAt: now,
+      logoutReason: reason,
+      durationMinutes,
+    })
+    .where(eq(userSessions.sessionId, sessionId));
+}
+
+export async function getSessionBySessionId(sessionId: string): Promise<UserSession | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(userSessions).where(eq(userSessions.sessionId, sessionId)).limit(1);
+  return result[0];
+}
+
+// ============================================================================
+// LOGIN ATTEMPTS QUERIES
+// ============================================================================
+export async function createLoginAttempt(attempt: Omit<InsertLoginAttempt, "id">): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(loginAttempts).values(attempt);
+  return result[0].insertId;
+}
+
+export async function getRecentFailedAttempts(email: string, minutes: number = 30): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  const since = new Date(Date.now() - minutes * 60 * 1000);
+  
+  const result = await db.select({ count: sql<number>`count(*)` })
+    .from(loginAttempts)
+    .where(and(
+      eq(loginAttempts.email, email),
+      eq(loginAttempts.success, false),
+      gte(loginAttempts.createdAt, since)
+    ));
+  
+  return result[0]?.count || 0;
+}
+
+// ============================================================================
+// SECURITY ALERTS QUERIES
+// ============================================================================
+export async function createSecurityAlert(alert: Omit<InsertSecurityAlert, "id">): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(securityAlerts).values(alert);
+  return result[0].insertId;
+}
+
+export async function getSecurityAlerts(filters?: { 
+  isRead?: boolean; 
+  priority?: string;
+  limit?: number;
+}): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const conditions = [];
+  if (filters?.isRead !== undefined) {
+    conditions.push(eq(securityAlerts.isRead, filters.isRead));
+  }
+  if (filters?.priority) {
+    conditions.push(eq(securityAlerts.priority, filters.priority as any));
+  }
+  
+  let query = conditions.length > 0 
+    ? db.select().from(securityAlerts).where(and(...conditions))
+    : db.select().from(securityAlerts);
+  
+  query = query.orderBy(desc(securityAlerts.createdAt)) as typeof query;
+  
+  if (filters?.limit) {
+    query = query.limit(filters.limit) as typeof query;
+  }
+  
+  return query;
+}
+
+export async function markAlertAsRead(alertId: number, readBy: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  
+  await db.update(securityAlerts)
+    .set({ 
+      isRead: true,
+      readAt: new Date(),
+      readBy,
+    })
+    .where(eq(securityAlerts.id, alertId));
+}
+
+export async function getUnreadAlertsCount(): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  const result = await db.select({ count: sql<number>`count(*)` })
+    .from(securityAlerts)
+    .where(eq(securityAlerts.isRead, false));
+  
+  return result[0]?.count || 0;
+}
+
+// ============================================================================
+// SYSTEM SETTINGS QUERIES
+// ============================================================================
+export async function getSystemSetting(key: string): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(systemSettings).where(eq(systemSettings.settingKey, key)).limit(1);
+  return result[0]?.settingValue || null;
+}
+
+export async function getSystemSettings(category?: string): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const query = category
+    ? db.select().from(systemSettings).where(eq(systemSettings.category, category)).orderBy(systemSettings.category, systemSettings.settingKey)
+    : db.select().from(systemSettings).orderBy(systemSettings.category, systemSettings.settingKey);
+  
+  return query;
+}
+
+export async function upsertSystemSetting(setting: Omit<InsertSystemSetting, "id">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  
+  await db.insert(systemSettings)
+    .values(setting)
+    .onDuplicateKeyUpdate({
+      set: {
+        settingValue: setting.settingValue,
+        updatedAt: new Date(),
+        updatedBy: setting.updatedBy,
+      },
+    });
+}
+
+// ============================================================================
+// USER MANAGEMENT QUERIES (Admin only)
+// ============================================================================
+export async function getAllUsers(filters?: {
+  status?: string;
+  role?: string;
+  search?: string;
+}): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const conditions = [];
+  if (filters?.status) {
+    conditions.push(eq(users.status, filters.status as any));
+  }
+  if (filters?.role) {
+    conditions.push(eq(users.role, filters.role as any));
+  }
+  if (filters?.search) {
+    conditions.push(or(
+      like(users.name, `%${filters.search}%`),
+      like(users.email, `%${filters.search}%`)
+    ));
+  }
+  
+  const query = conditions.length > 0
+    ? db.select().from(users).where(and(...conditions)).orderBy(users.name)
+    : db.select().from(users).orderBy(users.name);
+  
+  return query;
+}
+
+export async function getUserById(id: number): Promise<any | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result[0];
+}
+
+export async function updateUser(id: number, data: Partial<InsertUser>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  
+  await db.update(users).set(data).where(eq(users.id, id));
+}
+
+export async function blockUser(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  
+  await db.update(users).set({ status: "bloqueado" }).where(eq(users.id, id));
+}
+
+export async function unblockUser(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  
+  await db.update(users).set({ status: "ativo" }).where(eq(users.id, id));
+}
+
+// ============================================================================
+// ONLINE USERS QUERIES
+// ============================================================================
+export async function getOnlineUsers(): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Consider users online if they had activity in the last 5 minutes
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+  
+  const sessions = await db.select({
+    sessionId: userSessions.sessionId,
+    userId: userSessions.userId,
+    loginAt: userSessions.loginAt,
+    lastActivityAt: userSessions.lastActivityAt,
+    currentModule: userSessions.currentModule,
+    ipAddress: userSessions.ipAddress,
+    userAgent: userSessions.userAgent,
+  })
+    .from(userSessions)
+    .where(and(
+      eq(userSessions.isActive, true),
+      gte(userSessions.lastActivityAt, fiveMinutesAgo)
+    ))
+    .orderBy(desc(userSessions.lastActivityAt));
+  
+  // Get user details for each session
+  const result = await Promise.all(sessions.map(async (session) => {
+    const user = await getUserById(session.userId);
+    return {
+      ...session,
+      userName: user?.name,
+      userEmail: user?.email,
+      userRole: user?.role,
+    };
+  }));
+  
+  return result;
 }

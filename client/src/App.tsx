@@ -25,6 +25,13 @@ import QualidadeNaoConformidades from "./pages/QualidadeNaoConformidades";
 import GenteColaboradores from "./pages/GenteColaboradores";
 import GenteOcorrencias from "./pages/GenteOcorrencias";
 
+// Pages - Tarefa 3 (Administração)
+import AdminUsuarios from "./pages/AdminUsuarios";
+import AdminOnline from "./pages/AdminOnline";
+import AdminLogs from "./pages/AdminLogs";
+import AdminAlertas from "./pages/AdminAlertas";
+import AdminConfiguracoes from "./pages/AdminConfiguracoes";
+
 function Router() {
   return (
     <DashboardLayout>
@@ -47,6 +54,13 @@ function Router() {
         <Route path="/qualidade/ncs" component={QualidadeNaoConformidades} />
         <Route path="/rh/colaboradores" component={GenteColaboradores} />
         <Route path="/rh/ocorrencias" component={GenteOcorrencias} />
+        
+        {/* Tarefa 3 - Administração */}
+        <Route path="/admin/usuarios" component={AdminUsuarios} />
+        <Route path="/admin/online" component={AdminOnline} />
+        <Route path="/admin/logs" component={AdminLogs} />
+        <Route path="/admin/alertas" component={AdminAlertas} />
+        <Route path="/admin/configuracoes" component={AdminConfiguracoes} />
         
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />

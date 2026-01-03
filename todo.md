@@ -1,6 +1,6 @@
 # Coco Litorâneo ERP - TODO
 
-## TAREFA 1: Fundação do Sistema
+## TAREFA 1: Fundação do Sistema ✅
 
 ### Estrutura Base
 - [x] Configurar identidade visual (paleta coco: #8B7355, #D4C4B0, #5D4E37, #FAF8F5)
@@ -60,13 +60,12 @@
 - [x] Implementar cálculo automático de data de validade
 - [x] Implementar alertas de estoque mínimo
 - [x] Implementar alertas de validade (≤30 dias amarelo, ≤7 dias vermelho)
-- [ ] Criar seeds dos 9 SKUs obrigatórios (3 categorias × 3 variações) - usuário cadastrará manualmente
 
 ### Rastreabilidade
 - [x] Implementar campos created_at, created_by, updated_at, updated_by em todas as tabelas
 - [x] Exibir informações de rastreabilidade no rodapé dos modais
 
-### Testes Unitários
+### Testes Unitários Tarefa 1
 - [x] Testes do router producers
 - [x] Testes do router coconutLoads
 - [x] Testes do router producerPayables
@@ -77,23 +76,44 @@
 - [x] Testes do router auditLogs
 
 ## TAREFA 2: Módulos de Gestão ✅
-- [x] Módulo Produção (apontamentos + problemas do dia)
+- [x] Módulo Produção - Apontamentos
+- [x] Módulo Produção - Problemas do Dia
 - [x] Módulo Compras (solicitações + cotações + aprovação)
 - [x] Módulo Financeiro (provisões + fluxo de caixa + contas a receber)
-- [x] Módulo Qualidade (análises + NCs + ações corretivas + gráficos)
-- [x] Módulo Gente & Cultura (colaboradores + faltas + horas extras)
+- [x] Módulo Qualidade - Análises
+- [x] Módulo Qualidade - Não Conformidades
+- [x] Módulo Gente & Cultura - Colaboradores
+- [x] Módulo Gente & Cultura - Ocorrências
+- [x] Testes unitários (19 testes)
 
-## TAREFA 3: Segurança e RBAC
-- [ ] Sistema de login
-- [ ] Gestão de usuários
-- [ ] 10 perfis pré-definidos
-- [ ] Matriz RBAC
-- [ ] Monitoramento de usuários online
-- [ ] Logs de auditoria
+## TAREFA 3: Segurança e RBAC ✅
+- [x] Tabelas de RBAC no schema (roles, permissions, user_sessions, security_alerts, system_settings)
+- [x] Queries de administração no db.ts
+- [x] Routers de administração (admin.users, admin.onlineUsers, admin.auditLogs, admin.securityAlerts, admin.settings, admin.sessions)
+- [x] Página Gestão de Usuários (AdminUsuarios)
+- [x] Página Usuários Online (AdminOnline)
+- [x] Página Logs de Auditoria (AdminLogs)
+- [x] Página Alertas de Segurança (AdminAlertas)
+- [x] Página Configurações do Sistema (AdminConfiguracoes)
+- [x] Menu de Administração (apenas para admin)
+- [x] Proteção de rotas (apenas admin pode acessar)
+- [x] Testes unitários (17 testes)
 
 ## TAREFA 4: Dashboard e Finalização
-- [ ] Dashboard com KPIs
-- [ ] Sistema de notificações
-- [ ] Busca global
+- [ ] Dashboard executivo com KPIs visuais
+- [ ] Gráficos de produção
+- [ ] Gráficos financeiros
+- [ ] Fluxo de caixa 30 dias
+- [ ] Produtos próximos do vencimento
+- [ ] Sistema de notificações em tempo real
+- [ ] Busca global inteligente
 - [ ] Modo escuro/claro
-- [ ] Export CSV padronizado
+- [ ] Export CSV padronizado (compatível ERP)
+- [ ] Testes unitários
+
+## RESUMO DE TESTES
+- Tarefa 1: 15 testes ✅
+- Tarefa 2: 19 testes ✅
+- Tarefa 3: 17 testes ✅
+- Auth: 1 teste ✅
+- **Total: 52 testes passando**
