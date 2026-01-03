@@ -76,12 +76,12 @@
 - [x] Testes do router seed
 - [x] Testes do router auditLogs
 
-## TAREFA 2: Módulos de Gestão
-- [ ] Módulo Produção (apontamentos + problemas do dia)
-- [ ] Módulo Compras (solicitações + cotações + aprovação)
-- [ ] Módulo Financeiro (provisões + fluxo de caixa + contas a receber)
-- [ ] Módulo Qualidade (análises + NCs + ações corretivas + gráficos)
-- [ ] Módulo Gente & Cultura (colaboradores + faltas + horas extras)
+## TAREFA 2: Módulos de Gestão ✅
+- [x] Módulo Produção (apontamentos + problemas do dia)
+- [x] Módulo Compras (solicitações + cotações + aprovação)
+- [x] Módulo Financeiro (provisões + fluxo de caixa + contas a receber)
+- [x] Módulo Qualidade (análises + NCs + ações corretivas + gráficos)
+- [x] Módulo Gente & Cultura (colaboradores + faltas + horas extras)
 
 ## TAREFA 3: Segurança e RBAC
 - [ ] Sistema de login

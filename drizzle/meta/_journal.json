@@ -15,6 +15,13 @@
       "when": 1767469493596,
       "tag": "0001_low_wong",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1767470641316,
+      "tag": "0002_many_la_nuit",
+      "breakpoints": true
     }
   ]
 }

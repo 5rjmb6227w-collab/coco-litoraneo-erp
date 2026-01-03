@@ -703,3 +703,744 @@ export async function runAllSeeds() {
   await seedWarehouseItemsGerais();
   await seedSkus();
 }
+
+
+// ============================================================================
+// TAREFA 2: QUERIES DOS MÓDULOS DE GESTÃO
+// ============================================================================
+
+import {
+  productionEntries,
+  InsertProductionEntry,
+  productionIssues,
+  InsertProductionIssue,
+  purchaseRequests,
+  InsertPurchaseRequest,
+  purchaseRequestItems,
+  InsertPurchaseRequestItem,
+  purchaseQuotations,
+  InsertPurchaseQuotation,
+  purchaseQuotationItems,
+  InsertPurchaseQuotationItem,
+  financialEntries,
+  InsertFinancialEntry,
+  qualityAnalyses,
+  InsertQualityAnalysis,
+  nonConformities,
+  InsertNonConformity,
+  correctiveActions,
+  InsertCorrectiveAction,
+  employees,
+  InsertEmployee,
+  employeeEvents,
+  InsertEmployeeEvent,
+  employeeNotes,
+  InsertEmployeeNote,
+} from "../drizzle/schema";
+
+// ============================================================================
+// PRODUCTION ENTRY QUERIES
+// ============================================================================
+export async function getProductionEntries(filters?: {
+  startDate?: string;
+  endDate?: string;
+  shift?: string;
+  skuId?: number;
+  variation?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [];
+
+  if (filters?.startDate) {
+    conditions.push(gte(productionEntries.productionDate, new Date(filters.startDate)));
+  }
+  if (filters?.endDate) {
+    conditions.push(lte(productionEntries.productionDate, new Date(filters.endDate)));
+  }
+  if (filters?.shift) {
+    conditions.push(eq(productionEntries.shift, filters.shift as "manha" | "tarde" | "noite"));
+  }
+  if (filters?.skuId) {
+    conditions.push(eq(productionEntries.skuId, filters.skuId));
+  }
+  if (filters?.variation) {
+    conditions.push(eq(productionEntries.variation, filters.variation as "flocos" | "medio" | "fino"));
+  }
+
+  const query = conditions.length > 0
+    ? db.select().from(productionEntries).where(and(...conditions))
+    : db.select().from(productionEntries);
+
+  return query.orderBy(desc(productionEntries.productionDate));
+}
+
+export async function createProductionEntry(data: InsertProductionEntry) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(productionEntries).values(data);
+  return result[0].insertId;
+}
+
+// ============================================================================
+// PRODUCTION ISSUE QUERIES
+// ============================================================================
+export async function getProductionIssues(filters?: {
+  startDate?: string;
+  endDate?: string;
+  area?: string;
+  status?: string;
+  impact?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [];
+
+  if (filters?.startDate) {
+    conditions.push(gte(productionIssues.occurredAt, new Date(filters.startDate)));
+  }
+  if (filters?.endDate) {
+    conditions.push(lte(productionIssues.occurredAt, new Date(filters.endDate)));
+  }
+  if (filters?.area) {
+    conditions.push(eq(productionIssues.area, filters.area as any));
+  }
+  if (filters?.status) {
+    conditions.push(eq(productionIssues.status, filters.status as any));
+  }
+  if (filters?.impact) {
+    conditions.push(eq(productionIssues.impact, filters.impact as any));
+  }
+
+  const query = conditions.length > 0
+    ? db.select().from(productionIssues).where(and(...conditions))
+    : db.select().from(productionIssues);
+
+  return query.orderBy(desc(productionIssues.occurredAt));
+}
+
+export async function createProductionIssue(data: InsertProductionIssue) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(productionIssues).values(data);
+  return result[0].insertId;
+}
+
+export async function updateProductionIssue(id: number, data: Partial<InsertProductionIssue>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(productionIssues).set(data).where(eq(productionIssues.id, id));
+}
+
+// ============================================================================
+// PURCHASE REQUEST QUERIES
+// ============================================================================
+export async function getPurchaseRequests(filters?: {
+  status?: string;
+  sector?: string;
+  urgency?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [];
+
+  if (filters?.status) {
+    conditions.push(eq(purchaseRequests.status, filters.status as any));
+  }
+  if (filters?.sector) {
+    conditions.push(eq(purchaseRequests.sector, filters.sector as any));
+  }
+  if (filters?.urgency) {
+    conditions.push(eq(purchaseRequests.urgency, filters.urgency as any));
+  }
+  if (filters?.startDate) {
+    conditions.push(gte(purchaseRequests.requestDate, new Date(filters.startDate)));
+  }
+  if (filters?.endDate) {
+    conditions.push(lte(purchaseRequests.requestDate, new Date(filters.endDate)));
+  }
+  if (filters?.search) {
+    conditions.push(like(purchaseRequests.requestNumber, `%${filters.search}%`));
+  }
+
+  const query = conditions.length > 0
+    ? db.select().from(purchaseRequests).where(and(...conditions))
+    : db.select().from(purchaseRequests);
+
+  return query.orderBy(desc(purchaseRequests.requestDate));
+}
+
+export async function getPurchaseRequestById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(purchaseRequests).where(eq(purchaseRequests.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createPurchaseRequest(data: InsertPurchaseRequest) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(purchaseRequests).values(data);
+  return result[0].insertId;
+}
+
+export async function updatePurchaseRequest(id: number, data: Partial<InsertPurchaseRequest>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(purchaseRequests).set(data).where(eq(purchaseRequests.id, id));
+}
+
+export async function getNextPurchaseRequestNumber() {
+  const db = await getDb();
+  if (!db) return "SC-0001";
+
+  const result = await db.select({ count: sql<number>`COUNT(*)` }).from(purchaseRequests);
+  const count = result[0]?.count || 0;
+  return `SC-${String(count + 1).padStart(4, '0')}`;
+}
+
+// ============================================================================
+// PURCHASE REQUEST ITEMS QUERIES
+// ============================================================================
+export async function getPurchaseRequestItems(purchaseRequestId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(purchaseRequestItems).where(eq(purchaseRequestItems.purchaseRequestId, purchaseRequestId));
+}
+
+export async function createPurchaseRequestItem(data: InsertPurchaseRequestItem) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(purchaseRequestItems).values(data);
+  return result[0].insertId;
+}
+
+// ============================================================================
+// PURCHASE QUOTATION QUERIES
+// ============================================================================
+export async function getPurchaseQuotations(purchaseRequestId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(purchaseQuotations).where(eq(purchaseQuotations.purchaseRequestId, purchaseRequestId));
+}
+
+export async function createPurchaseQuotation(data: InsertPurchaseQuotation) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(purchaseQuotations).values(data);
+  return result[0].insertId;
+}
+
+export async function updatePurchaseQuotation(id: number, data: Partial<InsertPurchaseQuotation>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(purchaseQuotations).set(data).where(eq(purchaseQuotations.id, id));
+}
+
+// ============================================================================
+// PURCHASE QUOTATION ITEMS QUERIES
+// ============================================================================
+export async function getPurchaseQuotationItems(quotationId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(purchaseQuotationItems).where(eq(purchaseQuotationItems.quotationId, quotationId));
+}
+
+export async function createPurchaseQuotationItem(data: InsertPurchaseQuotationItem) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(purchaseQuotationItems).values(data);
+  return result[0].insertId;
+}
+
+// ============================================================================
+// FINANCIAL ENTRY QUERIES
+// ============================================================================
+export async function getFinancialEntries(filters?: {
+  entryType?: string;
+  origin?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [];
+
+  if (filters?.entryType) {
+    conditions.push(eq(financialEntries.entryType, filters.entryType as "pagar" | "receber"));
+  }
+  if (filters?.origin) {
+    conditions.push(eq(financialEntries.origin, filters.origin as any));
+  }
+  if (filters?.status) {
+    conditions.push(eq(financialEntries.status, filters.status as any));
+  }
+  if (filters?.startDate) {
+    conditions.push(gte(financialEntries.dueDate, new Date(filters.startDate)));
+  }
+  if (filters?.endDate) {
+    conditions.push(lte(financialEntries.dueDate, new Date(filters.endDate)));
+  }
+
+  const query = conditions.length > 0
+    ? db.select().from(financialEntries).where(and(...conditions))
+    : db.select().from(financialEntries);
+
+  return query.orderBy(asc(financialEntries.dueDate));
+}
+
+export async function createFinancialEntry(data: InsertFinancialEntry) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(financialEntries).values(data);
+  return result[0].insertId;
+}
+
+export async function updateFinancialEntry(id: number, data: Partial<InsertFinancialEntry>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(financialEntries).set(data).where(eq(financialEntries.id, id));
+}
+
+// ============================================================================
+// QUALITY ANALYSIS QUERIES
+// ============================================================================
+export async function getQualityAnalyses(filters?: {
+  analysisType?: string;
+  result?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [];
+
+  if (filters?.analysisType) {
+    conditions.push(eq(qualityAnalyses.analysisType, filters.analysisType as any));
+  }
+  if (filters?.result) {
+    conditions.push(eq(qualityAnalyses.result, filters.result as any));
+  }
+  if (filters?.startDate) {
+    conditions.push(gte(qualityAnalyses.analysisDate, new Date(filters.startDate)));
+  }
+  if (filters?.endDate) {
+    conditions.push(lte(qualityAnalyses.analysisDate, new Date(filters.endDate)));
+  }
+
+  const query = conditions.length > 0
+    ? db.select().from(qualityAnalyses).where(and(...conditions))
+    : db.select().from(qualityAnalyses);
+
+  return query.orderBy(desc(qualityAnalyses.analysisDate));
+}
+
+export async function createQualityAnalysis(data: InsertQualityAnalysis) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(qualityAnalyses).values(data);
+  return result[0].insertId;
+}
+
+// ============================================================================
+// NON CONFORMITY QUERIES
+// ============================================================================
+export async function getNonConformities(filters?: {
+  status?: string;
+  origin?: string;
+  area?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [];
+
+  if (filters?.status) {
+    conditions.push(eq(nonConformities.status, filters.status as any));
+  }
+  if (filters?.origin) {
+    conditions.push(eq(nonConformities.origin, filters.origin as any));
+  }
+  if (filters?.area) {
+    conditions.push(eq(nonConformities.area, filters.area as any));
+  }
+  if (filters?.startDate) {
+    conditions.push(gte(nonConformities.identificationDate, new Date(filters.startDate)));
+  }
+  if (filters?.endDate) {
+    conditions.push(lte(nonConformities.identificationDate, new Date(filters.endDate)));
+  }
+
+  const query = conditions.length > 0
+    ? db.select().from(nonConformities).where(and(...conditions))
+    : db.select().from(nonConformities);
+
+  return query.orderBy(desc(nonConformities.identificationDate));
+}
+
+export async function getNonConformityById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(nonConformities).where(eq(nonConformities.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createNonConformity(data: InsertNonConformity) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(nonConformities).values(data);
+  return result[0].insertId;
+}
+
+export async function updateNonConformity(id: number, data: Partial<InsertNonConformity>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(nonConformities).set(data).where(eq(nonConformities.id, id));
+}
+
+export async function getNextNCNumber() {
+  const db = await getDb();
+  if (!db) return "NC-0001";
+
+  const result = await db.select({ count: sql<number>`COUNT(*)` }).from(nonConformities);
+  const count = result[0]?.count || 0;
+  return `NC-${String(count + 1).padStart(4, '0')}`;
+}
+
+// ============================================================================
+// CORRECTIVE ACTION QUERIES
+// ============================================================================
+export async function getCorrectiveActions(filters?: {
+  nonConformityId?: number;
+  status?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [];
+
+  if (filters?.nonConformityId) {
+    conditions.push(eq(correctiveActions.nonConformityId, filters.nonConformityId));
+  }
+  if (filters?.status) {
+    conditions.push(eq(correctiveActions.status, filters.status as any));
+  }
+
+  const query = conditions.length > 0
+    ? db.select().from(correctiveActions).where(and(...conditions))
+    : db.select().from(correctiveActions);
+
+  return query.orderBy(desc(correctiveActions.createdAt));
+}
+
+export async function createCorrectiveAction(data: InsertCorrectiveAction) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(correctiveActions).values(data);
+  return result[0].insertId;
+}
+
+export async function updateCorrectiveAction(id: number, data: Partial<InsertCorrectiveAction>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(correctiveActions).set(data).where(eq(correctiveActions.id, id));
+}
+
+// ============================================================================
+// EMPLOYEE QUERIES
+// ============================================================================
+export async function getEmployees(filters?: {
+  status?: string;
+  sector?: string;
+  search?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [];
+
+  if (filters?.status) {
+    conditions.push(eq(employees.status, filters.status as any));
+  }
+  if (filters?.sector) {
+    conditions.push(eq(employees.sector, filters.sector as any));
+  }
+  if (filters?.search) {
+    conditions.push(like(employees.fullName, `%${filters.search}%`));
+  }
+
+  const query = conditions.length > 0
+    ? db.select().from(employees).where(and(...conditions))
+    : db.select().from(employees);
+
+  return query.orderBy(asc(employees.fullName));
+}
+
+export async function getEmployeeById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(employees).where(eq(employees.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createEmployee(data: InsertEmployee) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(employees).values(data);
+  return result[0].insertId;
+}
+
+export async function updateEmployee(id: number, data: Partial<InsertEmployee>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(employees).set(data).where(eq(employees.id, id));
+}
+
+// ============================================================================
+// EMPLOYEE EVENT QUERIES
+// ============================================================================
+export async function getEmployeeEvents(filters?: {
+  employeeId?: number;
+  eventType?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [];
+
+  if (filters?.employeeId) {
+    conditions.push(eq(employeeEvents.employeeId, filters.employeeId));
+  }
+  if (filters?.eventType) {
+    conditions.push(eq(employeeEvents.eventType, filters.eventType as any));
+  }
+  if (filters?.startDate) {
+    conditions.push(gte(employeeEvents.eventDate, new Date(filters.startDate)));
+  }
+  if (filters?.endDate) {
+    conditions.push(lte(employeeEvents.eventDate, new Date(filters.endDate)));
+  }
+
+  const query = conditions.length > 0
+    ? db.select().from(employeeEvents).where(and(...conditions))
+    : db.select().from(employeeEvents);
+
+  return query.orderBy(desc(employeeEvents.eventDate));
+}
+
+export async function createEmployeeEvent(data: InsertEmployeeEvent) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(employeeEvents).values(data);
+  return result[0].insertId;
+}
+
+// ============================================================================
+// EMPLOYEE NOTE QUERIES
+// ============================================================================
+export async function getEmployeeNotes(filters?: {
+  employeeId?: number;
+  noteType?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [];
+
+  if (filters?.employeeId) {
+    conditions.push(eq(employeeNotes.employeeId, filters.employeeId));
+  }
+  if (filters?.noteType) {
+    conditions.push(eq(employeeNotes.noteType, filters.noteType as any));
+  }
+
+  const query = conditions.length > 0
+    ? db.select().from(employeeNotes).where(and(...conditions))
+    : db.select().from(employeeNotes);
+
+  return query.orderBy(desc(employeeNotes.noteDate));
+}
+
+export async function createEmployeeNote(data: InsertEmployeeNote) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(employeeNotes).values(data);
+  return result[0].insertId;
+}
+
+// ============================================================================
+// QUALITY STATISTICS
+// ============================================================================
+export async function getQualityStats(months: number = 6) {
+  const db = await getDb();
+  if (!db) return { ncsByMonth: [], ncsByOrigin: [], conformityRate: [] };
+
+  const startDate = new Date();
+  startDate.setMonth(startDate.getMonth() - months);
+
+  // NCs por mês
+  const ncsByMonth = await db.select({
+    month: sql<string>`DATE_FORMAT(${nonConformities.identificationDate}, '%Y-%m')`,
+    count: sql<number>`COUNT(*)`,
+  })
+    .from(nonConformities)
+    .where(gte(nonConformities.identificationDate, startDate))
+    .groupBy(sql`DATE_FORMAT(${nonConformities.identificationDate}, '%Y-%m')`)
+    .orderBy(sql`DATE_FORMAT(${nonConformities.identificationDate}, '%Y-%m')`);
+
+  // NCs por origem
+  const ncsByOrigin = await db.select({
+    origin: nonConformities.origin,
+    count: sql<number>`COUNT(*)`,
+  })
+    .from(nonConformities)
+    .where(gte(nonConformities.identificationDate, startDate))
+    .groupBy(nonConformities.origin);
+
+  // Taxa de conformidade por mês
+  const conformityRate = await db.select({
+    month: sql<string>`DATE_FORMAT(${qualityAnalyses.analysisDate}, '%Y-%m')`,
+    total: sql<number>`COUNT(*)`,
+    conformes: sql<number>`SUM(CASE WHEN ${qualityAnalyses.result} = 'conforme' THEN 1 ELSE 0 END)`,
+  })
+    .from(qualityAnalyses)
+    .where(gte(qualityAnalyses.analysisDate, startDate))
+    .groupBy(sql`DATE_FORMAT(${qualityAnalyses.analysisDate}, '%Y-%m')`)
+    .orderBy(sql`DATE_FORMAT(${qualityAnalyses.analysisDate}, '%Y-%m')`);
+
+  return { ncsByMonth, ncsByOrigin, conformityRate };
+}
+
+// ============================================================================
+// ABSENTEEISM REPORT
+// ============================================================================
+export async function getAbsenteeismReport(filters?: {
+  month?: number;
+  year?: number;
+  sector?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const now = new Date();
+  const month = filters?.month || now.getMonth() + 1;
+  const year = filters?.year || now.getFullYear();
+
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 0);
+
+  const conditions = [
+    gte(employeeEvents.eventDate, startDate),
+    lte(employeeEvents.eventDate, endDate),
+  ];
+
+  const events = await db.select().from(employeeEvents).where(and(...conditions));
+  const employeeList = await getEmployees({ status: "ativo", sector: filters?.sector });
+
+  return employeeList.map(emp => {
+    const empEvents = events.filter(e => e.employeeId === emp.id);
+    return {
+      employeeId: emp.id,
+      employeeName: emp.fullName,
+      sector: emp.sector,
+      faltasJustificadas: empEvents.filter(e => e.eventType === "falta_justificada").length,
+      faltasInjustificadas: empEvents.filter(e => e.eventType === "falta_injustificada").length,
+      atrasos: empEvents.filter(e => e.eventType === "atraso").length,
+      horasExtras: empEvents
+        .filter(e => e.eventType === "hora_extra")
+        .reduce((sum, e) => sum + Number(e.hoursQuantity || 0), 0),
+      totalAusencias: empEvents.filter(e => 
+        ["falta_justificada", "falta_injustificada", "atraso", "saida_antecipada"].includes(e.eventType)
+      ).length,
+    };
+  });
+}
+
+// ============================================================================
+// CASH FLOW PROJECTION
+// ============================================================================
+export async function getCashFlowProjection(days: number = 30) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const today = new Date();
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + days);
+
+  // Buscar todas as entradas financeiras no período
+  const entries = await db.select()
+    .from(financialEntries)
+    .where(and(
+      gte(financialEntries.dueDate, today),
+      lte(financialEntries.dueDate, endDate),
+      sql`${financialEntries.status} NOT IN ('pago', 'recebido', 'cancelado')`
+    ))
+    .orderBy(asc(financialEntries.dueDate));
+
+  // Agrupar por semana
+  const weeks: { weekStart: Date; weekEnd: Date; entradas: number; saidas: number }[] = [];
+  
+  for (let i = 0; i < 4; i++) {
+    const weekStart = new Date(today);
+    weekStart.setDate(weekStart.getDate() + (i * 7));
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+
+    const weekEntries = entries.filter(e => {
+      const dueDate = new Date(e.dueDate);
+      return dueDate >= weekStart && dueDate <= weekEnd;
+    });
+
+    weeks.push({
+      weekStart,
+      weekEnd,
+      entradas: weekEntries
+        .filter(e => e.entryType === "receber")
+        .reduce((sum, e) => sum + Number(e.value), 0),
+      saidas: weekEntries
+        .filter(e => e.entryType === "pagar")
+        .reduce((sum, e) => sum + Number(e.value), 0),
+    });
+  }
+
+  return weeks;
+}

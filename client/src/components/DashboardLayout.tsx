@@ -36,6 +36,13 @@ import {
   Boxes, 
   Archive,
   ChevronDown,
+  Factory,
+  AlertTriangle,
+  ShoppingCart,
+  DollarSign,
+  FlaskConical,
+  ClipboardList,
+  UserCog,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -64,6 +71,13 @@ const menuGroups = [
     ],
   },
   {
+    label: "Produção",
+    items: [
+      { icon: Factory, label: "Apontamentos", path: "/producao/apontamentos" },
+      { icon: AlertTriangle, label: "Problemas do Dia", path: "/producao/problemas" },
+    ],
+  },
+  {
     label: "Almoxarifado",
     items: [
       { icon: Package, label: "Insumos Produção", path: "/almoxarifado/producao" },
@@ -74,6 +88,26 @@ const menuGroups = [
     label: "Estoque",
     items: [
       { icon: Archive, label: "Produto Acabado", path: "/estoque" },
+    ],
+  },
+  {
+    label: "Gestão",
+    items: [
+      { icon: ShoppingCart, label: "Compras", path: "/compras" },
+      { icon: DollarSign, label: "Financeiro", path: "/financeiro" },
+    ],
+  },
+  {
+    label: "Qualidade",
+    items: [
+      { icon: FlaskConical, label: "Análises", path: "/qualidade/analises" },
+      { icon: ClipboardList, label: "Não Conformidades", path: "/qualidade/ncs" },
+    ],
+  },
+  {
+    label: "Pessoas",
+    items: [
+      { icon: UserCog, label: "Gente & Cultura", path: "/rh" },
     ],
   },
 ];
@@ -162,7 +196,7 @@ function DashboardLayoutContent({
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const [openGroups, setOpenGroups] = useState<string[]>(["Principal", "Operações", "Almoxarifado", "Estoque"]);
+  const [openGroups, setOpenGroups] = useState<string[]>(["Principal", "Operações", "Produção", "Almoxarifado", "Estoque", "Gestão", "Qualidade", "Pessoas"]);
 
   // Find active menu item
   const activeMenuItem = menuGroups.flatMap(g => g.items).find(item => item.path === location);

@@ -279,3 +279,318 @@ export const attachments = mysqlTable("attachments", {
 
 export type Attachment = typeof attachments.$inferSelect;
 export type InsertAttachment = typeof attachments.$inferInsert;
+
+
+// ============================================================================
+// TAREFA 2: MÓDULOS DE GESTÃO
+// ============================================================================
+
+// ============================================================================
+// PRODUCTION_ENTRIES TABLE (Apontamentos de produção)
+// ============================================================================
+export const productionEntries = mysqlTable("production_entries", {
+  id: int("id").autoincrement().primaryKey(),
+  externalCode: varchar("externalCode", { length: 50 }),
+  productionDate: date("productionDate").notNull(),
+  shift: mysqlEnum("shift", ["manha", "tarde", "noite"]).notNull(),
+  line: mysqlEnum("line", ["linha1", "linha2", "unica"]).default("unica"),
+  responsibleId: int("responsibleId"),
+  responsibleName: varchar("responsibleName", { length: 255 }),
+  skuId: int("skuId").notNull(),
+  variation: mysqlEnum("variation", ["flocos", "medio", "fino"]).notNull(),
+  quantityProduced: decimal("quantityProduced", { precision: 10, scale: 2 }).notNull(),
+  batchNumber: varchar("batchNumber", { length: 50 }).notNull(),
+  losses: decimal("losses", { precision: 10, scale: 2 }).default("0"),
+  lossReason: mysqlEnum("lossReason", ["processo", "qualidade", "equipamento", "materia_prima", "outro"]),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type ProductionEntry = typeof productionEntries.$inferSelect;
+export type InsertProductionEntry = typeof productionEntries.$inferInsert;
+
+// ============================================================================
+// PRODUCTION_ISSUES TABLE (Problemas do dia)
+// ============================================================================
+export const productionIssues = mysqlTable("production_issues", {
+  id: int("id").autoincrement().primaryKey(),
+  occurredAt: timestamp("occurredAt").notNull(),
+  shift: mysqlEnum("shift", ["manha", "tarde", "noite"]).notNull(),
+  area: mysqlEnum("area", ["recepcao", "producao", "embalagem", "expedicao", "manutencao"]).notNull(),
+  tags: json("tags").notNull(), // Array de tags
+  description: text("description").notNull(),
+  impact: mysqlEnum("impact", ["nenhum", "baixo", "medio", "alto", "parada_total"]).default("nenhum"),
+  downtimeMinutes: int("downtimeMinutes"),
+  actionTaken: text("actionTaken"),
+  photoUrl: varchar("photoUrl", { length: 500 }),
+  status: mysqlEnum("status", ["aberto", "em_tratamento", "resolvido"]).default("aberto").notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+  resolvedBy: int("resolvedBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type ProductionIssue = typeof productionIssues.$inferSelect;
+export type InsertProductionIssue = typeof productionIssues.$inferInsert;
+
+// ============================================================================
+// PURCHASE_REQUESTS TABLE (Solicitações de compra)
+// ============================================================================
+export const purchaseRequests = mysqlTable("purchase_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  externalCode: varchar("externalCode", { length: 50 }),
+  requestNumber: varchar("requestNumber", { length: 20 }).notNull().unique(),
+  requestDate: timestamp("requestDate").defaultNow().notNull(),
+  requesterId: int("requesterId"),
+  requesterName: varchar("requesterName", { length: 255 }),
+  sector: mysqlEnum("sector", ["producao", "qualidade", "manutencao", "administrativo", "almoxarifado"]).notNull(),
+  urgency: mysqlEnum("urgency", ["baixa", "media", "alta", "critica"]).default("media").notNull(),
+  deadlineDate: date("deadlineDate"),
+  status: mysqlEnum("status", ["solicitado", "em_cotacao", "aguardando_aprovacao", "aprovado", "reprovado", "comprado", "entregue", "cancelado"]).default("solicitado").notNull(),
+  totalEstimated: decimal("totalEstimated", { precision: 14, scale: 2 }),
+  totalApproved: decimal("totalApproved", { precision: 14, scale: 2 }),
+  chosenQuotationId: int("chosenQuotationId"),
+  approvedAt: timestamp("approvedAt"),
+  approvedBy: int("approvedBy"),
+  approvalNotes: text("approvalNotes"),
+  rejectionReason: text("rejectionReason"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type PurchaseRequest = typeof purchaseRequests.$inferSelect;
+export type InsertPurchaseRequest = typeof purchaseRequests.$inferInsert;
+
+// ============================================================================
+// PURCHASE_REQUEST_ITEMS TABLE (Itens da solicitação de compra)
+// ============================================================================
+export const purchaseRequestItems = mysqlTable("purchase_request_items", {
+  id: int("id").autoincrement().primaryKey(),
+  purchaseRequestId: int("purchaseRequestId").notNull(),
+  itemName: varchar("itemName", { length: 255 }).notNull(),
+  specification: text("specification"),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  unit: varchar("unit", { length: 20 }).notNull(),
+  estimatedValue: decimal("estimatedValue", { precision: 10, scale: 2 }),
+  warehouseItemId: int("warehouseItemId"), // Se veio de sugestão automática
+});
+
+export type PurchaseRequestItem = typeof purchaseRequestItems.$inferSelect;
+export type InsertPurchaseRequestItem = typeof purchaseRequestItems.$inferInsert;
+
+// ============================================================================
+// PURCHASE_QUOTATIONS TABLE (Cotações de compra)
+// ============================================================================
+export const purchaseQuotations = mysqlTable("purchase_quotations", {
+  id: int("id").autoincrement().primaryKey(),
+  purchaseRequestId: int("purchaseRequestId").notNull(),
+  supplierName: varchar("supplierName", { length: 255 }).notNull(),
+  supplierCnpj: varchar("supplierCnpj", { length: 20 }),
+  supplierContact: varchar("supplierContact", { length: 255 }),
+  supplierPhone: varchar("supplierPhone", { length: 20 }),
+  supplierEmail: varchar("supplierEmail", { length: 320 }),
+  totalValue: decimal("totalValue", { precision: 14, scale: 2 }).notNull(),
+  deliveryDays: int("deliveryDays"),
+  paymentCondition: varchar("paymentCondition", { length: 255 }),
+  observations: text("observations"),
+  quotationFileUrl: varchar("quotationFileUrl", { length: 500 }),
+  isChosen: boolean("isChosen").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type PurchaseQuotation = typeof purchaseQuotations.$inferSelect;
+export type InsertPurchaseQuotation = typeof purchaseQuotations.$inferInsert;
+
+// ============================================================================
+// PURCHASE_QUOTATION_ITEMS TABLE (Itens da cotação)
+// ============================================================================
+export const purchaseQuotationItems = mysqlTable("purchase_quotation_items", {
+  id: int("id").autoincrement().primaryKey(),
+  quotationId: int("quotationId").notNull(),
+  requestItemId: int("requestItemId").notNull(),
+  unitValue: decimal("unitValue", { precision: 10, scale: 2 }).notNull(),
+  totalValue: decimal("totalValue", { precision: 10, scale: 2 }).notNull(),
+  deliveryDays: varchar("deliveryDays", { length: 50 }),
+  observations: text("observations"),
+});
+
+export type PurchaseQuotationItem = typeof purchaseQuotationItems.$inferSelect;
+export type InsertPurchaseQuotationItem = typeof purchaseQuotationItems.$inferInsert;
+
+// ============================================================================
+// FINANCIAL_ENTRIES TABLE (Entradas financeiras - Contas a pagar e receber)
+// ============================================================================
+export const financialEntries = mysqlTable("financial_entries", {
+  id: int("id").autoincrement().primaryKey(),
+  externalCode: varchar("externalCode", { length: 50 }),
+  entryType: mysqlEnum("entryType", ["pagar", "receber"]).notNull(),
+  origin: mysqlEnum("origin", ["produtor", "compra", "venda", "outros"]).notNull(),
+  referenceType: varchar("referenceType", { length: 50 }), // producer_payable, purchase_request, etc.
+  referenceId: int("referenceId"),
+  description: varchar("description", { length: 255 }).notNull(),
+  entityName: varchar("entityName", { length: 255 }), // Nome do produtor, fornecedor ou cliente
+  value: decimal("value", { precision: 14, scale: 2 }).notNull(),
+  dueDate: date("dueDate").notNull(),
+  status: mysqlEnum("status", ["pendente", "programado", "pago", "recebido", "atrasado", "cancelado"]).default("pendente").notNull(),
+  paidAt: timestamp("paidAt"),
+  paidBy: int("paidBy"),
+  paymentMethod: mysqlEnum("paymentMethod", ["pix", "transferencia", "boleto", "dinheiro", "cheque"]),
+  receiptUrl: varchar("receiptUrl", { length: 500 }),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type FinancialEntry = typeof financialEntries.$inferSelect;
+export type InsertFinancialEntry = typeof financialEntries.$inferInsert;
+
+// ============================================================================
+// QUALITY_ANALYSES TABLE (Análises de qualidade)
+// ============================================================================
+export const qualityAnalyses = mysqlTable("quality_analyses", {
+  id: int("id").autoincrement().primaryKey(),
+  externalCode: varchar("externalCode", { length: 50 }),
+  analysisDate: date("analysisDate").notNull(),
+  analysisType: mysqlEnum("analysisType", ["microbiologica", "fisico_quimica", "sensorial", "outra"]).notNull(),
+  relatedTo: mysqlEnum("relatedTo", ["carga_coco", "lote_producao", "nenhum"]).default("nenhum"),
+  referenceId: int("referenceId"),
+  skuId: int("skuId"),
+  batchNumber: varchar("batchNumber", { length: 50 }),
+  parameters: text("parameters").notNull(),
+  results: text("results").notNull(),
+  specificationLimits: text("specificationLimits"),
+  result: mysqlEnum("result", ["conforme", "nao_conforme", "pendente"]).default("pendente").notNull(),
+  responsibleId: int("responsibleId"),
+  responsibleName: varchar("responsibleName", { length: 255 }),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type QualityAnalysis = typeof qualityAnalyses.$inferSelect;
+export type InsertQualityAnalysis = typeof qualityAnalyses.$inferInsert;
+
+// ============================================================================
+// NON_CONFORMITIES TABLE (Não conformidades)
+// ============================================================================
+export const nonConformities = mysqlTable("non_conformities", {
+  id: int("id").autoincrement().primaryKey(),
+  externalCode: varchar("externalCode", { length: 50 }),
+  ncNumber: varchar("ncNumber", { length: 20 }).notNull().unique(),
+  identificationDate: date("identificationDate").notNull(),
+  origin: mysqlEnum("origin", ["analise", "reclamacao_cliente", "auditoria", "processo", "fornecedor"]).notNull(),
+  relatedAnalysisId: int("relatedAnalysisId"),
+  area: mysqlEnum("area", ["recepcao", "producao", "embalagem", "expedicao", "qualidade", "almoxarifado"]).notNull(),
+  description: text("description").notNull(),
+  affectedProduct: varchar("affectedProduct", { length: 255 }),
+  affectedQuantity: decimal("affectedQuantity", { precision: 10, scale: 2 }),
+  immediateAction: text("immediateAction"),
+  status: mysqlEnum("status", ["aberta", "em_analise", "acao_corretiva", "verificacao", "fechada"]).default("aberta").notNull(),
+  closedAt: timestamp("closedAt"),
+  closedBy: int("closedBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type NonConformity = typeof nonConformities.$inferSelect;
+export type InsertNonConformity = typeof nonConformities.$inferInsert;
+
+// ============================================================================
+// CORRECTIVE_ACTIONS TABLE (Ações corretivas)
+// ============================================================================
+export const correctiveActions = mysqlTable("corrective_actions", {
+  id: int("id").autoincrement().primaryKey(),
+  nonConformityId: int("nonConformityId").notNull(),
+  rootCause: text("rootCause").notNull(),
+  correctiveAction: text("correctiveAction").notNull(),
+  responsibleId: int("responsibleId"),
+  responsibleName: varchar("responsibleName", { length: 255 }),
+  deadline: date("deadline").notNull(),
+  status: mysqlEnum("status", ["pendente", "em_andamento", "concluida", "verificada"]).default("pendente").notNull(),
+  effectivenessVerified: mysqlEnum("effectivenessVerified", ["sim", "nao"]),
+  verificationNotes: text("verificationNotes"),
+  completedAt: timestamp("completedAt"),
+  completedBy: int("completedBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type CorrectiveAction = typeof correctiveActions.$inferSelect;
+export type InsertCorrectiveAction = typeof correctiveActions.$inferInsert;
+
+// ============================================================================
+// EMPLOYEES TABLE (Colaboradores - Gente & Cultura)
+// ============================================================================
+export const employees = mysqlTable("employees", {
+  id: int("id").autoincrement().primaryKey(),
+  externalCode: varchar("externalCode", { length: 50 }),
+  fullName: varchar("fullName", { length: 255 }).notNull(),
+  cpf: varchar("cpf", { length: 14 }).notNull(),
+  birthDate: date("birthDate"),
+  position: varchar("position", { length: 100 }).notNull(),
+  sector: mysqlEnum("sector", ["recepcao", "producao", "embalagem", "expedicao", "qualidade", "manutencao", "almoxarifado", "administrativo"]).notNull(),
+  admissionDate: date("admissionDate").notNull(),
+  phone: varchar("phone", { length: 20 }),
+  emergencyContact: varchar("emergencyContact", { length: 255 }),
+  status: mysqlEnum("status", ["ativo", "afastado", "desligado"]).default("ativo").notNull(),
+  terminationDate: date("terminationDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type Employee = typeof employees.$inferSelect;
+export type InsertEmployee = typeof employees.$inferInsert;
+
+// ============================================================================
+// EMPLOYEE_EVENTS TABLE (Eventos de presença - faltas, atrasos, horas extras)
+// ============================================================================
+export const employeeEvents = mysqlTable("employee_events", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull(),
+  eventDate: date("eventDate").notNull(),
+  eventType: mysqlEnum("eventType", ["falta_justificada", "falta_injustificada", "atraso", "saida_antecipada", "hora_extra", "atestado_medico"]).notNull(),
+  hoursQuantity: decimal("hoursQuantity", { precision: 4, scale: 2 }), // Para horas extras
+  reason: text("reason"),
+  attachmentUrl: varchar("attachmentUrl", { length: 500 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type EmployeeEvent = typeof employeeEvents.$inferSelect;
+export type InsertEmployeeEvent = typeof employeeEvents.$inferInsert;
+
+// ============================================================================
+// EMPLOYEE_NOTES TABLE (Observações de colaboradores)
+// ============================================================================
+export const employeeNotes = mysqlTable("employee_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull(),
+  noteDate: date("noteDate").notNull(),
+  noteType: mysqlEnum("noteType", ["elogio", "advertencia_verbal", "advertencia_escrita", "feedback", "observacao"]).notNull(),
+  description: text("description").notNull(),
+  attachmentUrl: varchar("attachmentUrl", { length: 500 }),
+  visibility: mysqlEnum("visibility", ["restrito", "gestores"]).default("restrito").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type EmployeeNote = typeof employeeNotes.$inferSelect;
+export type InsertEmployeeNote = typeof employeeNotes.$inferInsert;

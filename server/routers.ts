@@ -656,6 +656,933 @@ export const appRouter = router({
         return db.getAuditLogs(input);
       }),
   }),
+
+  // ============================================================================
+  // TAREFA 2: PRODUCTION ROUTER
+  // ============================================================================
+  production: router({
+    entries: router({
+      list: protectedProcedure
+        .input(z.object({
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+          shift: z.string().optional(),
+          skuId: z.number().optional(),
+          variation: z.string().optional(),
+        }).optional())
+        .query(async ({ input }) => {
+          return db.getProductionEntries(input);
+        }),
+
+      create: protectedProcedure
+        .input(z.object({
+          productionDate: z.string(),
+          shift: z.enum(["manha", "tarde", "noite"]),
+          line: z.enum(["linha1", "linha2", "unica"]).optional(),
+          responsibleId: z.number().optional(),
+          responsibleName: z.string().optional(),
+          skuId: z.number(),
+          variation: z.enum(["flocos", "medio", "fino"]),
+          quantityProduced: z.string(),
+          batchNumber: z.string(),
+          losses: z.string().optional(),
+          lossReason: z.enum(["processo", "qualidade", "equipamento", "materia_prima", "outro"]).optional(),
+          observations: z.string().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const id = await db.createProductionEntry({
+            ...input,
+            productionDate: new Date(input.productionDate),
+            createdBy: ctx.user?.id,
+            updatedBy: ctx.user?.id,
+          });
+
+          // Gerar entrada automática no Estoque PA
+          const sku = await db.getSkuById(input.skuId);
+          if (sku) {
+            const productionDate = new Date(input.productionDate);
+            const expirationDate = new Date(productionDate);
+            expirationDate.setDate(expirationDate.getDate() + sku.shelfLifeDays);
+
+            // Criar lote no inventário
+            const inventoryId = await db.createFinishedGoodsInventory({
+              skuId: input.skuId,
+              batchNumber: input.batchNumber,
+              productionDate: productionDate,
+              expirationDate: expirationDate,
+              quantity: input.quantityProduced,
+              createdBy: ctx.user?.id,
+              updatedBy: ctx.user?.id,
+            });
+
+            // Atualizar estoque do SKU
+            const newStock = Number(sku.currentStock) + Number(input.quantityProduced);
+            await db.updateSku(input.skuId, { currentStock: newStock.toString() });
+
+            // Registrar movimento (a função calcula previousStock e newStock automaticamente)
+            await db.createFinishedGoodsMovement({
+              skuId: input.skuId,
+              inventoryId,
+              movementType: "entrada",
+              quantity: input.quantityProduced,
+              batchNumber: input.batchNumber,
+              reason: "Produção",
+              referenceType: "production_entry",
+              referenceId: id,
+              createdBy: ctx.user?.id,
+            });
+          }
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_CREATE",
+            module: "production",
+            entityType: "production_entry",
+            entityId: id,
+          });
+
+          return { id };
+        }),
+    }),
+
+    issues: router({
+      list: protectedProcedure
+        .input(z.object({
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+          area: z.string().optional(),
+          status: z.string().optional(),
+          impact: z.string().optional(),
+        }).optional())
+        .query(async ({ input }) => {
+          return db.getProductionIssues(input);
+        }),
+
+      create: protectedProcedure
+        .input(z.object({
+          occurredAt: z.string(),
+          shift: z.enum(["manha", "tarde", "noite"]),
+          area: z.enum(["recepcao", "producao", "embalagem", "expedicao", "manutencao"]),
+          tags: z.array(z.string()),
+          description: z.string(),
+          impact: z.enum(["nenhum", "baixo", "medio", "alto", "parada_total"]).optional(),
+          downtimeMinutes: z.number().optional(),
+          actionTaken: z.string().optional(),
+          photoUrl: z.string().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const id = await db.createProductionIssue({
+            ...input,
+            occurredAt: new Date(input.occurredAt),
+            createdBy: ctx.user?.id,
+            updatedBy: ctx.user?.id,
+          });
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_CREATE",
+            module: "production",
+            entityType: "production_issue",
+            entityId: id,
+          });
+
+          return { id };
+        }),
+
+      update: protectedProcedure
+        .input(z.object({
+          id: z.number(),
+          status: z.enum(["aberto", "em_tratamento", "resolvido"]).optional(),
+          actionTaken: z.string().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const { id, ...data } = input;
+          const updateData: any = { ...data, updatedBy: ctx.user?.id };
+          
+          if (input.status === "resolvido") {
+            updateData.resolvedAt = new Date();
+            updateData.resolvedBy = ctx.user?.id;
+          }
+
+          await db.updateProductionIssue(id, updateData);
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_EDIT",
+            module: "production",
+            entityType: "production_issue",
+            entityId: id,
+          });
+
+          return { success: true };
+        }),
+    }),
+  }),
+
+  // ============================================================================
+  // TAREFA 2: PURCHASES ROUTER
+  // ============================================================================
+  purchases: router({
+    list: protectedProcedure
+      .input(z.object({
+        status: z.string().optional(),
+        sector: z.string().optional(),
+        urgency: z.string().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        search: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return db.getPurchaseRequests(input);
+      }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const request = await db.getPurchaseRequestById(input.id);
+        if (!request) return null;
+        
+        const items = await db.getPurchaseRequestItems(input.id);
+        const quotations = await db.getPurchaseQuotations(input.id);
+        
+        // Get items for each quotation
+        const quotationsWithItems = await Promise.all(
+          quotations.map(async (q) => ({
+            ...q,
+            items: await db.getPurchaseQuotationItems(q.id),
+          }))
+        );
+        
+        return { ...request, items, quotations: quotationsWithItems };
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        sector: z.enum(["producao", "qualidade", "manutencao", "administrativo", "almoxarifado"]),
+        urgency: z.enum(["baixa", "media", "alta", "critica"]),
+        deadlineDate: z.string().optional(),
+        items: z.array(z.object({
+          itemName: z.string(),
+          specification: z.string().optional(),
+          quantity: z.string(),
+          unit: z.string(),
+          estimatedValue: z.string().optional(),
+          warehouseItemId: z.number().optional(),
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const requestNumber = await db.getNextPurchaseRequestNumber();
+        
+        const totalEstimated = input.items.reduce(
+          (sum, item) => sum + (Number(item.estimatedValue || 0) * Number(item.quantity)),
+          0
+        );
+
+        const id = await db.createPurchaseRequest({
+          requestNumber,
+          sector: input.sector,
+          urgency: input.urgency,
+          deadlineDate: input.deadlineDate ? new Date(input.deadlineDate) : undefined,
+          totalEstimated: totalEstimated.toString(),
+          requesterId: ctx.user?.id,
+          requesterName: ctx.user?.name || undefined,
+          createdBy: ctx.user?.id,
+          updatedBy: ctx.user?.id,
+        });
+
+        // Create items
+        for (const item of input.items) {
+          await db.createPurchaseRequestItem({
+            purchaseRequestId: id,
+            ...item,
+          });
+        }
+
+        await db.createAuditLog({
+          userId: ctx.user?.id,
+          userName: ctx.user?.name || undefined,
+          action: "RECORD_CREATE",
+          module: "purchases",
+          entityType: "purchase_request",
+          entityId: id,
+        });
+
+        return { id, requestNumber };
+      }),
+
+    updateStatus: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["solicitado", "em_cotacao", "aguardando_aprovacao", "aprovado", "reprovado", "comprado", "entregue", "cancelado"]),
+        chosenQuotationId: z.number().optional(),
+        rejectionReason: z.string().optional(),
+        approvalNotes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { id, status, chosenQuotationId, rejectionReason, approvalNotes } = input;
+        
+        const updateData: any = {
+          status,
+          updatedBy: ctx.user?.id,
+        };
+
+        if (status === "aprovado" && chosenQuotationId) {
+          updateData.approvedAt = new Date();
+          updateData.approvedBy = ctx.user?.id;
+          updateData.chosenQuotationId = chosenQuotationId;
+          updateData.approvalNotes = approvalNotes;
+
+          // Mark chosen quotation
+          await db.updatePurchaseQuotation(chosenQuotationId, { isChosen: true });
+
+          // Get quotation to create financial provision
+          const quotations = await db.getPurchaseQuotations(id);
+          const chosenQuotation = quotations.find(q => q.id === chosenQuotationId);
+          
+          if (chosenQuotation) {
+            updateData.totalApproved = chosenQuotation.totalValue;
+
+            // Create financial entry (provision)
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + (chosenQuotation.deliveryDays || 30));
+
+            await db.createFinancialEntry({
+              entryType: "pagar",
+              origin: "compra",
+              referenceType: "purchase_request",
+              referenceId: id,
+              description: `Compra ${(await db.getPurchaseRequestById(id))?.requestNumber}`,
+              entityName: chosenQuotation.supplierName,
+              value: chosenQuotation.totalValue,
+              dueDate: dueDate,
+              status: "pendente",
+              createdBy: ctx.user?.id,
+              updatedBy: ctx.user?.id,
+            });
+          }
+        }
+
+        if (status === "reprovado") {
+          updateData.rejectionReason = rejectionReason;
+        }
+
+        await db.updatePurchaseRequest(id, updateData);
+
+        await db.createAuditLog({
+          userId: ctx.user?.id,
+          userName: ctx.user?.name || undefined,
+          action: status === "aprovado" ? "RECORD_APPROVE" : "RECORD_EDIT",
+          module: "purchases",
+          entityType: "purchase_request",
+          entityId: id,
+          fieldName: "status",
+          newValue: status,
+        });
+
+        return { success: true };
+      }),
+
+    addQuotation: protectedProcedure
+      .input(z.object({
+        purchaseRequestId: z.number(),
+        supplierName: z.string(),
+        supplierCnpj: z.string().optional(),
+        supplierContact: z.string().optional(),
+        supplierPhone: z.string().optional(),
+        supplierEmail: z.string().optional(),
+        deliveryDays: z.number().optional(),
+        paymentCondition: z.string().optional(),
+        observations: z.string().optional(),
+        quotationFileUrl: z.string().optional(),
+        items: z.array(z.object({
+          requestItemId: z.number(),
+          unitValue: z.string(),
+          totalValue: z.string(),
+          deliveryDays: z.string().optional(),
+          observations: z.string().optional(),
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { items, ...quotationData } = input;
+        
+        const totalValue = items.reduce((sum, item) => sum + Number(item.totalValue), 0);
+
+        const quotationId = await db.createPurchaseQuotation({
+          ...quotationData,
+          totalValue: totalValue.toString(),
+          createdBy: ctx.user?.id,
+        });
+
+        for (const item of items) {
+          await db.createPurchaseQuotationItem({
+            quotationId,
+            ...item,
+          });
+        }
+
+        // Update request status to "em_cotacao" if still "solicitado"
+        const request = await db.getPurchaseRequestById(input.purchaseRequestId);
+        if (request?.status === "solicitado") {
+          await db.updatePurchaseRequest(input.purchaseRequestId, {
+            status: "em_cotacao",
+            updatedBy: ctx.user?.id,
+          });
+        }
+
+        return { id: quotationId };
+      }),
+
+    getSuggestions: protectedProcedure.query(async () => {
+      // Get items below minimum stock
+      const productionItems = await db.getWarehouseItems({ warehouseType: "producao", belowMinimum: true });
+      const generalItems = await db.getWarehouseItems({ warehouseType: "geral", belowMinimum: true });
+      
+      return [...productionItems, ...generalItems].map(item => ({
+        ...item,
+        suggestedQuantity: Number(item.minimumStock) - Number(item.currentStock),
+      }));
+    }),
+  }),
+
+  // ============================================================================
+  // TAREFA 2: FINANCIAL ROUTER
+  // ============================================================================
+  financial: router({
+    list: protectedProcedure
+      .input(z.object({
+        entryType: z.string().optional(),
+        origin: z.string().optional(),
+        status: z.string().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return db.getFinancialEntries(input);
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        entryType: z.enum(["pagar", "receber"]),
+        origin: z.enum(["produtor", "compra", "venda", "outros"]),
+        description: z.string(),
+        entityName: z.string().optional(),
+        value: z.string(),
+        dueDate: z.string(),
+        observations: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const id = await db.createFinancialEntry({
+          ...input,
+          dueDate: new Date(input.dueDate),
+          createdBy: ctx.user?.id,
+          updatedBy: ctx.user?.id,
+        });
+
+        await db.createAuditLog({
+          userId: ctx.user?.id,
+          userName: ctx.user?.name || undefined,
+          action: "RECORD_CREATE",
+          module: "financial",
+          entityType: "financial_entry",
+          entityId: id,
+        });
+
+        return { id };
+      }),
+
+    markAsPaid: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        paymentMethod: z.enum(["pix", "transferencia", "boleto", "dinheiro", "cheque"]),
+        receiptUrl: z.string().optional(),
+        observations: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { id, ...data } = input;
+        
+        await db.updateFinancialEntry(id, {
+          ...data,
+          status: "pago",
+          paidAt: new Date(),
+          paidBy: ctx.user?.id,
+          updatedBy: ctx.user?.id,
+        });
+
+        await db.createAuditLog({
+          userId: ctx.user?.id,
+          userName: ctx.user?.name || undefined,
+          action: "RECORD_APPROVE",
+          module: "financial",
+          entityType: "financial_entry",
+          entityId: id,
+          fieldName: "status",
+          newValue: "pago",
+        });
+
+        return { success: true };
+      }),
+
+    markAsReceived: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        paymentMethod: z.enum(["pix", "transferencia", "boleto", "dinheiro", "cheque"]),
+        receiptUrl: z.string().optional(),
+        observations: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { id, ...data } = input;
+        
+        await db.updateFinancialEntry(id, {
+          ...data,
+          status: "recebido",
+          paidAt: new Date(),
+          paidBy: ctx.user?.id,
+          updatedBy: ctx.user?.id,
+        });
+
+        await db.createAuditLog({
+          userId: ctx.user?.id,
+          userName: ctx.user?.name || undefined,
+          action: "RECORD_APPROVE",
+          module: "financial",
+          entityType: "financial_entry",
+          entityId: id,
+          fieldName: "status",
+          newValue: "recebido",
+        });
+
+        return { success: true };
+      }),
+
+    getCashFlow: protectedProcedure
+      .input(z.object({ days: z.number().optional() }).optional())
+      .query(async ({ input }) => {
+        return db.getCashFlowProjection(input?.days || 30);
+      }),
+  }),
+
+  // ============================================================================
+  // TAREFA 2: QUALITY ROUTER
+  // ============================================================================
+  quality: router({
+    analyses: router({
+      list: protectedProcedure
+        .input(z.object({
+          analysisType: z.string().optional(),
+          result: z.string().optional(),
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+        }).optional())
+        .query(async ({ input }) => {
+          return db.getQualityAnalyses(input);
+        }),
+
+      create: protectedProcedure
+        .input(z.object({
+          analysisDate: z.string(),
+          analysisType: z.enum(["microbiologica", "fisico_quimica", "sensorial", "outra"]),
+          relatedTo: z.enum(["carga_coco", "lote_producao", "nenhum"]).optional(),
+          referenceId: z.number().optional(),
+          skuId: z.number().optional(),
+          batchNumber: z.string().optional(),
+          parameters: z.string(),
+          results: z.string(),
+          specificationLimits: z.string().optional(),
+          result: z.enum(["conforme", "nao_conforme", "pendente"]),
+          responsibleId: z.number().optional(),
+          responsibleName: z.string().optional(),
+          observations: z.string().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const id = await db.createQualityAnalysis({
+            ...input,
+            analysisDate: new Date(input.analysisDate),
+            createdBy: ctx.user?.id,
+            updatedBy: ctx.user?.id,
+          });
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_CREATE",
+            module: "quality",
+            entityType: "quality_analysis",
+            entityId: id,
+          });
+
+          return { id };
+        }),
+    }),
+
+    nonConformities: router({
+      list: protectedProcedure
+        .input(z.object({
+          status: z.string().optional(),
+          origin: z.string().optional(),
+          area: z.string().optional(),
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+        }).optional())
+        .query(async ({ input }) => {
+          return db.getNonConformities(input);
+        }),
+
+      getById: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .query(async ({ input }) => {
+          const nc = await db.getNonConformityById(input.id);
+          if (!nc) return null;
+          
+          const actions = await db.getCorrectiveActions({ nonConformityId: input.id });
+          return { ...nc, correctiveActions: actions };
+        }),
+
+      create: protectedProcedure
+        .input(z.object({
+          identificationDate: z.string(),
+          origin: z.enum(["analise", "reclamacao_cliente", "auditoria", "processo", "fornecedor"]),
+          relatedAnalysisId: z.number().optional(),
+          area: z.enum(["recepcao", "producao", "embalagem", "expedicao", "qualidade", "almoxarifado"]),
+          description: z.string(),
+          affectedProduct: z.string().optional(),
+          affectedQuantity: z.string().optional(),
+          immediateAction: z.string().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const ncNumber = await db.getNextNCNumber();
+          
+          const id = await db.createNonConformity({
+            ...input,
+            ncNumber,
+            identificationDate: new Date(input.identificationDate),
+            createdBy: ctx.user?.id,
+            updatedBy: ctx.user?.id,
+          });
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_CREATE",
+            module: "quality",
+            entityType: "non_conformity",
+            entityId: id,
+          });
+
+          return { id, ncNumber };
+        }),
+
+      updateStatus: protectedProcedure
+        .input(z.object({
+          id: z.number(),
+          status: z.enum(["aberta", "em_analise", "acao_corretiva", "verificacao", "fechada"]),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const { id, status } = input;
+          
+          const updateData: any = {
+            status,
+            updatedBy: ctx.user?.id,
+          };
+
+          if (status === "fechada") {
+            updateData.closedAt = new Date();
+            updateData.closedBy = ctx.user?.id;
+          }
+
+          await db.updateNonConformity(id, updateData);
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_EDIT",
+            module: "quality",
+            entityType: "non_conformity",
+            entityId: id,
+            fieldName: "status",
+            newValue: status,
+          });
+
+          return { success: true };
+        }),
+    }),
+
+    correctiveActions: router({
+      list: protectedProcedure
+        .input(z.object({
+          nonConformityId: z.number().optional(),
+          status: z.string().optional(),
+        }).optional())
+        .query(async ({ input }) => {
+          return db.getCorrectiveActions(input);
+        }),
+
+      create: protectedProcedure
+        .input(z.object({
+          nonConformityId: z.number(),
+          rootCause: z.string(),
+          correctiveAction: z.string(),
+          responsibleId: z.number().optional(),
+          responsibleName: z.string().optional(),
+          deadline: z.string(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const id = await db.createCorrectiveAction({
+            ...input,
+            deadline: new Date(input.deadline),
+            createdBy: ctx.user?.id,
+            updatedBy: ctx.user?.id,
+          });
+
+          // Update NC status to "acao_corretiva"
+          await db.updateNonConformity(input.nonConformityId, {
+            status: "acao_corretiva",
+            updatedBy: ctx.user?.id,
+          });
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_CREATE",
+            module: "quality",
+            entityType: "corrective_action",
+            entityId: id,
+          });
+
+          return { id };
+        }),
+
+      updateStatus: protectedProcedure
+        .input(z.object({
+          id: z.number(),
+          status: z.enum(["pendente", "em_andamento", "concluida", "verificada"]),
+          effectivenessVerified: z.enum(["sim", "nao"]).optional(),
+          verificationNotes: z.string().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const { id, status, effectivenessVerified, verificationNotes } = input;
+          
+          const updateData: any = {
+            status,
+            updatedBy: ctx.user?.id,
+          };
+
+          if (status === "concluida") {
+            updateData.completedAt = new Date();
+            updateData.completedBy = ctx.user?.id;
+          }
+
+          if (effectivenessVerified) {
+            updateData.effectivenessVerified = effectivenessVerified;
+            updateData.verificationNotes = verificationNotes;
+          }
+
+          await db.updateCorrectiveAction(id, updateData);
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_EDIT",
+            module: "quality",
+            entityType: "corrective_action",
+            entityId: id,
+            fieldName: "status",
+            newValue: status,
+          });
+
+          return { success: true };
+        }),
+    }),
+
+    stats: protectedProcedure
+      .input(z.object({ months: z.number().optional() }).optional())
+      .query(async ({ input }) => {
+        return db.getQualityStats(input?.months || 6);
+      }),
+  }),
+
+  // ============================================================================
+  // TAREFA 2: EMPLOYEES ROUTER (Gente & Cultura)
+  // ============================================================================
+  employees: router({
+    list: protectedProcedure
+      .input(z.object({
+        status: z.string().optional(),
+        sector: z.string().optional(),
+        search: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return db.getEmployees(input);
+      }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const employee = await db.getEmployeeById(input.id);
+        if (!employee) return null;
+        
+        const events = await db.getEmployeeEvents({ employeeId: input.id });
+        const notes = await db.getEmployeeNotes({ employeeId: input.id });
+        
+        return { ...employee, events, notes };
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        fullName: z.string(),
+        cpf: z.string(),
+        birthDate: z.string().optional(),
+        position: z.string(),
+        sector: z.enum(["recepcao", "producao", "embalagem", "expedicao", "qualidade", "manutencao", "almoxarifado", "administrativo"]),
+        admissionDate: z.string(),
+        phone: z.string().optional(),
+        emergencyContact: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const id = await db.createEmployee({
+          ...input,
+          birthDate: input.birthDate ? new Date(input.birthDate) : undefined,
+          admissionDate: new Date(input.admissionDate),
+          createdBy: ctx.user?.id,
+          updatedBy: ctx.user?.id,
+        });
+
+        await db.createAuditLog({
+          userId: ctx.user?.id,
+          userName: ctx.user?.name || undefined,
+          action: "RECORD_CREATE",
+          module: "employees",
+          entityType: "employee",
+          entityId: id,
+        });
+
+        return { id };
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        fullName: z.string().optional(),
+        position: z.string().optional(),
+        sector: z.enum(["recepcao", "producao", "embalagem", "expedicao", "qualidade", "manutencao", "almoxarifado", "administrativo"]).optional(),
+        phone: z.string().optional(),
+        emergencyContact: z.string().optional(),
+        status: z.enum(["ativo", "afastado", "desligado"]).optional(),
+        terminationDate: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { id, terminationDate, ...data } = input;
+        
+        await db.updateEmployee(id, {
+          ...data,
+          terminationDate: terminationDate ? new Date(terminationDate) : undefined,
+          updatedBy: ctx.user?.id,
+        });
+
+        await db.createAuditLog({
+          userId: ctx.user?.id,
+          userName: ctx.user?.name || undefined,
+          action: "RECORD_EDIT",
+          module: "employees",
+          entityType: "employee",
+          entityId: id,
+        });
+
+        return { success: true };
+      }),
+
+    events: router({
+      list: protectedProcedure
+        .input(z.object({
+          employeeId: z.number().optional(),
+          eventType: z.string().optional(),
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+        }).optional())
+        .query(async ({ input }) => {
+          return db.getEmployeeEvents(input);
+        }),
+
+      create: protectedProcedure
+        .input(z.object({
+          employeeId: z.number(),
+          eventDate: z.string(),
+          eventType: z.enum(["falta_justificada", "falta_injustificada", "atraso", "saida_antecipada", "hora_extra", "atestado_medico"]),
+          hoursQuantity: z.string().optional(),
+          reason: z.string().optional(),
+          attachmentUrl: z.string().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const id = await db.createEmployeeEvent({
+            ...input,
+            eventDate: new Date(input.eventDate),
+            createdBy: ctx.user?.id,
+          });
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_CREATE",
+            module: "employees",
+            entityType: "employee_event",
+            entityId: id,
+          });
+
+          return { id };
+        }),
+    }),
+
+    notes: router({
+      list: protectedProcedure
+        .input(z.object({
+          employeeId: z.number().optional(),
+          noteType: z.string().optional(),
+        }).optional())
+        .query(async ({ input }) => {
+          return db.getEmployeeNotes(input);
+        }),
+
+      create: protectedProcedure
+        .input(z.object({
+          employeeId: z.number(),
+          noteDate: z.string(),
+          noteType: z.enum(["elogio", "advertencia_verbal", "advertencia_escrita", "feedback", "observacao"]),
+          description: z.string(),
+          attachmentUrl: z.string().optional(),
+          visibility: z.enum(["restrito", "gestores"]),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const id = await db.createEmployeeNote({
+            ...input,
+            noteDate: new Date(input.noteDate),
+            createdBy: ctx.user?.id,
+          });
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_CREATE",
+            module: "employees",
+            entityType: "employee_note",
+            entityId: id,
+          });
+
+          return { id };
+        }),
+    }),
+
+    absenteeismReport: protectedProcedure
+      .input(z.object({
+        month: z.number().optional(),
+        year: z.number().optional(),
+        sector: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return db.getAbsenteeismReport(input);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
