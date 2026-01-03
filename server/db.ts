@@ -1908,20 +1908,25 @@ export async function getLoadsEvolution(startDate?: Date, endDate?: Date) {
 
   const start = startDate || new Date(new Date().setDate(new Date().getDate() - 30));
   const end = endDate || new Date();
+  const startStr = start.toISOString().slice(0, 19).replace('T', ' ');
+  const endStr = end.toISOString().slice(0, 19).replace('T', ' ');
 
-  const result = await db.select({
-    date: sql<string>`DATE(${coconutLoads.receivedAt})`,
-    totalWeight: sql<number>`SUM(${coconutLoads.netWeight})`,
-    count: sql<number>`COUNT(*)`,
-  }).from(coconutLoads)
-    .where(and(
-      gte(coconutLoads.receivedAt, start),
-      lte(coconutLoads.receivedAt, end)
-    ))
-    .groupBy(sql`DATE(${coconutLoads.receivedAt})`)
-    .orderBy(sql`DATE(${coconutLoads.receivedAt})`);
+  // Usar SQL raw para evitar problemas com interpolação de colunas no GROUP BY
+  const result = await db.execute(
+    sql`SELECT DATE(receivedAt) as date, SUM(netWeight) as totalWeight, COUNT(*) as count 
+        FROM coconut_loads 
+        WHERE receivedAt >= ${startStr} AND receivedAt <= ${endStr}
+        GROUP BY DATE(receivedAt) 
+        ORDER BY DATE(receivedAt)`
+  );
 
-  return result;
+  // Converter resultado para o formato esperado
+  const rows = (result[0] as unknown) as any[];
+  return rows.map(row => ({
+    date: row.date,
+    totalWeight: Number(row.totalWeight) || 0,
+    count: Number(row.count) || 0,
+  }));
 }
 
 export async function getPaymentsByStatus() {

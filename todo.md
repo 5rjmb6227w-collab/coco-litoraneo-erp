@@ -159,3 +159,4 @@
 - [x] Corrigir query getProductionByShift - formato de data incorreto (convertido para ISO string)
 - [x] Corrigir query getProductionBySkuVariation - formato de data incorreto (convertido para ISO string)
 - [x] Corrigir query getDashboardStats - formato de data incorreto (convertido para ISO string)
+- [x] Corrigir query getLoadsEvolution - erro de sintaxe SQL no GROUP BY e ORDER BY (usando SQL raw)
