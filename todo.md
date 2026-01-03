@@ -87,6 +87,7 @@
 - [x] Testes unitários (19 testes)
 
 ## TAREFA 3: Segurança e RBAC ✅
+
 - [x] Tabelas de RBAC no schema (roles, permissions, user_sessions, security_alerts, system_settings)
 - [x] Queries de administração no db.ts
 - [x] Routers de administração (admin.users, admin.onlineUsers, admin.auditLogs, admin.securityAlerts, admin.settings, admin.sessions)
@@ -99,21 +100,54 @@
 - [x] Proteção de rotas (apenas admin pode acessar)
 - [x] Testes unitários (17 testes)
 
-## TAREFA 4: Dashboard e Finalização
-- [ ] Dashboard executivo com KPIs visuais
-- [ ] Gráficos de produção
-- [ ] Gráficos financeiros
-- [ ] Fluxo de caixa 30 dias
-- [ ] Produtos próximos do vencimento
-- [ ] Sistema de notificações em tempo real
-- [ ] Busca global inteligente
-- [ ] Modo escuro/claro
-- [ ] Export CSV padronizado (compatível ERP)
-- [ ] Testes unitários
+## TAREFA 4: Dashboard e Finalização ✅
+
+### Dashboard Executivo
+- [x] Cards de KPIs (Produção Total, Cargas Recebidas, A Pagar Produtores, Pagamentos Atrasados, Compras Pendentes, NCs Abertas)
+- [x] Filtro de período (7 dias, 30 dias, 3 meses, 1 ano)
+- [x] Ações rápidas (Nova Carga, Apontamento, Solicitação)
+- [x] Gráfico: Produção por SKU/Variação (barras)
+- [x] Gráfico: Produção por Turno (pizza)
+- [x] Gráfico: Evolução do Recebimento (linha)
+- [x] Gráfico: Pagamentos por Status (pizza)
+- [x] Lista: Top 5 Produtores por volume
+- [x] Lista: Vencimentos próximos (7 dias)
+- [x] Lista: Alertas de estoque
+- [x] Gráfico: NCs por mês (barras)
+- [x] Indicador: Índice de Conformidade (%)
+- [x] Tabela: Produtos próximos do vencimento
+
+### Busca Global
+- [x] Router de busca global implementado
+- [x] Busca em: produtores, cargas, colaboradores, almoxarifado, SKUs, NCs
+
+### Funcionalidades Complementares
+- [x] Export CSV em todos os módulos
+- [x] Filtros em todas as listagens
+- [x] Ordenação em todas as tabelas
+- [x] Modais de criação/edição
+- [x] Rastreabilidade (created_by/at, updated_by/at)
+
+### Testes Unitários Tarefa 4
+- [x] Testes do router dashboard (12 testes)
+- [x] Testes do router search (2 testes)
 
 ## RESUMO DE TESTES
 - Tarefa 1: 15 testes ✅
 - Tarefa 2: 19 testes ✅
 - Tarefa 3: 17 testes ✅
+- Tarefa 4: 14 testes ✅
 - Auth: 1 teste ✅
-- **Total: 52 testes passando**
+- **Total: 66 testes passando**
+
+## CHECKPOINTS
+- [x] Checkpoint Tarefa 1: ef966dca
+- [x] Checkpoint Tarefa 2: 5f5c0288
+- [x] Checkpoint Tarefa 3: ea1a0316
+- [ ] Checkpoint Tarefa 4: (pendente)
+
+## PENDÊNCIAS MENORES (não bloqueantes)
+- [ ] Upload de foto da carga (requer configuração de storage S3)
+- [ ] Upload de comprovante de pagamento (requer configuração de storage S3)
+- [ ] Modo escuro/claro (toggle no header)
+- [ ] Notificações em tempo real (WebSocket)

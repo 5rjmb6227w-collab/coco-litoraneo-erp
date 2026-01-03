@@ -1857,6 +1857,118 @@ export const appRouter = router({
         }),
     }),
   }),
+
+  // ============================================================================
+  // DASHBOARD ROUTER
+  // ============================================================================
+  dashboard: router({
+    stats: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        const start = input?.startDate ? new Date(input.startDate) : undefined;
+        const end = input?.endDate ? new Date(input.endDate) : undefined;
+        return db.getDashboardStats(start, end);
+      }),
+
+    productionBySkuVariation: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        const start = input?.startDate ? new Date(input.startDate) : undefined;
+        const end = input?.endDate ? new Date(input.endDate) : undefined;
+        return db.getProductionBySkuVariation(start, end);
+      }),
+
+    productionByShift: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        const start = input?.startDate ? new Date(input.startDate) : undefined;
+        const end = input?.endDate ? new Date(input.endDate) : undefined;
+        return db.getProductionByShift(start, end);
+      }),
+
+    topProducers: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        limit: z.number().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        const start = input?.startDate ? new Date(input.startDate) : undefined;
+        const end = input?.endDate ? new Date(input.endDate) : undefined;
+        return db.getTopProducersByVolume(start, end, input?.limit);
+      }),
+
+    loadsEvolution: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        const start = input?.startDate ? new Date(input.startDate) : undefined;
+        const end = input?.endDate ? new Date(input.endDate) : undefined;
+        return db.getLoadsEvolution(start, end);
+      }),
+
+    paymentsByStatus: protectedProcedure
+      .query(async () => {
+        return db.getPaymentsByStatus();
+      }),
+
+    upcomingPayments: protectedProcedure
+      .input(z.object({ days: z.number().optional() }).optional())
+      .query(async ({ input }) => {
+        return db.getUpcomingPayments(input?.days);
+      }),
+
+    stockAlerts: protectedProcedure
+      .query(async () => {
+        return db.getStockAlerts();
+      }),
+
+    expiringProducts: protectedProcedure
+      .input(z.object({ days: z.number().optional() }).optional())
+      .query(async ({ input }) => {
+        return db.getExpiringProducts(input?.days);
+      }),
+
+    ncsByMonth: protectedProcedure
+      .input(z.object({ months: z.number().optional() }).optional())
+      .query(async ({ input }) => {
+        return db.getNcsByMonth(input?.months);
+      }),
+
+    conformityIndex: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        const start = input?.startDate ? new Date(input.startDate) : undefined;
+        const end = input?.endDate ? new Date(input.endDate) : undefined;
+        return db.getConformityIndex(start, end);
+      }),
+  }),
+
+  // ============================================================================
+  // GLOBAL SEARCH ROUTER
+  // ============================================================================
+  search: router({
+    global: protectedProcedure
+      .input(z.object({ query: z.string().min(3) }))
+      .query(async ({ input }) => {
+        return db.globalSearch(input.query);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
+

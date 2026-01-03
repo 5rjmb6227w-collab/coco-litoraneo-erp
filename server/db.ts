@@ -1,4 +1,4 @@
-import { eq, desc, and, gte, lte, like, sql, asc, or } from "drizzle-orm";
+import { eq, desc, and, gte, lte, like, sql, asc, or, not, gt, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, 
@@ -1757,4 +1757,372 @@ export async function getOnlineUsers(): Promise<any[]> {
   }));
   
   return result;
+}
+
+// ============================================================================
+// DASHBOARD QUERIES
+// ============================================================================
+
+export async function getDashboardStats(startDate?: Date, endDate?: Date) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const start = startDate || new Date(new Date().setDate(new Date().getDate() - 30));
+  const end = endDate || new Date();
+
+  // Produção total
+  const productionResult = await db.select({
+    total: sql<number>`COALESCE(SUM(${productionEntries}.quantity), 0)`,
+  }).from(productionEntries)
+    .where(and(
+      gte(productionEntries.productionDate, start),
+      lte(productionEntries.productionDate, end)
+    ));
+
+  // Cargas recebidas
+  const loadsResult = await db.select({
+    count: sql<number>`COUNT(*)`,
+    totalWeight: sql<number>`COALESCE(SUM(${coconutLoads}.netWeight), 0)`,
+  }).from(coconutLoads)
+    .where(and(
+      gte(coconutLoads.receivedAt, start),
+      lte(coconutLoads.receivedAt, end)
+    ));
+
+  // A pagar produtores
+  const payablesResult = await db.select({
+    total: sql<number>`COALESCE(SUM(${producerPayables}.totalAmount), 0)`,
+    pending: sql<number>`COALESCE(SUM(CASE WHEN ${producerPayables}.status IN ('pendente', 'aprovado', 'programado') THEN ${producerPayables}.totalAmount ELSE 0 END), 0)`,
+    overdue: sql<number>`COALESCE(SUM(CASE WHEN ${producerPayables}.status != 'pago' AND ${producerPayables}.dueDate < CURRENT_DATE THEN ${producerPayables}.totalAmount ELSE 0 END), 0)`,
+  }).from(producerPayables);
+
+  // Compras pendentes
+  const purchasesResult = await db.select({
+    count: sql<number>`COUNT(*)`,
+  }).from(purchaseRequests)
+    .where(inArray(purchaseRequests.status, ['solicitado', 'em_cotacao', 'aguardando_aprovacao']));
+
+  // NCs abertas
+  const ncsResult = await db.select({
+    count: sql<number>`COUNT(*)`,
+  }).from(nonConformities)
+    .where(inArray(nonConformities.status, ['aberta', 'em_analise', 'acao_corretiva']));
+
+  // Produtores ativos
+  const producersResult = await db.select({
+    count: sql<number>`COUNT(*)`,
+  }).from(producers)
+    .where(eq(producers.status, 'ativo'));
+
+  return {
+    production: {
+      total: Number(productionResult[0]?.total || 0),
+    },
+    loads: {
+      count: Number(loadsResult[0]?.count || 0),
+      totalWeight: Number(loadsResult[0]?.totalWeight || 0),
+    },
+    payables: {
+      total: Number(payablesResult[0]?.total || 0),
+      pending: Number(payablesResult[0]?.pending || 0),
+      overdue: Number(payablesResult[0]?.overdue || 0),
+    },
+    purchases: {
+      pending: Number(purchasesResult[0]?.count || 0),
+    },
+    ncs: {
+      open: Number(ncsResult[0]?.count || 0),
+    },
+    producers: {
+      active: Number(producersResult[0]?.count || 0),
+    },
+  };
+}
+
+export async function getProductionBySkuVariation(startDate?: Date, endDate?: Date) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const start = startDate || new Date(new Date().setDate(new Date().getDate() - 30));
+  const end = endDate || new Date();
+
+  const result = await db.select({
+    sku: productionEntries.skuId,
+    variation: productionEntries.variation,
+    total: sql<number>`SUM(${productionEntries}.quantity)`,
+  }).from(productionEntries)
+    .where(and(
+      gte(productionEntries.productionDate, start),
+      lte(productionEntries.productionDate, end)
+    ))
+    .groupBy(productionEntries.skuId, productionEntries.variation);
+
+  return result;
+}
+
+export async function getProductionByShift(startDate?: Date, endDate?: Date) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const start = startDate || new Date(new Date().setDate(new Date().getDate() - 30));
+  const end = endDate || new Date();
+
+  const result = await db.select({
+    shift: productionEntries.shift,
+    total: sql<number>`SUM(${productionEntries}.quantity)`,
+  }).from(productionEntries)
+    .where(and(
+      gte(productionEntries.productionDate, start),
+      lte(productionEntries.productionDate, end)
+    ))
+    .groupBy(productionEntries.shift);
+
+  return result;
+}
+
+export async function getTopProducersByVolume(startDate?: Date, endDate?: Date, limit = 10) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const start = startDate || new Date(new Date().setDate(new Date().getDate() - 30));
+  const end = endDate || new Date();
+
+  const result = await db.select({
+    producerId: coconutLoads.producerId,
+    producerName: producers.name,
+    totalWeight: sql<number>`SUM(${coconutLoads}.netWeight)`,
+  }).from(coconutLoads)
+    .leftJoin(producers, eq(coconutLoads.producerId, producers.id))
+    .where(and(
+      gte(coconutLoads.receivedAt, start),
+      lte(coconutLoads.receivedAt, end)
+    ))
+    .groupBy(coconutLoads.producerId, producers.name)
+    .orderBy(desc(sql`SUM(${coconutLoads}.netWeight)`))
+    .limit(limit);
+
+  return result;
+}
+
+export async function getLoadsEvolution(startDate?: Date, endDate?: Date) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const start = startDate || new Date(new Date().setDate(new Date().getDate() - 30));
+  const end = endDate || new Date();
+
+  const result = await db.select({
+    date: sql<string>`DATE(${coconutLoads}.loadDate)`,
+    totalWeight: sql<number>`SUM(${coconutLoads}.netWeight)`,
+    count: sql<number>`COUNT(*)`,
+  }).from(coconutLoads)
+    .where(and(
+      gte(coconutLoads.receivedAt, start),
+      lte(coconutLoads.receivedAt, end)
+    ))
+    .groupBy(sql`DATE(${coconutLoads}.loadDate)`)
+    .orderBy(sql`DATE(${coconutLoads}.loadDate)`);
+
+  return result;
+}
+
+export async function getPaymentsByStatus() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db.select({
+    status: producerPayables.status,
+    total: sql<number>`SUM(${producerPayables}.totalAmount)`,
+    count: sql<number>`COUNT(*)`,
+  }).from(producerPayables)
+    .groupBy(producerPayables.status);
+
+  return result;
+}
+
+export async function getUpcomingPayments(days = 7) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const today = new Date();
+  const futureDate = new Date();
+  futureDate.setDate(today.getDate() + days);
+
+  const result = await db.select({
+    id: producerPayables.id,
+    producerId: producerPayables.producerId,
+    producerName: producers.name,
+    totalAmount: producerPayables.totalValue,
+    dueDate: producerPayables.dueDate,
+    status: producerPayables.status,
+  }).from(producerPayables)
+    .leftJoin(producers, eq(producerPayables.producerId, producers.id))
+    .where(and(
+      gte(producerPayables.dueDate, today),
+      lte(producerPayables.dueDate, futureDate),
+      not(eq(producerPayables.status, 'pago'))
+    ))
+    .orderBy(producerPayables.dueDate)
+    .limit(10);
+
+  return result;
+}
+
+export async function getStockAlerts() {
+  const db = await getDb();
+  if (!db) return { warehouse: [], finishedGoods: [] };
+
+  const warehouseAlerts = await db.select()
+    .from(warehouseItems)
+    .where(sql`${warehouseItems}.currentStock < ${warehouseItems}.minimumStock`);
+
+  const skuAlerts = await db.select()
+    .from(skus)
+    .where(sql`${skus}.currentStock < ${skus}.minimumStock`);
+
+  return { warehouse: warehouseAlerts, finishedGoods: skuAlerts };
+}
+
+export async function getExpiringProducts(days = 30) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const today = new Date();
+  const futureDate = new Date();
+  futureDate.setDate(today.getDate() + days);
+
+  const result = await db.select({
+    id: finishedGoodsInventory.id,
+    skuId: finishedGoodsInventory.skuId,
+    skuCode: skus.code,
+    skuDescription: skus.description,
+    batch: finishedGoodsInventory.batchNumber,
+    expirationDate: finishedGoodsInventory.expirationDate,
+    currentStock: finishedGoodsInventory.quantity,
+  }).from(finishedGoodsInventory)
+    .leftJoin(skus, eq(finishedGoodsInventory.skuId, skus.id))
+    .where(and(
+      lte(finishedGoodsInventory.expirationDate, futureDate),
+      sql`${finishedGoodsInventory}.quantity > 0`
+    ))
+    .orderBy(finishedGoodsInventory.expirationDate);
+
+  return result;
+}
+
+export async function getNcsByMonth(months = 6) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const startDate = new Date();
+  startDate.setMonth(startDate.getMonth() - months);
+
+  const result = await db.select({
+    month: sql<string>`DATE_FORMAT(${nonConformities}.createdAt, '%Y-%m')`,
+    count: sql<number>`COUNT(*)`,
+  }).from(nonConformities)
+    .where(gte(nonConformities.createdAt, startDate))
+    .groupBy(sql`DATE_FORMAT(${nonConformities}.createdAt, '%Y-%m')`)
+    .orderBy(sql`DATE_FORMAT(${nonConformities}.createdAt, '%Y-%m')`);
+
+  return result;
+}
+
+export async function getConformityIndex(startDate?: Date, endDate?: Date) {
+  const db = await getDb();
+  if (!db) return { conforming: 0, total: 0, percentage: 0 };
+
+  const start = startDate || new Date(new Date().setDate(new Date().getDate() - 30));
+  const end = endDate || new Date();
+
+  const result = await db.select({
+    total: sql<number>`COUNT(*)`,
+    conforming: sql<number>`SUM(CASE WHEN ${qualityAnalyses}.result = 'conforme' THEN 1 ELSE 0 END)`,
+  }).from(qualityAnalyses)
+    .where(and(
+      gte(qualityAnalyses.analysisDate, start),
+      lte(qualityAnalyses.analysisDate, end)
+    ));
+
+  const total = Number(result[0]?.total || 0);
+  const conforming = Number(result[0]?.conforming || 0);
+  const percentage = total > 0 ? (conforming / total) * 100 : 100;
+
+  return { conforming, total, percentage };
+}
+
+export async function globalSearch(query: string) {
+  const db = await getDb();
+  if (!db || !query || query.length < 3) return {};
+
+  const searchTerm = `%${query}%`;
+
+  const producersResults = await db.select({
+    id: producers.id,
+    name: producers.name,
+    cpfCnpj: producers.cpfCnpj,
+  }).from(producers)
+    .where(or(
+      like(producers.name, searchTerm),
+      like(producers.cpfCnpj, searchTerm)
+    ))
+    .limit(5);
+
+  const loadsResults = await db.select({
+    id: coconutLoads.id,
+    licensePlate: coconutLoads.licensePlate,
+    observations: coconutLoads.observations,
+  }).from(coconutLoads)
+    .where(or(
+      like(coconutLoads.licensePlate, searchTerm),
+      like(coconutLoads.observations, searchTerm)
+    ))
+    .limit(5);
+
+  const employeesResults = await db.select({
+    id: employees.id,
+    name: employees.fullName,
+    position: employees.position,
+  }).from(employees)
+    .where(like(employees.fullName, searchTerm))
+    .limit(5);
+
+  const warehouseResults = await db.select({
+    id: warehouseItems.id,
+    name: warehouseItems.name,
+    category: warehouseItems.category,
+  }).from(warehouseItems)
+    .where(like(warehouseItems.name, searchTerm))
+    .limit(5);
+
+  const skusResults = await db.select({
+    id: skus.id,
+    code: skus.code,
+    description: skus.description,
+  }).from(skus)
+    .where(or(
+      like(skus.code, searchTerm),
+      like(skus.description, searchTerm)
+    ))
+    .limit(5);
+
+  const ncsResults = await db.select({
+    id: nonConformities.id,
+    ncNumber: nonConformities.ncNumber,
+    description: nonConformities.description,
+  }).from(nonConformities)
+    .where(or(
+      like(nonConformities.ncNumber, searchTerm),
+      like(nonConformities.description, searchTerm)
+    ))
+    .limit(5);
+
+  return {
+    producers: producersResults,
+    loads: loadsResults,
+    employees: employeesResults,
+    warehouse: warehouseResults,
+    skus: skusResults,
+    ncs: ncsResults,
+  };
 }
