@@ -35,6 +35,10 @@ import AdminConfiguracoes from "./pages/AdminConfiguracoes";
 // Página de Login
 import Login from "./pages/Login";
 
+// Copiloto IA
+import Copiloto from "./pages/Copiloto";
+import { CopilotFloatingButton } from "./components/copilot/CopilotFloatingButton";
+
 function Router() {
   return (
     <DashboardLayout>
@@ -65,6 +69,9 @@ function Router() {
         <Route path="/admin/alertas" component={AdminAlertas} />
         <Route path="/admin/configuracoes" component={AdminConfiguracoes} />
         
+        {/* Copiloto IA */}
+        <Route path="/copiloto" component={Copiloto} />
+        
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>
@@ -91,6 +98,7 @@ function App() {
             <Route path="/login" component={Login} />
             <Route>
               <Router />
+              <CopilotFloatingButton />
             </Route>
           </Switch>
         </TooltipProvider>

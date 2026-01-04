@@ -138,8 +138,9 @@
 - Tarefa 3: 17 testes ✅
 - Tarefa 4: 14 testes ✅
 - Auth: 1 teste ✅
-- AI Copilot: 31 testes ✅
+- AI Copilot Backend: 31 testes ✅
 - **Total: 97 testes passando**
+- Frontend Copiloto: Testes manuais aprovados (Chat, Insights, Alertas, Acoes, Config, Widgets, Botao flutuante)
 
 ## CHECKPOINTS
 - [x] Checkpoint Tarefa 1: ef966dca
@@ -186,11 +187,17 @@
 - [x] Chat Service com integração LLM
 - [x] Testes unitários (31 testes)
 
-### TAREFA 3: Frontend do Copiloto IA (Pendente)
-- [ ] Página /copiloto com chat interface
-- [ ] Widget de insights no Dashboard
-- [ ] Notificações visuais de alertas
-- [ ] Ações sugeridas com aprovação
+### TAREFA 3: Frontend do Copiloto IA ✅
+- [x] Página /copiloto com 5 abas (Chat, Insights, Alertas, Ações, Config)
+- [x] ChatPanel com histórico de conversa e botão de cópia
+- [x] InsightCards com badges de severidade e "Ver evidencias"
+- [x] AlertsTable com filtros e ações de acknowledge
+- [x] ActionsQueue com aprovação/rejeição de ações
+- [x] CopilotSettings com configurações de verificações e e-mail
+- [x] Widgets no Dashboard (Copiloto IA, Insights do Dia, Alertas Críticos, Pendências)
+- [x] Botão flutuante (CopilotFloatingButton) com notificações
+- [x] Integração tRPC com TanStack Query e cache invalidation
+- [x] Estados loading/empty/error em todos os componentes
 
 ### TAREFA 4: Integrações (Pendente)
 - [ ] Notificações por e-mail

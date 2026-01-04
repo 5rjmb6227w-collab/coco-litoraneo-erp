@@ -39,6 +39,12 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import {
+  InsightsDoDiaWidget,
+  AlertasCriticosWidget,
+  PendenciasWidget,
+  CopilotoQuickAccessWidget
+} from "@/components/copilot/CopilotWidgets";
 
 const COLORS = ['#8B7355', '#D4C4B0', '#5D4E37', '#A89078', '#C4B4A0', '#6D5E47'];
 const STATUS_COLORS: Record<string, string> = {
@@ -648,6 +654,15 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* Widgets do Copiloto IA */}
+        <CopilotoQuickAccessWidget />
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <InsightsDoDiaWidget />
+          <AlertasCriticosWidget />
+          <PendenciasWidget />
+        </div>
 
         {/* Mensagem de boas-vindas */}
         <Card>
