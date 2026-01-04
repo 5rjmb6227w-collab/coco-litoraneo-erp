@@ -837,3 +837,172 @@ export function hasPermission(role: string, module: string, action: string): boo
   
   return (modulePerms as readonly string[]).includes(action);
 }
+
+
+// ============================================================================
+// AI COPILOT TABLES
+// ============================================================================
+
+// ai_events - Log de eventos do ERP (o "fio" que liga tudo)
+export const aiEvents = mysqlTable("ai_events", {
+  id: int("id").autoincrement().primaryKey(),
+  eventType: varchar("eventType", { length: 100 }).notNull(), // 'coconut_load.created', 'payable.approved'
+  module: varchar("module", { length: 50 }).notNull(), // 'recebimento', 'producao', etc.
+  entityType: varchar("entityType", { length: 50 }).notNull(), // 'coconut_load', 'producer_payable'
+  entityId: int("entityId").notNull(),
+  producerId: int("producerId"), // FK opcional para contexto
+  skuId: int("skuId"), // FK opcional para contexto
+  payload: json("payload"), // Dados relevantes do evento
+  metadata: json("metadata"), // Contexto adicional (IP, user-agent)
+  createdBy: int("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AIEvent = typeof aiEvents.$inferSelect;
+export type InsertAIEvent = typeof aiEvents.$inferInsert;
+
+// ai_insights - Insights gerados pela IA
+export const aiInsights = mysqlTable("ai_insights", {
+  id: int("id").autoincrement().primaryKey(),
+  insightType: varchar("insightType", { length: 50 }).notNull(), // 'stock_alert', 'payment_overdue', 'anomaly'
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("info").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  summary: text("summary").notNull(),
+  details: json("details"), // Dados estruturados do insight
+  evidenceIds: json("evidenceIds"), // Array de ai_sources.id
+  module: varchar("module", { length: 50 }), // Módulo relacionado
+  entityType: varchar("entityType", { length: 50 }), // Tipo de entidade relacionada
+  entityId: int("entityId"), // ID da entidade relacionada
+  status: mysqlEnum("status", ["active", "dismissed", "resolved"]).default("active").notNull(),
+  dismissedBy: int("dismissedBy"),
+  dismissedAt: timestamp("dismissedAt"),
+  resolvedAt: timestamp("resolvedAt"),
+  generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt"),
+});
+
+export type AIInsight = typeof aiInsights.$inferSelect;
+export type InsertAIInsight = typeof aiInsights.$inferInsert;
+
+// ai_alerts - Alertas enviados/pendentes
+export const aiAlerts = mysqlTable("ai_alerts", {
+  id: int("id").autoincrement().primaryKey(),
+  insightId: int("insightId"), // FK ai_insights (opcional)
+  alertType: varchar("alertType", { length: 50 }).notNull(), // 'stock_critical', 'payment_overdue'
+  channel: mysqlEnum("channel", ["email", "whatsapp", "push", "in_app"]).notNull(),
+  recipientUserId: int("recipientUserId"), // FK users
+  recipientEmail: varchar("recipientEmail", { length: 320 }),
+  recipientPhone: varchar("recipientPhone", { length: 20 }),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  status: mysqlEnum("status", ["pending", "sent", "failed", "read"]).default("pending").notNull(),
+  sentAt: timestamp("sentAt"),
+  readAt: timestamp("readAt"),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AIAlert = typeof aiAlerts.$inferSelect;
+export type InsertAIAlert = typeof aiAlerts.$inferInsert;
+
+// ai_conversations - Threads de chat por usuário
+export const aiConversations = mysqlTable("ai_conversations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // FK users
+  title: varchar("title", { length: 255 }),
+  status: mysqlEnum("status", ["active", "archived"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AIConversation = typeof aiConversations.$inferSelect;
+export type InsertAIConversation = typeof aiConversations.$inferInsert;
+
+// ai_messages - Mensagens do chat
+export const aiMessages = mysqlTable("ai_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversationId").notNull(), // FK ai_conversations
+  role: mysqlEnum("role", ["user", "assistant", "system"]).notNull(),
+  content: text("content").notNull(),
+  sourceIds: json("sourceIds"), // Array de ai_sources.id usados na resposta
+  tokensUsed: int("tokensUsed"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AIMessage = typeof aiMessages.$inferSelect;
+export type InsertAIMessage = typeof aiMessages.$inferInsert;
+
+// ai_actions - Ações sugeridas pela IA
+export const aiActions = mysqlTable("ai_actions", {
+  id: int("id").autoincrement().primaryKey(),
+  insightId: int("insightId"), // FK ai_insights (opcional)
+  conversationId: int("conversationId"), // FK ai_conversations (opcional)
+  actionType: varchar("actionType", { length: 50 }).notNull(), // 'create_purchase_request', 'open_nc'
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  targetModule: varchar("targetModule", { length: 50 }).notNull(), // 'purchases', 'quality', 'financial'
+  targetMutation: varchar("targetMutation", { length: 100 }).notNull(), // 'purchases.create'
+  payload: json("payload").notNull(), // Dados para executar a ação
+  status: mysqlEnum("status", ["suggested", "approved", "rejected", "executed", "failed"]).default("suggested").notNull(),
+  suggestedAt: timestamp("suggestedAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type AIAction = typeof aiActions.$inferSelect;
+export type InsertAIAction = typeof aiActions.$inferInsert;
+
+// ai_action_approvals - Aprovações de ações
+export const aiActionApprovals = mysqlTable("ai_action_approvals", {
+  id: int("id").autoincrement().primaryKey(),
+  actionId: int("actionId").notNull(), // FK ai_actions
+  userId: int("userId").notNull(), // FK users (quem aprovou/rejeitou)
+  decision: mysqlEnum("decision", ["approved", "rejected"]).notNull(),
+  reason: text("reason"), // Motivo (obrigatório se rejected)
+  decidedAt: timestamp("decidedAt").defaultNow().notNull(),
+  executedAt: timestamp("executedAt"),
+  executionResult: json("executionResult"), // Resultado da execução
+});
+
+export type AIActionApproval = typeof aiActionApprovals.$inferSelect;
+export type InsertAIActionApproval = typeof aiActionApprovals.$inferInsert;
+
+// ai_sources - Evidências/fontes usadas nas respostas
+export const aiSources = mysqlTable("ai_sources", {
+  id: int("id").autoincrement().primaryKey(),
+  entityType: varchar("entityType", { length: 50 }).notNull(), // 'coconut_load', 'producer_payable'
+  entityId: int("entityId").notNull(),
+  label: varchar("label", { length: 255 }).notNull(), // "Carga #123 - Produtor João"
+  url: varchar("url", { length: 500 }), // Link interno: /recebimento?id=123
+  snippet: text("snippet"), // Trecho relevante (notes, description)
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AISource = typeof aiSources.$inferSelect;
+export type InsertAISource = typeof aiSources.$inferInsert;
+
+// ai_feedback - Feedback do usuário (like/dislike)
+export const aiFeedback = mysqlTable("ai_feedback", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // FK users
+  messageId: int("messageId"), // FK ai_messages (opcional)
+  insightId: int("insightId"), // FK ai_insights (opcional)
+  feedbackType: mysqlEnum("feedbackType", ["like", "dislike"]).notNull(),
+  comment: text("comment"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AIFeedback = typeof aiFeedback.$inferSelect;
+export type InsertAIFeedback = typeof aiFeedback.$inferInsert;
+
+// ai_config - Configurações do Copiloto IA
+export const aiConfig = mysqlTable("ai_config", {
+  id: int("id").autoincrement().primaryKey(),
+  configKey: varchar("configKey", { length: 100 }).notNull().unique(),
+  configValue: json("configValue").notNull(),
+  description: text("description"),
+  updatedBy: int("updatedBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AIConfig = typeof aiConfig.$inferSelect;
+export type InsertAIConfig = typeof aiConfig.$inferInsert;

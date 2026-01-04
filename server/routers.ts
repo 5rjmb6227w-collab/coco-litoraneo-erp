@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import { aiRouter } from "./ai/aiRouter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1968,6 +1969,11 @@ export const appRouter = router({
         return db.globalSearch(input.query);
       }),
   }),
+
+  // ============================================================================
+  // AI COPILOT ROUTER
+  // ============================================================================
+  ai: aiRouter,
 });
 
 export type AppRouter = typeof appRouter;

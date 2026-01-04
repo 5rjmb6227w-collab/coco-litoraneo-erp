@@ -138,7 +138,8 @@
 - Tarefa 3: 17 testes ✅
 - Tarefa 4: 14 testes ✅
 - Auth: 1 teste ✅
-- **Total: 66 testes passando**
+- AI Copilot: 31 testes ✅
+- **Total: 97 testes passando**
 
 ## CHECKPOINTS
 - [x] Checkpoint Tarefa 1: ef966dca
@@ -168,3 +169,30 @@
 - [x] Ajustar página de login: cor do botão marrom coco seco (#8B7355)
 - [x] Ajustar página de login: remover card branco, deixar só o botão
 - [x] Corrigir fluxo de login: usuários não autenticados devem ver a página com foto de coqueiros primeiro
+## UPGRADE: COPILOTO IA
+
+- [x] Definir arquitetura do Copiloto IA
+- [x] Definir novas tabelas ai_*
+- [x] Definir eventos e onde disparar nas mutations tRPC
+- [x] Definir UX (página /copiloto + widgets no Dashboard)
+- [x] Listar insights/alertas P0
+
+### TAREFA 2: Backend do Copiloto IA ✅
+- [x] Schema Drizzle para tabelas ai_* (ai_events, ai_insights, ai_alerts, ai_conversations, ai_messages, ai_actions, ai_action_approvals, ai_sources, ai_feedback, ai_config)
+- [x] Router tRPC ai.* (chat, listConversations, getMessages, createConversation, archiveConversation, listInsights, dismissInsight, resolveInsight, runInsightChecks, listEvents, emitEvent, getQuickSummary, getContext, submitFeedback, listActions, approveAction, rejectAction, getStats)
+- [x] Event Emitter para captura de eventos do ERP
+- [x] Context Builder para agregação de dados RAG
+- [x] Insight Generator com 6 verificações automáticas (estoque crítico, pagamentos atrasados, produtos vencendo, contas vencidas, NCs abertas, compras pendentes)
+- [x] Chat Service com integração LLM
+- [x] Testes unitários (31 testes)
+
+### TAREFA 3: Frontend do Copiloto IA (Pendente)
+- [ ] Página /copiloto com chat interface
+- [ ] Widget de insights no Dashboard
+- [ ] Notificações visuais de alertas
+- [ ] Ações sugeridas com aprovação
+
+### TAREFA 4: Integrações (Pendente)
+- [ ] Notificações por e-mail
+- [ ] Auditoria de ações executadas
+- [ ] Hooks de eventos nas mutations existentes
