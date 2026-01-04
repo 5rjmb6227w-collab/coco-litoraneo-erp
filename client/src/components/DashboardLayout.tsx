@@ -164,41 +164,34 @@ export default function DashboardLayout({
         {/* Imagem de fundo ocupando TODA a tela */}
         <img 
           src="/coqueiros-banner.webp" 
-          alt="Coqueiros"
+          alt="Coqueiros - Coco Litorâneo"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        {/* Overlay gradiente para melhor legibilidade */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
         
-        {/* Conteúdo do login posicionado na parte inferior */}
-        <div className="absolute inset-0 flex items-end justify-center pb-16 px-4">
-          <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-10 w-full max-w-md">
-            <div className="flex flex-col items-center gap-6">
-              <div className="w-28 h-28 rounded-full bg-gradient-to-br from-amber-100 to-amber-300 flex items-center justify-center shadow-xl border-4 border-white">
-                <span className="text-6xl">🥥</span>
-              </div>
-              <div className="text-center">
-                <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-                  Coco Litorâneo
-                </h1>
-                <p className="text-gray-600 mt-2 text-lg">
-                  Sistema de Gestão Integrada
-                </p>
-              </div>
-              <Button
-                onClick={() => {
-                  window.location.href = getLoginUrl();
-                }}
-                size="lg"
-                className="w-full bg-amber-700 hover:bg-amber-800 text-white shadow-lg hover:shadow-xl transition-all py-6 text-lg font-semibold rounded-xl"
-              >
-                Entrar no Sistema
-              </Button>
-              <p className="text-sm text-gray-500 text-center">
-                Acesso restrito a usuários autorizados
-              </p>
-            </div>
-          </div>
+        {/* Overlay gradiente sutil na parte inferior para o botão */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+        
+        {/* Apenas o botão posicionado na parte inferior */}
+        <div className="absolute inset-x-0 bottom-8 flex justify-center px-4">
+          <Button
+            onClick={() => {
+              window.location.href = getLoginUrl();
+            }}
+            size="lg"
+            className="px-12 py-6 text-lg font-bold rounded-xl shadow-2xl transition-all hover:scale-105"
+            style={{
+              backgroundColor: '#8B7355',
+              color: '#FFFFFF',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#6B5A45';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#8B7355';
+            }}
+          >
+            Entrar no Sistema
+          </Button>
         </div>
       </div>
     );

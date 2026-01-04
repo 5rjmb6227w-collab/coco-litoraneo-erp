@@ -167,3 +167,4 @@
 - [x] Ajustar página de login: botão mais para baixo
 - [x] Ajustar página de login: cor do botão marrom coco seco (#8B7355)
 - [x] Ajustar página de login: remover card branco, deixar só o botão
+- [x] Corrigir fluxo de login: usuários não autenticados devem ver a página com foto de coqueiros primeiro
