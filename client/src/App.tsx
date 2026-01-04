@@ -32,6 +32,9 @@ import AdminLogs from "./pages/AdminLogs";
 import AdminAlertas from "./pages/AdminAlertas";
 import AdminConfiguracoes from "./pages/AdminConfiguracoes";
 
+// Página de Login
+import Login from "./pages/Login";
+
 function Router() {
   return (
     <DashboardLayout>
@@ -69,13 +72,27 @@ function Router() {
   );
 }
 
+// Rota de Login (sem DashboardLayout)
+function LoginRouter() {
+  return (
+    <Switch>
+      <Route path="/login" component={Login} />
+    </Switch>
+  );
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster richColors position="bottom-right" />
-          <Router />
+          <Switch>
+            <Route path="/login" component={Login} />
+            <Route>
+              <Router />
+            </Route>
+          </Switch>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

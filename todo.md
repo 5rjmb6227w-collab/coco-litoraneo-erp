@@ -163,3 +163,7 @@
 - [x] Adicionar foto de coqueiros na página inicial (Dashboard)
 - [x] Adicionar foto de coqueiros como fundo da página de login
 - [x] Corrigir erro no módulo Financeiro que impede carregamento da página (corrigido: cashFlow retorna weeks, não entries)
+- [x] Corrigir página de login - foto de coqueiros deve ocupar TODA a tela de fundo
+- [x] Ajustar página de login: botão mais para baixo
+- [x] Ajustar página de login: cor do botão marrom coco seco (#8B7355)
+- [x] Ajustar página de login: remover card branco, deixar só o botão
