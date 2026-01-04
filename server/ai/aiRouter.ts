@@ -20,6 +20,29 @@ import { eq, desc, and, gte, lte, count, sql } from "drizzle-orm";
 
 // Services
 import { emitEvent, EVENT_TYPES, EventData } from "./eventEmitter";
+import { 
+  hasPermission, 
+  checkPermission, 
+  isFeatureEnabled, 
+  enforceRateLimit,
+  logAudit,
+  redactSensitiveData,
+  UserRole,
+  FEATURE_FLAGS,
+  grantFeatureAccess,
+  revokeFeatureAccess,
+  addRoleToFeature,
+  updateRolloutPercentage,
+  runSecurityChecklist,
+} from "./security";
+import {
+  trackUsage,
+  withLatencyTracking,
+  logError,
+  getMetricsDashboard,
+  getUsageStats,
+  getLatencyStats,
+} from "./observability";
 import { buildContext, getSystemSummary, getRecentEvents, getActiveInsights } from "./contextBuilder";
 import { 
   runAllInsightChecks, 
@@ -430,6 +453,218 @@ export const aiRouter = router({
         activeInsights: insightsResult[0]?.count || 0,
         recentEvents: eventsResult[0]?.count || 0,
       };
+    }),
+
+  // ============================================================================
+  // FEATURE FLAGS E ROLLOUT
+  // ============================================================================
+
+  /**
+   * Verifica se o Copiloto está habilitado para o usuário
+   */
+  checkAccess: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      const hasAccess = isFeatureEnabled("copilot_enabled", ctx.user.id, userRole);
+      const hasActionsAccess = isFeatureEnabled("copilot_actions", ctx.user.id, userRole);
+      const hasAutoInsights = isFeatureEnabled("copilot_auto_insights", ctx.user.id, userRole);
+      
+      return {
+        copilotEnabled: hasAccess,
+        actionsEnabled: hasActionsAccess,
+        autoInsightsEnabled: hasAutoInsights,
+        userRole,
+      };
+    }),
+
+  /**
+   * Lista feature flags (admin only)
+   */
+  listFeatureFlags: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      return FEATURE_FLAGS.map(f => ({
+        name: f.name,
+        enabled: f.enabled,
+        allowedRoles: f.allowedRoles,
+        allowedUserIds: f.allowedUserIds,
+        rolloutPercentage: f.rolloutPercentage,
+      }));
+    }),
+
+  /**
+   * Concede acesso ao Copiloto para um usuário (admin only)
+   */
+  grantAccess: protectedProcedure
+    .input(z.object({
+      userId: z.number(),
+      featureName: z.string().default("copilot_enabled"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      const success = grantFeatureAccess(input.featureName, input.userId);
+      
+      await logAudit({
+        userId: ctx.user.id,
+        userRole,
+        action: "grant_feature_access",
+        resource: "feature_flag",
+        details: { targetUserId: input.userId, featureName: input.featureName },
+        success,
+      });
+      
+      return { success };
+    }),
+
+  /**
+   * Revoga acesso ao Copiloto de um usuário (admin only)
+   */
+  revokeAccess: protectedProcedure
+    .input(z.object({
+      userId: z.number(),
+      featureName: z.string().default("copilot_enabled"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      const success = revokeFeatureAccess(input.featureName, input.userId);
+      
+      await logAudit({
+        userId: ctx.user.id,
+        userRole,
+        action: "revoke_feature_access",
+        resource: "feature_flag",
+        details: { targetUserId: input.userId, featureName: input.featureName },
+        success,
+      });
+      
+      return { success };
+    }),
+
+  /**
+   * Adiciona role à lista de acesso de uma feature (admin only)
+   */
+  addRoleAccess: protectedProcedure
+    .input(z.object({
+      role: z.enum(["admin", "ceo", "manager", "operator", "user"]),
+      featureName: z.string().default("copilot_enabled"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      const success = addRoleToFeature(input.featureName, input.role);
+      
+      await logAudit({
+        userId: ctx.user.id,
+        userRole,
+        action: "add_role_to_feature",
+        resource: "feature_flag",
+        details: { role: input.role, featureName: input.featureName },
+        success,
+      });
+      
+      return { success };
+    }),
+
+  /**
+   * Atualiza percentual de rollout (admin only)
+   */
+  updateRollout: protectedProcedure
+    .input(z.object({
+      featureName: z.string(),
+      percentage: z.number().min(0).max(100),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      const success = updateRolloutPercentage(input.featureName, input.percentage);
+      
+      await logAudit({
+        userId: ctx.user.id,
+        userRole,
+        action: "update_rollout_percentage",
+        resource: "feature_flag",
+        details: { featureName: input.featureName, percentage: input.percentage },
+        success,
+      });
+      
+      return { success };
+    }),
+
+  // ============================================================================
+  // OBSERVABILIDADE
+  // ============================================================================
+
+  /**
+   * Retorna dashboard de métricas (admin only)
+   */
+  getMetrics: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      return getMetricsDashboard();
+    }),
+
+  /**
+   * Retorna estatísticas de uso detalhadas (admin only)
+   */
+  getUsageStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      return getUsageStats();
+    }),
+
+  /**
+   * Retorna estatísticas de latência (admin only)
+   */
+  getLatencyStats: protectedProcedure
+    .input(z.object({
+      endpoint: z.string().optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      return getLatencyStats(input?.endpoint);
+    }),
+
+  /**
+   * Executa checklist de segurança (admin only)
+   */
+  runSecurityCheck: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      return runSecurityChecklist();
     }),
 });
 

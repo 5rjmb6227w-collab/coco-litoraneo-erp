@@ -139,7 +139,8 @@
 - Tarefa 4: 14 testes ✅
 - Auth: 1 teste ✅
 - AI Copilot Backend: 31 testes ✅
-- **Total: 97 testes passando**
+- AI Copilot Security/Observability: 47 testes ✅
+- **Total: 144 testes passando**
 - Frontend Copiloto: Testes manuais aprovados (Chat, Insights, Alertas, Acoes, Config, Widgets, Botao flutuante)
 
 ## CHECKPOINTS
@@ -203,3 +204,20 @@
 - [ ] Notificações por e-mail
 - [ ] Auditoria de ações executadas
 - [ ] Hooks de eventos nas mutations existentes
+
+### TAREFA 4: Testes, Seguranca e Deploy ✅
+- [x] Testes Vitest unit: redaction, prompt builder, provider adapter mock (47 testes)
+- [x] Testes Vitest integration: tRPC ai.chat, ai.insights, ai.actions com RBAC
+- [x] Teste: estoque abaixo do minimo gera ai_insight
+- [x] Teste: payable atrasado gera insight
+- [x] Teste: sugestao de acao nao executa sem aprovacao
+- [x] Teste: execucao gera audit_logs
+- [x] Checklist RBAC no contexto e execucao (security.ts)
+- [x] Mascaramento de dados sensiveis (employees, banco/pix) - redactSensitiveData()
+- [x] Logs/auditoria completos - logAudit(), getAuditLogs()
+- [x] Rate limit por usuario - checkRateLimit(), enforceRateLimit()
+- [x] Logs de latencia/erro do router ai - logLatency(), logError()
+- [x] Metricas: qtd insights/dia, erros provider, uso por perfil - observability.ts
+- [x] Feature flag copilot_enabled por usuario/role - isFeatureEnabled()
+- [x] Rollout: CEO primeiro, depois perfis selecionados - grantFeatureAccess(), addRoleToFeature()
+- [x] Endpoints de observabilidade: getMetrics, getUsageStats, getLatencyStats, runSecurityCheck
