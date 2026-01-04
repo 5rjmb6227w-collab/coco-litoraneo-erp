@@ -161,3 +161,5 @@
 - [x] Corrigir query getDashboardStats - formato de data incorreto (convertido para ISO string)
 - [x] Corrigir query getLoadsEvolution - erro de sintaxe SQL no GROUP BY e ORDER BY (usando SQL raw)
 - [x] Adicionar foto de coqueiros na página inicial (Dashboard)
+- [x] Adicionar foto de coqueiros como fundo da página de login
+- [x] Corrigir erro no módulo Financeiro que impede carregamento da página (corrigido: cashFlow retorna weeks, não entries)

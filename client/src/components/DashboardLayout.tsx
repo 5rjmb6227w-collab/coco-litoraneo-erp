@@ -160,28 +160,44 @@ export default function DashboardLayout({
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-3xl">🥥</span>
+      <div className="relative flex items-center justify-center min-h-screen">
+        {/* Imagem de fundo */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/coqueiros-banner.webp')" }}
+        />
+        {/* Overlay escuro para melhor legibilidade */}
+        <div className="absolute inset-0 bg-black/40" />
+        
+        {/* Conteúdo do login */}
+        <div className="relative z-10 flex flex-col items-center gap-8 p-8 max-w-md w-full">
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 w-full">
+            <div className="flex flex-col items-center gap-6">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center shadow-lg">
+                <span className="text-5xl">🥥</span>
+              </div>
+              <div className="text-center">
+                <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                  Coco Litorâneo
+                </h1>
+                <p className="text-gray-600 mt-2">
+                  Sistema de Gestão Integrada
+                </p>
+              </div>
+              <Button
+                onClick={() => {
+                  window.location.href = getLoginUrl();
+                }}
+                size="lg"
+                className="w-full bg-amber-700 hover:bg-amber-800 text-white shadow-lg hover:shadow-xl transition-all py-6 text-lg font-semibold"
+              >
+                Entrar no Sistema
+              </Button>
+              <p className="text-xs text-gray-500 text-center">
+                Acesso restrito a usuários autorizados
+              </p>
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-center text-foreground">
-              Coco Litorâneo
-            </h1>
-            <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Sistema de Gestão Empresarial
-            </p>
           </div>
-          <Button
-            onClick={() => {
-              window.location.href = getLoginUrl();
-            }}
-            size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
-          >
-            Entrar no Sistema
-          </Button>
         </div>
       </div>
     );

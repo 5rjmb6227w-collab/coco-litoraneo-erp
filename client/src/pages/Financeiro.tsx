@@ -576,8 +576,8 @@ export default function Financeiro() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Descrição</TableHead>
+                      <TableHead>Período</TableHead>
+                      <TableHead>Semana</TableHead>
                       <TableHead className="text-right text-red-600">Saídas</TableHead>
                       <TableHead className="text-right text-green-600">Entradas</TableHead>
                       <TableHead className="text-right">Saldo Acumulado</TableHead>
@@ -587,16 +587,24 @@ export default function Financeiro() {
                     {(() => {
                       let runningBalance = 0;
                       return cashFlow.map((item: any, index: number) => {
-                        const saida = item.entryType === "pagar" ? Number(item.value) : 0;
-                        const entrada = item.entryType === "receber" ? Number(item.value) : 0;
+                        // getCashFlowProjection retorna weeks com weekStart/weekEnd/entradas/saidas
+                        const saida = Number(item.saidas) || 0;
+                        const entrada = Number(item.entradas) || 0;
                         runningBalance += entrada - saida;
+                        
+                        // Formatar período da semana
+                        const weekStartDate = item.weekStart ? new Date(item.weekStart) : null;
+                        const weekEndDate = item.weekEnd ? new Date(item.weekEnd) : null;
+                        const periodoLabel = weekStartDate && weekEndDate && !isNaN(weekStartDate.getTime()) && !isNaN(weekEndDate.getTime())
+                          ? `${format(weekStartDate, "dd/MM")} - ${format(weekEndDate, "dd/MM")}`
+                          : `Semana ${index + 1}`;
                         
                         return (
                           <TableRow key={index}>
                             <TableCell>
-                              {format(new Date(item.dueDate), "dd/MM/yyyy")}
+                              {periodoLabel}
                             </TableCell>
-                            <TableCell>{item.description}</TableCell>
+                            <TableCell>Semana {index + 1}</TableCell>
                             <TableCell className="text-right text-red-600">
                               {saida > 0 ? `R$ ${saida.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}
                             </TableCell>
