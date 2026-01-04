@@ -43,6 +43,12 @@ import {
   getUsageStats,
   getLatencyStats,
 } from "./observability";
+import {
+  getNotificationConfig,
+  saveNotificationConfig,
+  sendDailySummary,
+  checkAndSendCriticalAlerts,
+} from "./emailNotifications";
 import { buildContext, getSystemSummary, getRecentEvents, getActiveInsights } from "./contextBuilder";
 import { 
   runAllInsightChecks, 
@@ -665,6 +671,84 @@ export const aiRouter = router({
       }
       
       return runSecurityChecklist();
+    }),
+
+  // ============================================================================
+  // NOTIFICAÇÕES POR E-MAIL
+  // ============================================================================
+
+  /**
+   * Obtém configuração de notificações (admin only)
+   */
+  getNotificationConfig: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      return getNotificationConfig();
+    }),
+
+  /**
+   * Salva configuração de notificações (admin only)
+   */
+  saveNotificationConfig: protectedProcedure
+    .input(z.object({
+      criticalAlertsEnabled: z.boolean().optional(),
+      dailySummaryEnabled: z.boolean().optional(),
+      dailySummaryTime: z.string().optional(),
+      weeklyReportEnabled: z.boolean().optional(),
+      weeklyReportDay: z.number().min(0).max(6).optional(),
+      recipientRoles: z.array(z.string()).optional(),
+      recipientUserIds: z.array(z.number()).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      const success = await saveNotificationConfig(input);
+      
+      await logAudit({
+        userId: ctx.user.id,
+        userRole,
+        action: "update_notification_config",
+        resource: "notification_config",
+        details: input,
+        success,
+      });
+      
+      return { success };
+    }),
+
+  /**
+   * Envia resumo diário manualmente (admin only)
+   */
+  sendDailySummary: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      const success = await sendDailySummary();
+      return { success };
+    }),
+
+  /**
+   * Verifica e envia alertas críticos pendentes (admin only)
+   */
+  sendCriticalAlerts: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      const sentCount = await checkAndSendCriticalAlerts();
+      return { sentCount };
     }),
 });
 

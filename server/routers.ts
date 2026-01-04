@@ -5,6 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { aiRouter } from "./ai/aiRouter";
+import { emitEvent, EVENT_TYPES } from "./ai/eventEmitter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -161,6 +162,19 @@ export const appRouter = router({
           entityId: id,
         });
         
+        // Emitir evento para o Copiloto IA
+        await emitEvent({
+          eventType: EVENT_TYPES.COCONUT_LOAD_CREATED,
+          entityType: "coconut_load",
+          entityId: id,
+          producerId: input.producerId,
+          payload: {
+            netWeight: input.netWeight,
+            licensePlate: input.licensePlate,
+          },
+          userId: ctx.user?.id,
+        });
+        
         return { id };
       }),
 
@@ -243,6 +257,21 @@ export const appRouter = router({
           fieldName: input.status ? "status" : undefined,
           newValue: input.status,
         });
+        
+        // Emitir evento para o Copiloto IA
+        if (input.status === "fechado") {
+          await emitEvent({
+            eventType: EVENT_TYPES.COCONUT_LOAD_CLOSED,
+            entityType: "coconut_load",
+            entityId: id,
+            producerId: load?.producerId,
+            payload: {
+              netWeight: load?.netWeight,
+              status: "fechado",
+            },
+            userId: ctx.user?.id,
+          });
+        }
         
         return { success: true };
       }),
@@ -334,6 +363,34 @@ export const appRouter = router({
           oldValue: payable.status,
           newValue: input.status,
         });
+        
+        // Emitir evento para o Copiloto IA
+        if (input.status === "aprovado") {
+          await emitEvent({
+            eventType: EVENT_TYPES.PAYABLE_APPROVED,
+            entityType: "producer_payable",
+            entityId: id,
+            producerId: payable.producerId,
+            payload: {
+              totalValue: payable.totalValue,
+              status: "aprovado",
+            },
+            userId: ctx.user?.id,
+          });
+        } else if (input.status === "pago") {
+          await emitEvent({
+            eventType: EVENT_TYPES.PAYABLE_PAID,
+            entityType: "producer_payable",
+            entityId: id,
+            producerId: payable.producerId,
+            payload: {
+              totalValue: payable.totalValue,
+              paymentMethod: input.paymentMethod,
+              status: "pago",
+            },
+            userId: ctx.user?.id,
+          });
+        }
         
         return { success: true };
       }),
@@ -910,6 +967,21 @@ export const appRouter = router({
           entityType: "purchase_request",
           entityId: id,
         });
+        
+        // Emitir evento para o Copiloto IA
+        await emitEvent({
+          eventType: EVENT_TYPES.PURCHASE_REQUEST_CREATED,
+          entityType: "purchase_request",
+          entityId: id,
+          payload: {
+            requestNumber,
+            sector: input.sector,
+            urgency: input.urgency,
+            totalEstimated,
+            itemCount: input.items.length,
+          },
+          userId: ctx.user?.id,
+        });
 
         return { id, requestNumber };
       }),
@@ -982,6 +1054,32 @@ export const appRouter = router({
           fieldName: "status",
           newValue: status,
         });
+        
+        // Emitir evento para o Copiloto IA
+        if (status === "aprovado") {
+          await emitEvent({
+            eventType: EVENT_TYPES.PURCHASE_REQUEST_APPROVED,
+            entityType: "purchase_request",
+            entityId: id,
+            payload: {
+              status: "aprovado",
+              chosenQuotationId,
+              totalApproved: updateData.totalApproved,
+            },
+            userId: ctx.user?.id,
+          });
+        } else if (status === "reprovado") {
+          await emitEvent({
+            eventType: EVENT_TYPES.PURCHASE_REQUEST_REJECTED,
+            entityType: "purchase_request",
+            entityId: id,
+            payload: {
+              status: "reprovado",
+              rejectionReason,
+            },
+            userId: ctx.user?.id,
+          });
+        }
 
         return { success: true };
       }),
@@ -1271,6 +1369,20 @@ export const appRouter = router({
             entityType: "non_conformity",
             entityId: id,
           });
+          
+          // Emitir evento para o Copiloto IA
+          await emitEvent({
+            eventType: EVENT_TYPES.NC_CREATED,
+            entityType: "non_conformity",
+            entityId: id,
+            payload: {
+              ncNumber,
+              origin: input.origin,
+              area: input.area,
+              description: input.description,
+            },
+            userId: ctx.user?.id,
+          });
 
           return { id, ncNumber };
         }),
@@ -1305,6 +1417,19 @@ export const appRouter = router({
             fieldName: "status",
             newValue: status,
           });
+          
+          // Emitir evento para o Copiloto IA
+          if (status === "fechada") {
+            await emitEvent({
+              eventType: EVENT_TYPES.NC_CLOSED,
+              entityType: "non_conformity",
+              entityId: id,
+              payload: {
+                status: "fechada",
+              },
+              userId: ctx.user?.id,
+            });
+          }
 
           return { success: true };
         }),

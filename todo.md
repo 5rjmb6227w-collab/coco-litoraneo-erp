@@ -140,7 +140,8 @@
 - Auth: 1 teste ✅
 - AI Copilot Backend: 31 testes ✅
 - AI Copilot Security/Observability: 47 testes ✅
-- **Total: 144 testes passando**
+- AI Copilot E2E: 43 testes ✅
+- **Total: 187 testes passando**
 - Frontend Copiloto: Testes manuais aprovados (Chat, Insights, Alertas, Acoes, Config, Widgets, Botao flutuante)
 
 ## CHECKPOINTS
@@ -221,3 +222,8 @@
 - [x] Feature flag copilot_enabled por usuario/role - isFeatureEnabled()
 - [x] Rollout: CEO primeiro, depois perfis selecionados - grantFeatureAccess(), addRoleToFeature()
 - [x] Endpoints de observabilidade: getMetrics, getUsageStats, getLatencyStats, runSecurityCheck
+
+### SUGESTOES FINAIS ✅
+- [x] Hooks de eventos nas mutations: coconutLoads.create, coconutLoads.update, producerPayables.update, purchases.create, purchases.updateStatus, quality.nonConformities.create, quality.nonConformities.updateStatus
+- [x] Notificacoes por e-mail: alertas criticos, resumo diario (emailNotifications.ts)
+- [x] Testes E2E do Copiloto: 43 testes (chat, insights, eventos, contexto, seguranca, observabilidade, notificacoes, feature flags, feedback)
