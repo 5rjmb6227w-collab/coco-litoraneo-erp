@@ -142,7 +142,8 @@
 - AI Copilot Security/Observability: 47 testes ✅
 - AI Copilot E2E: 43 testes ✅
 - ML Predictions: 33 testes ✅
-- **Total: 220 testes passando**
+- Multimodal: 41 testes ✅
+- **Total: 261 testes passando**
 - Frontend Copiloto: Testes manuais aprovados (Chat, Insights, Alertas, Acoes, Config, Widgets, Botao flutuante)
 
 ## CHECKPOINTS
@@ -254,3 +255,18 @@
 - [x] Benchmark: <500ms por previsão (testado com 10 previsões em <5s)
 - [x] Tutorial in-app para CEO interpretar previsões (3 níveis de confiança: Alta ≥90%, Média 70-89%, Baixa <70%)
 - [x] Conformidade LGPD: dados sensíveis mascarados (CPF, banco, PIX não aparecem nas previsões)
+
+## BLOCO 6/9: PROCESSAMENTO DE ANEXOS E MULTIMODAL ✅
+
+- [x] Schema - Campos multimodal em ai_sources (extractedText, extractedEntities, confidenceScore, processedAt, boundingBoxes, processingDuration, errorMessage, retryCount)
+- [x] MultimodalService com batch processing, OCR via LLM Vision, e entity recognition (pH, Brix, temperatura, peso, lote, data, volume, turbidez, coliformes)
+- [x] Triggers automáticos: triggerNCAttachmentProcessing, triggerProductionIssueProcessing, triggerPurchaseDocumentProcessing
+- [x] Entity recognition para métricas (pH, temperatura, peso, Brix, lote, data, volume, turbidez, coliformes, fornecedor)
+- [x] Integração em ai.chat.send (analyzeAttachmentForChat) para queries como "Analise laudo de qualidade do lote X"
+- [x] Relatórios diários automáticos (generateDailyAttachmentReport) com highlights de anexos processados
+- [x] UX - AttachmentViewer com modal de highlights interativos, bounding boxes, feedback in-app
+- [x] View SQL vw_anexos_processed para relatórios consolidados
+- [x] 41 testes passando para módulo Multimodal
+- [x] Handling de 100 anexos/dia (batch processing com fila)
+- [x] Auditoria plena em audit_logs para processamentos (logAudit em todos os processamentos)
+- [x] Pop-up de treinamento onboard para análises rápidas

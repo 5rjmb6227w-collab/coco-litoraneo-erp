@@ -966,14 +966,27 @@ export const aiActionApprovals = mysqlTable("ai_action_approvals", {
 export type AIActionApproval = typeof aiActionApprovals.$inferSelect;
 export type InsertAIActionApproval = typeof aiActionApprovals.$inferInsert;
 
-// ai_sources - Evidências/fontes usadas nas respostas
+// ai_sources - Evidências/fontes usadas nas respostas (com suporte multimodal)
 export const aiSources = mysqlTable("ai_sources", {
   id: int("id").autoincrement().primaryKey(),
-  entityType: varchar("entityType", { length: 50 }).notNull(), // 'coconut_load', 'producer_payable'
+  entityType: varchar("entityType", { length: 50 }).notNull(), // 'coconut_load', 'producer_payable', 'attachment'
   entityId: int("entityId").notNull(),
   label: varchar("label", { length: 255 }).notNull(), // "Carga #123 - Produtor João"
   url: varchar("url", { length: 500 }), // Link interno: /recebimento?id=123
   snippet: text("snippet"), // Trecho relevante (notes, description)
+  
+  // Campos Multimodal (Bloco 6/9)
+  attachmentUrl: varchar("attachmentUrl", { length: 500 }), // URL do arquivo original (S3)
+  attachmentType: mysqlEnum("attachmentType", ["image", "pdf", "document", "video", "audio"]),
+  extractedText: text("extractedText"), // Texto extraído via OCR
+  extractedEntities: json("extractedEntities"), // Entidades extraídas: [{type: 'pH', value: '5.2', confidence: 0.98}]
+  boundingBoxes: json("boundingBoxes"), // Coordenadas para highlights: [{x, y, w, h, text}]
+  confidenceScore: decimal("confidenceScore", { precision: 5, scale: 4 }), // Score de confiança OCR (0.0000-1.0000)
+  processingStatus: mysqlEnum("processingStatus", ["pending", "processing", "completed", "failed"]).default("pending"),
+  processingError: text("processingError"), // Mensagem de erro se falhou
+  processedAt: timestamp("processedAt"), // Quando foi processado
+  processedBy: varchar("processedBy", { length: 50 }), // 'google_vision', 'tesseract', 'manual'
+  
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

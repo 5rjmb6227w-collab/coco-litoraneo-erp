@@ -27,6 +27,16 @@ import {
   triggerInventoryForecastOnMovement,
   triggerQualityPrediction,
 } from "./predictionTriggers";
+import {
+  processAttachment,
+  processPendingAttachments,
+  getProcessedAttachments,
+  analyzeAttachmentForChat,
+  getExtractedEntitiesByType,
+  generateDailyAttachmentReport,
+  createAttachmentSource,
+} from "./multimodalService";
+import { aiSources } from "../../drizzle/schema";
 import { eq, desc, and, gte, lte, count, sql } from "drizzle-orm";
 
 // Services
@@ -1005,6 +1015,132 @@ export const aiRouter = router({
         input.itemName
       );
       return { success: true };
+    }),
+
+  // ============================================================================
+  // MULTIMODAL - PROCESSAMENTO DE ANEXOS (BLOCO 6/9)
+  // ============================================================================
+
+  /**
+   * Lista anexos processados
+   */
+  listProcessedAttachments: protectedProcedure
+    .input(z.object({
+      entityType: z.string().optional(),
+      entityId: z.number().optional(),
+      limit: z.number().min(1).max(100).default(50),
+    }))
+    .query(async ({ ctx, input }) => {
+      return getProcessedAttachments(input);
+    }),
+
+  /**
+   * Analisa um anexo específico para o chat
+   */
+  analyzeAttachment: protectedProcedure
+    .input(z.object({ sourceId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      return analyzeAttachmentForChat(input.sourceId);
+    }),
+
+  /**
+   * Processa um anexo manualmente
+   */
+  processAttachment: protectedProcedure
+    .input(z.object({
+      sourceId: z.number(),
+      attachmentUrl: z.string(),
+      attachmentType: z.enum(["image", "pdf", "document", "video", "audio"]),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      
+      const result = await processAttachment({
+        sourceId: input.sourceId,
+        attachmentUrl: input.attachmentUrl,
+        attachmentType: input.attachmentType,
+      });
+      
+      await logAudit({
+        userId: ctx.user.id,
+        userRole,
+        action: "process_attachment",
+        resource: "ai_source",
+        resourceId: input.sourceId,
+        details: { attachmentUrl: input.attachmentUrl, success: result.success },
+        success: result.success,
+      });
+      
+      return result;
+    }),
+
+  /**
+   * Cria e processa um novo anexo
+   */
+  createAndProcessAttachment: protectedProcedure
+    .input(z.object({
+      entityType: z.string(),
+      entityId: z.number(),
+      label: z.string(),
+      attachmentUrl: z.string(),
+      attachmentType: z.enum(["image", "pdf", "document", "video", "audio"]),
+      url: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const sourceId = await createAttachmentSource(input);
+      
+      if (!sourceId) {
+        return { success: false, error: "Falha ao criar source", sourceId: null };
+      }
+      
+      return { success: true, sourceId };
+    }),
+
+  /**
+   * Processa anexos pendentes em batch (admin only)
+   */
+  processPendingAttachments: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(100).default(10) }))
+    .mutation(async ({ ctx, input }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      return processPendingAttachments(input.limit);
+    }),
+
+  /**
+   * Obtém entidades extraídas por tipo (para relatórios)
+   */
+  getExtractedEntities: protectedProcedure
+    .input(z.object({
+      entityType: z.string(),
+      days: z.number().min(1).max(365).default(30),
+    }))
+    .query(async ({ ctx, input }) => {
+      return getExtractedEntitiesByType(input.entityType, input.days);
+    }),
+
+  /**
+   * Gera relatório diário de anexos processados
+   */
+  getDailyAttachmentReport: protectedProcedure
+    .query(async ({ ctx }) => {
+      return generateDailyAttachmentReport();
+    }),
+
+  /**
+   * Obtém detalhes de um anexo processado
+   */
+  getAttachmentDetails: protectedProcedure
+    .input(z.object({ sourceId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      
+      const [source] = await db.select().from(aiSources).where(eq(aiSources.id, input.sourceId));
+      return source || null;
     }),
 
   /**
