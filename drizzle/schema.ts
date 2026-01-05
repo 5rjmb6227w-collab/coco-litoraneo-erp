@@ -1042,3 +1042,190 @@ export const aiPredictions = mysqlTable("ai_predictions", {
 
 export type AIPrediction = typeof aiPredictions.$inferSelect;
 export type InsertAIPrediction = typeof aiPredictions.$inferInsert;
+
+
+// ============================================================================
+// BLOCO 8/9: FEEDBACK AVANÇADO E ANALYTICS
+// ============================================================================
+
+// ai_feedback_advanced - Feedback detalhado com analytics
+export const aiFeedbackAdvanced = mysqlTable("ai_feedback_advanced", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // FK users
+  messageId: int("messageId"), // FK ai_messages (opcional)
+  insightId: int("insightId"), // FK ai_insights (opcional)
+  actionId: int("actionId"), // FK ai_actions (opcional)
+  predictionId: int("predictionId"), // FK ai_predictions (opcional)
+  
+  // Rating obrigatório (1-5 estrelas)
+  rating: int("rating").notNull(), // 1-5
+  feedbackType: mysqlEnum("feedbackType", ["like", "dislike", "neutral"]).notNull(),
+  
+  // Comentário obrigatório
+  comment: text("comment").notNull(),
+  
+  // Áreas de melhoria selecionadas
+  improvementAreas: json("improvementAreas"), // ['accuracy', 'relevance', 'clarity', 'completeness', 'actionability']
+  
+  // Contexto da interação
+  interactionType: mysqlEnum("interactionType", ["chat", "insight", "alert", "action", "prediction"]).notNull(),
+  responseTimeMs: int("responseTimeMs"), // Tempo de resposta do Copiloto
+  sessionDuration: int("sessionDuration"), // Duração da sessão em segundos
+  
+  // Idioma da interação
+  language: varchar("language", { length: 10 }).default("pt-BR"),
+  
+  // A/B Testing
+  experimentId: varchar("experimentId", { length: 50 }), // ID do experimento A/B
+  variant: varchar("variant", { length: 20 }), // 'control' ou 'treatment'
+  
+  // Metadados para ML
+  contextSnapshot: json("contextSnapshot"), // Estado do contexto no momento do feedback
+  userSegment: varchar("userSegment", { length: 50 }), // 'ceo', 'admin', 'operator'
+  
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  processedAt: timestamp("processedAt"), // Quando foi processado para retrain
+  processedForRetrain: boolean("processedForRetrain").default(false),
+});
+
+export type AIFeedbackAdvanced = typeof aiFeedbackAdvanced.$inferSelect;
+export type InsertAIFeedbackAdvanced = typeof aiFeedbackAdvanced.$inferInsert;
+
+// ai_retrain_logs - Logs de retreinamento de modelos
+export const aiRetrainLogs = mysqlTable("ai_retrain_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  modelType: varchar("modelType", { length: 50 }).notNull(), // 'demand_forecast', 'quality_prediction'
+  triggerType: mysqlEnum("triggerType", ["scheduled", "feedback_threshold", "manual"]).notNull(),
+  
+  // Métricas antes do retrain
+  previousAccuracy: decimal("previousAccuracy", { precision: 5, scale: 4 }),
+  previousFeedbackScore: decimal("previousFeedbackScore", { precision: 5, scale: 4 }),
+  
+  // Métricas após retrain
+  newAccuracy: decimal("newAccuracy", { precision: 5, scale: 4 }),
+  newFeedbackScore: decimal("newFeedbackScore", { precision: 5, scale: 4 }),
+  
+  // Dados do retrain
+  feedbackCount: int("feedbackCount").notNull(), // Quantidade de feedbacks usados
+  dataPointsUsed: int("dataPointsUsed").notNull(), // Quantidade de dados de treino
+  trainingDurationMs: int("trainingDurationMs"),
+  
+  // Configurações ajustadas
+  thresholdsAdjusted: json("thresholdsAdjusted"), // Thresholds que foram ajustados
+  parametersChanged: json("parametersChanged"), // Parâmetros do modelo alterados
+  
+  // Status
+  status: mysqlEnum("status", ["started", "completed", "failed", "rolled_back"]).default("started").notNull(),
+  errorMessage: text("errorMessage"),
+  
+  // Auditoria LGPD
+  dataRetentionDays: int("dataRetentionDays").default(365), // Retenção de dados
+  anonymizationApplied: boolean("anonymizationApplied").default(true),
+  
+  // Timestamps
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+  createdBy: int("createdBy"), // FK users (quem iniciou manual)
+});
+
+export type AIRetrainLog = typeof aiRetrainLogs.$inferSelect;
+export type InsertAIRetrainLog = typeof aiRetrainLogs.$inferInsert;
+
+// ai_performance_reports - Relatórios de performance do Copiloto
+export const aiPerformanceReports = mysqlTable("ai_performance_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  reportType: mysqlEnum("reportType", ["monthly", "quarterly", "annual"]).notNull(),
+  periodStart: date("periodStart").notNull(),
+  periodEnd: date("periodEnd").notNull(),
+  
+  // Métricas de interação
+  totalInteractions: int("totalInteractions").notNull(),
+  uniqueUsers: int("uniqueUsers").notNull(),
+  avgSessionDuration: int("avgSessionDuration"), // segundos
+  
+  // Métricas de feedback
+  totalFeedbacks: int("totalFeedbacks").notNull(),
+  feedbackRate: decimal("feedbackRate", { precision: 5, scale: 4 }), // % de interações com feedback
+  avgRating: decimal("avgRating", { precision: 3, scale: 2 }), // Média de rating (1-5)
+  satisfactionRate: decimal("satisfactionRate", { precision: 5, scale: 4 }), // % de ratings >= 4
+  
+  // Métricas de eficiência
+  suggestionAcceptanceRate: decimal("suggestionAcceptanceRate", { precision: 5, scale: 4 }),
+  alertAccuracyRate: decimal("alertAccuracyRate", { precision: 5, scale: 4 }),
+  predictionAccuracyRate: decimal("predictionAccuracyRate", { precision: 5, scale: 4 }),
+  
+  // Métricas por idioma
+  interactionsByLanguage: json("interactionsByLanguage"), // { 'pt-BR': 1000, 'en': 200, 'es': 50 }
+  
+  // Métricas de A/B Testing
+  abTestResults: json("abTestResults"), // Resultados dos experimentos
+  
+  // Insights gerados
+  insightsGenerated: int("insightsGenerated").notNull(),
+  insightsResolved: int("insightsResolved").notNull(),
+  insightsDismissed: int("insightsDismissed").notNull(),
+  
+  // Ações
+  actionssuggested: int("actionsSuggested").notNull(),
+  actionsApproved: int("actionsApproved").notNull(),
+  actionsExecuted: int("actionsExecuted").notNull(),
+  
+  // Previsões
+  predictionsGenerated: int("predictionsGenerated").notNull(),
+  predictionsValidated: int("predictionsValidated").notNull(),
+  
+  // Tendências
+  trend: mysqlEnum("trend", ["improving", "stable", "declining"]).default("stable"),
+  trendDetails: json("trendDetails"), // Detalhes da análise de tendência
+  
+  // Recomendações automáticas
+  recommendations: json("recommendations"), // Sugestões de melhoria geradas
+  
+  // Timestamps
+  generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+  generatedBy: int("generatedBy"), // FK users ou 0 para sistema
+});
+
+export type AIPerformanceReport = typeof aiPerformanceReports.$inferSelect;
+export type InsertAIPerformanceReport = typeof aiPerformanceReports.$inferInsert;
+
+// ai_ab_experiments - Experimentos A/B
+export const aiAbExperiments = mysqlTable("ai_ab_experiments", {
+  id: int("id").autoincrement().primaryKey(),
+  experimentId: varchar("experimentId", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  
+  // Configuração do experimento
+  feature: varchar("feature", { length: 100 }).notNull(), // 'chat_response_format', 'insight_threshold'
+  controlConfig: json("controlConfig").notNull(), // Configuração do grupo controle
+  treatmentConfig: json("treatmentConfig").notNull(), // Configuração do grupo tratamento
+  
+  // Alocação de tráfego
+  trafficAllocation: decimal("trafficAllocation", { precision: 3, scale: 2 }).default("0.50"), // % para treatment
+  
+  // Métricas alvo
+  primaryMetric: varchar("primaryMetric", { length: 100 }).notNull(), // 'satisfaction_rate', 'feedback_rate'
+  secondaryMetrics: json("secondaryMetrics"), // Métricas secundárias
+  
+  // Resultados
+  controlSampleSize: int("controlSampleSize").default(0),
+  treatmentSampleSize: int("treatmentSampleSize").default(0),
+  controlMetricValue: decimal("controlMetricValue", { precision: 10, scale: 4 }),
+  treatmentMetricValue: decimal("treatmentMetricValue", { precision: 10, scale: 4 }),
+  statisticalSignificance: decimal("statisticalSignificance", { precision: 5, scale: 4 }),
+  
+  // Status
+  status: mysqlEnum("status", ["draft", "running", "paused", "completed", "cancelled"]).default("draft").notNull(),
+  winner: mysqlEnum("winner", ["control", "treatment", "inconclusive"]),
+  
+  // Timestamps
+  startedAt: timestamp("startedAt"),
+  endedAt: timestamp("endedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy").notNull(),
+});
+
+export type AIAbExperiment = typeof aiAbExperiments.$inferSelect;
+export type InsertAIAbExperiment = typeof aiAbExperiments.$inferInsert;

@@ -1191,6 +1191,190 @@ export const aiRouter = router({
         recentPredictions,
       };
     }),
+
+  // ============================================================================
+  // BLOCO 8/9: FEEDBACK AVANÇADO E I18N
+  // ============================================================================
+
+  /**
+   * Submete feedback avançado obrigatório
+   */
+  submitAdvancedFeedback: protectedProcedure
+    .input(z.object({
+      messageId: z.number().optional(),
+      insightId: z.number().optional(),
+      actionId: z.number().optional(),
+      predictionId: z.number().optional(),
+      rating: z.number().min(1).max(5),
+      feedbackType: z.enum(["like", "dislike", "neutral"]),
+      comment: z.string().min(10, "Comentário deve ter pelo menos 10 caracteres"),
+      improvementAreas: z.array(z.enum(["accuracy", "relevance", "clarity", "completeness", "actionability"])).optional(),
+      interactionType: z.enum(["chat", "insight", "alert", "action", "prediction"]),
+      responseTimeMs: z.number().optional(),
+      sessionDuration: z.number().optional(),
+      language: z.string().optional(),
+      experimentId: z.string().optional(),
+      variant: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { submitAdvancedFeedback } = await import("./feedbackService");
+      
+      return submitAdvancedFeedback({
+        userId: ctx.user.id,
+        ...input,
+        userSegment: ctx.user.role || "user",
+      });
+    }),
+
+  /**
+   * Obtém analytics de feedback
+   */
+  getFeedbackAnalytics: protectedProcedure
+    .input(z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      const { getFeedbackAnalytics } = await import("./feedbackService");
+      return getFeedbackAnalytics(
+        new Date(input.startDate),
+        new Date(input.endDate)
+      );
+    }),
+
+  /**
+   * Verifica se deve disparar retrain
+   */
+  checkRetrainTrigger: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      const { checkRetrainTrigger } = await import("./feedbackService");
+      return checkRetrainTrigger();
+    }),
+
+  /**
+   * Executa retrain manual de modelo
+   */
+  executeRetrain: protectedProcedure
+    .input(z.object({
+      modelType: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      const { executeRetrain } = await import("./feedbackService");
+      return executeRetrain(input.modelType, "manual", ctx.user.id);
+    }),
+
+  /**
+   * Gera relatório de performance do Copiloto
+   */
+  generatePerformanceReport: protectedProcedure
+    .input(z.object({
+      reportType: z.enum(["monthly", "quarterly", "annual"]),
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      if (userRole !== "admin" && userRole !== "ceo") {
+        throw new Error("Acesso negado");
+      }
+      
+      const { generatePerformanceReport } = await import("./feedbackService");
+      return generatePerformanceReport(
+        input.reportType,
+        new Date(input.startDate),
+        new Date(input.endDate),
+        ctx.user.id
+      );
+    }),
+
+  /**
+   * Lista relatórios de performance
+   */
+  listPerformanceReports: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(10) }))
+    .query(async ({ ctx, input }) => {
+      const { listPerformanceReports } = await import("./feedbackService");
+      return listPerformanceReports(input.limit);
+    }),
+
+  /**
+   * Obtém variante de experimento A/B para o usuário
+   */
+  getExperimentVariant: protectedProcedure
+    .input(z.object({ experimentId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { getExperimentVariant } = await import("./feedbackService");
+      return getExperimentVariant(input.experimentId, ctx.user.id);
+    }),
+
+  /**
+   * Registra resultado de experimento A/B
+   */
+  recordExperimentResult: protectedProcedure
+    .input(z.object({
+      experimentId: z.string(),
+      variant: z.enum(["control", "treatment"]),
+      metricValue: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { recordExperimentResult } = await import("./feedbackService");
+      await recordExperimentResult(input.experimentId, input.variant, input.metricValue);
+      return { success: true };
+    }),
+
+  /**
+   * Traduz texto usando DeepL
+   */
+  translateText: protectedProcedure
+    .input(z.object({
+      text: z.string(),
+      targetLang: z.enum(["pt-BR", "en", "es"]),
+      sourceLang: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { translateWithDeepL, logTranslationUsage } = await import("./translationService");
+      
+      const result = await translateWithDeepL(input.text, input.targetLang, input.sourceLang);
+      
+      if (result.success && result.translatedText) {
+        await logTranslationUsage({
+          userId: ctx.user.id,
+          userName: ctx.user.name || "user",
+          sourceText: input.text,
+          translatedText: result.translatedText,
+          sourceLang: input.sourceLang || "auto",
+          targetLang: input.targetLang,
+          provider: result.provider || "unknown",
+        });
+      }
+      
+      return result;
+    }),
+
+  /**
+   * Obtém configuração de prompts LLM por idioma
+   */
+  getLLMPromptConfig: protectedProcedure
+    .input(z.object({ language: z.enum(["pt-BR", "en", "es"]) }))
+    .query(async ({ ctx, input }) => {
+      const { getLLMPromptConfig } = await import("./translationService");
+      return getLLMPromptConfig(input.language);
+    }),
 });
 
 export type AIRouter = typeof aiRouter;

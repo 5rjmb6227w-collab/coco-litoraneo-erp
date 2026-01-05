@@ -3,10 +3,14 @@ import { UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
+import { Suspense } from "react";
 import superjson from "superjson";
 import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
+
+// Importar configuração do i18n (deve ser importado antes do App)
+import "./lib/i18n";
 
 const queryClient = new QueryClient();
 
@@ -52,10 +56,24 @@ const trpcClient = trpc.createClient({
   ],
 });
 
+// Loading fallback para Suspense do i18n
+function I18nLoadingFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <span className="text-muted-foreground text-sm">Carregando...</span>
+      </div>
+    </div>
+  );
+}
+
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <Suspense fallback={<I18nLoadingFallback />}>
+        <App />
+      </Suspense>
     </QueryClientProvider>
   </trpc.Provider>
 );

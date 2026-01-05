@@ -53,6 +53,7 @@ import {
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { Button } from "./ui/button";
 import {
   Collapsible,
@@ -409,6 +410,7 @@ function DashboardLayoutContent({
                 </div>
               </div>
             </div>
+            <LanguageSwitcher variant="compact" />
           </div>
         )}
         <main className="flex-1 p-4 md:p-6 bg-background min-h-screen">{children}</main>

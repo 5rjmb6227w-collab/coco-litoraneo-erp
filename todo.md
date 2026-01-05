@@ -145,7 +145,8 @@
 - Multimodal: 41 testes ✅
 - PWA/Mobile: 42 testes ✅
 - Alerta Baixa Confiança: 10 testes ✅
-- **Total: 313 testes passando**
+- i18n e Feedback Avançado: 64 testes ✅
+- **Total: 377 testes passando**
 - Frontend Copiloto: Testes manuais aprovados (Chat, Insights, Alertas, Acoes, Config, Widgets, Botao flutuante)
 
 ## CHECKPOINTS
@@ -290,3 +291,49 @@
 - [x] Página offline.html para quando não há conexão
 - [x] Meta tags PWA completas no index.html (apple-mobile-web-app-capable, theme-color)
 - [x] Conformidade com Apple/Google guidelines (touch targets 44px, contraste 4.5:1)
+
+
+## BLOCO 8/9: INTERNACIONALIZAÇÃO E FEEDBACK LOOP AVANÇADO ✅
+
+### i18n - Internacionalização
+- [x] Instalar e configurar react-i18next
+- [x] Criar arquivos de tradução JSON para PT-BR (base)
+- [x] Criar arquivos de tradução JSON para EN (inglês)
+- [x] Criar arquivos de tradução JSON para ES (espanhol)
+- [ ] Implementar detecção automática de idioma (env LANGUAGE)
+- [ ] Adaptar prompts LLM por idioma (insights em PT para CEO)
+- [ ] Integrar API de tradução certificada (DeepL) para novos conteúdos
+- [ ] Criar switch de idioma seamless no UX (header)
+
+### Feedback Loop Avançado
+- [ ] Expandir ai_feedback com campos para comentários textuais obrigatórios
+- [ ] Criar FeedbackModal obrigatório após cada resposta IA
+- [ ] Implementar tRPC ai.feedback.submit com analytics avançados
+- [ ] Criar agregação de feedback para retrain automático
+- [ ] Implementar ajuste de thresholds via ML trimestral
+- [ ] Criar relatórios de impacto de retrains
+
+### Relatórios de Performance
+- [ ] Gerar ai_insights mensais sobre "Eficiência do Copiloto"
+- [ ] Calcular taxa de aceitação de sugestões
+- [ ] Calcular precisão de alertas baseada em feedback
+- [ ] Criar dashboard KPI no admin para performance do Copiloto
+- [ ] Implementar relatórios anuais de performance
+
+### Testes A/B e Monitoramento
+- [ ] Implementar framework de testes A/B para features
+- [ ] Criar monitoramento contínuo de métricas
+- [ ] Implementar feedback real-time em produção
+- [ ] Auditoria de retrains em audit_logs com conformidade LGPD
+
+### Tutoriais e UX
+- [ ] Criar tutorial in-app para feedback obrigatório
+- [ ] Implementar onboarding de idiomas
+- [ ] Garantir tradução >99% precisa (certificada)
+- [ ] Taxa de feedback >50% por interação
+
+### Testes
+- [ ] Testes Vitest para i18n
+- [ ] Testes Vitest para feedback avançado
+- [ ] Testes Vitest para relatórios de performance
+- [ ] Testes Vitest para testes A/B
