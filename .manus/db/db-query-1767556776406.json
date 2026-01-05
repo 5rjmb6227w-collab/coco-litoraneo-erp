@@ -1,0 +1,9 @@
+{
+  "query": "DROP VIEW IF EXISTS vw_daily_production_summary;\nCREATE VIEW vw_daily_production_summary AS\nSELECT\n  pe.productionDate,\n  pe.shift,\n  pe.skuId,\n  s.code AS skuCode,\n  s.description AS skuName,\n  s.variation AS skuVariation,\n  SUM(pe.quantityProduced) AS totalQuantityProduced,\n  COUNT(*) AS entriesCount\nFROM production_entries pe\nJOIN skus s ON s.id = pe.skuId\nGROUP BY pe.productionDate, pe.shift, pe.skuId, s.code, s.description, s.variation;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute DROP VIEW IF EXISTS vw_daily_production_summary;\nCREATE VIEW vw_daily_production_summary AS\nSELECT\n  pe.productionDate,\n  pe.shift,\n  pe.skuId,\n  s.code AS skuCode,\n  s.description AS skuName,\n  s.variation AS skuVariation,\n  SUM(pe.quantityProduced) AS totalQuantityProduced,\n  COUNT(*) AS entriesCount\nFROM production_entries pe\nJOIN skus s ON s.id = pe.skuId\nGROUP BY pe.productionDate, pe.shift, pe.skuId, s.code, s.description, s.variation;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 204
+}

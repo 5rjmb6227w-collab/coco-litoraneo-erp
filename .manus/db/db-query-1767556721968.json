@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS ai_actions (\n  id CHAR(36) NOT NULL,\n  insightId CHAR(36) NULL,\n  actionType VARCHAR(60) NOT NULL,\n  module VARCHAR(40) NOT NULL,\n  title VARCHAR(160) NOT NULL,\n  rationale TEXT NOT NULL,\n  payloadDraft JSON NOT NULL,\n  status VARCHAR(20) NOT NULL DEFAULT 'SUGGESTED',\n  requestedBy CHAR(36) NULL,\n  executedBy CHAR(36) NULL,\n  executedAt DATETIME(3) NULL,\n  errorMessage TEXT NULL,\n  createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),\n  updatedAt DATETIME(3) NULL,\n  PRIMARY KEY (id),\n  INDEX idx_ai_actions_status (status),\n  INDEX idx_ai_actions_module (module),\n  INDEX idx_ai_actions_insight (insightId),\n  INDEX idx_ai_actions_createdAt (createdAt)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute CREATE TABLE IF NOT EXISTS ai_actions (\n  id CHAR(36) NOT NULL,\n  insightId CHAR(36) NULL,\n  actionType VARCHAR(60) NOT NULL,\n  module VARCHAR(40) NOT NULL,\n  title VARCHAR(160) NOT NULL,\n  rationale TEXT NOT NULL,\n  payloadDraft JSON NOT NULL,\n  status VARCHAR(20) NOT NULL DEFAULT 'SUGGESTED',\n  requestedBy CHAR(36) NULL,\n  executedBy CHAR(36) NULL,\n  executedAt DATETIME(3) NULL,\n  errorMessage TEXT NULL,\n  createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),\n  updatedAt DATETIME(3) NULL,\n  PRIMARY KEY (id),\n  INDEX idx_ai_actions_status (status),\n  INDEX idx_ai_actions_module (module),\n  INDEX idx_ai_actions_insight (insightId),\n  INDEX idx_ai_actions_createdAt (createdAt)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 57
+}

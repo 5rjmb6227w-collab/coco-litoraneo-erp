@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS ai_alerts (\n  id CHAR(36) NOT NULL,\n  insightId CHAR(36) NULL,\n  channel VARCHAR(16) NOT NULL,\n  toAddress VARCHAR(180) NULL,\n  userId CHAR(36) NULL,\n  subject VARCHAR(160) NULL,\n  message TEXT NOT NULL,\n  status VARCHAR(20) NOT NULL DEFAULT 'PENDING',\n  errorMessage TEXT NULL,\n  sentAt DATETIME(3) NULL,\n  ackedAt DATETIME(3) NULL,\n  createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),\n  PRIMARY KEY (id),\n  INDEX idx_ai_alerts_status (status),\n  INDEX idx_ai_alerts_user (userId),\n  INDEX idx_ai_alerts_insight (insightId),\n  INDEX idx_ai_alerts_createdAt (createdAt)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute CREATE TABLE IF NOT EXISTS ai_alerts (\n  id CHAR(36) NOT NULL,\n  insightId CHAR(36) NULL,\n  channel VARCHAR(16) NOT NULL,\n  toAddress VARCHAR(180) NULL,\n  userId CHAR(36) NULL,\n  subject VARCHAR(160) NULL,\n  message TEXT NOT NULL,\n  status VARCHAR(20) NOT NULL DEFAULT 'PENDING',\n  errorMessage TEXT NULL,\n  sentAt DATETIME(3) NULL,\n  ackedAt DATETIME(3) NULL,\n  createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),\n  PRIMARY KEY (id),\n  INDEX idx_ai_alerts_status (status),\n  INDEX idx_ai_alerts_user (userId),\n  INDEX idx_ai_alerts_insight (insightId),\n  INDEX idx_ai_alerts_createdAt (createdAt)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 82
+}

@@ -1,0 +1,1 @@
+ALTER TABLE `ai_predictions` MODIFY COLUMN `accuracyEstimate` decimal(5,2) DEFAULT '0';

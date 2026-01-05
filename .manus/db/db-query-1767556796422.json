@@ -1,0 +1,9 @@
+{
+  "query": "DROP VIEW IF EXISTS vw_inventory_below_minimum_finished_goods;\nCREATE VIEW vw_inventory_below_minimum_finished_goods AS\nSELECT\n  s.id AS skuId,\n  s.code AS skuCode,\n  s.description AS skuName,\n  s.variation AS skuVariation,\n  'kg' AS unit,\n  s.minimumStock,\n  COALESCE(SUM(fgi.quantity), 0) AS currentStock,\n  (s.minimumStock - COALESCE(SUM(fgi.quantity), 0)) AS deficit\nFROM skus s\nLEFT JOIN finished_goods_inventory fgi\n  ON fgi.skuId = s.id\n  AND (fgi.status IS NULL OR fgi.status NOT IN ('vencido'))\nWHERE s.status IS NULL OR s.status <> 'inativo'\nGROUP BY s.id, s.code, s.description, s.variation, s.minimumStock\nHAVING s.minimumStock IS NOT NULL\n   AND COALESCE(SUM(fgi.quantity), 0) < s.minimumStock;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute DROP VIEW IF EXISTS vw_inventory_below_minimum_finished_goods;\nCREATE VIEW vw_inventory_below_minimum_finished_goods AS\nSELECT\n  s.id AS skuId,\n  s.code AS skuCode,\n  s.description AS skuName,\n  s.variation AS skuVariation,\n  'kg' AS unit,\n  s.minimumStock,\n  COALESCE(SUM(fgi.quantity), 0) AS currentStock,\n  (s.minimumStock - COALESCE(SUM(fgi.quantity), 0)) AS deficit\nFROM skus s\nLEFT JOIN finished_goods_inventory fgi\n  ON fgi.skuId = s.id\n  AND (fgi.status IS NULL OR fgi.status NOT IN ('vencido'))\nWHERE s.status IS NULL OR s.status <> 'inativo'\nGROUP BY s.id, s.code, s.description, s.variation, s.minimumStock\nHAVING s.minimumStock IS NOT NULL\n   AND COALESCE(SUM(fgi.quantity), 0) < s.minimumStock;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 202
+}

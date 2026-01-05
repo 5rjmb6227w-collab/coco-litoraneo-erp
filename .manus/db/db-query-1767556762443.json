@@ -1,0 +1,29 @@
+{
+  "query": "SELECT * FROM skus LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute SELECT * FROM skus LIMIT 1;",
+  "rows": [
+    {
+      "id": "1",
+      "externalCode": "NULL",
+      "code": "CRS-FL-5",
+      "description": "Coco Ralado Seco Flocos 5kg",
+      "category": "seco",
+      "variation": "flocos",
+      "packageWeight": "5.00",
+      "packageType": "NULL",
+      "minimumStock": "500.00",
+      "currentStock": "0.00",
+      "shelfLifeDays": "180",
+      "suggestedPrice": "NULL",
+      "status": "ativo",
+      "createdAt": "2026-01-03 19:59:37",
+      "createdBy": "NULL",
+      "updatedAt": "2026-01-03 19:59:37",
+      "updatedBy": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\texternalCode\tcode\tdescription\tcategory\tvariation\tpackageWeight\tpackageType\tminimumStock\tcurrentStock\tshelfLifeDays\tsuggestedPrice\tstatus\tcreatedAt\tcreatedBy\tupdatedAt\tupdatedBy\n1\tNULL\tCRS-FL-5\tCoco Ralado Seco Flocos 5kg\tseco\tflocos\t5.00\tNULL\t500.00\t0.00\t180\tNULL\tativo\t2026-01-03 19:59:37\tNULL\t2026-01-03 19:59:37\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 78
+}

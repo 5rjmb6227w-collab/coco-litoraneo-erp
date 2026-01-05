@@ -1,0 +1,9 @@
+{
+  "query": "DROP VIEW IF EXISTS vw_financial_due_summary;\nCREATE VIEW vw_financial_due_summary AS\nSELECT\n  fe.status,\n  fe.entryType AS type,\n  fe.origin AS category,\n  fe.dueDate,\n  COUNT(*) AS entriesCount,\n  SUM(fe.value) AS totalValueSum,\n  SUM(CASE\n        WHEN fe.status NOT IN ('pago', 'recebido', 'cancelado') AND fe.dueDate IS NOT NULL AND fe.dueDate < CURDATE() THEN 1\n        ELSE 0\n      END) AS overdueCount,\n  SUM(CASE\n        WHEN fe.status NOT IN ('pago', 'recebido', 'cancelado') AND fe.dueDate IS NOT NULL AND fe.dueDate < CURDATE() THEN fe.value\n        ELSE 0\n      END) AS overdueValueSum\nFROM financial_entries fe\nGROUP BY fe.status, fe.entryType, fe.origin, fe.dueDate;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute DROP VIEW IF EXISTS vw_financial_due_summary;\nCREATE VIEW vw_financial_due_summary AS\nSELECT\n  fe.status,\n  fe.entryType AS type,\n  fe.origin AS category,\n  fe.dueDate,\n  COUNT(*) AS entriesCount,\n  SUM(fe.value) AS totalValueSum,\n  SUM(CASE\n        WHEN fe.status NOT IN ('pago', 'recebido', 'cancelado') AND fe.dueDate IS NOT NULL AND fe.dueDate < CURDATE() THEN 1\n        ELSE 0\n      END) AS overdueCount,\n  SUM(CASE\n        WHEN fe.status NOT IN ('pago', 'recebido', 'cancelado') AND fe.dueDate IS NOT NULL AND fe.dueDate < CURDATE() THEN fe.value\n        ELSE 0\n      END) AS overdueValueSum\nFROM financial_entries fe\nGROUP BY fe.status, fe.entryType, fe.origin, fe.dueDate;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 228
+}

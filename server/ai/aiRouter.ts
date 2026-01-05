@@ -15,7 +15,18 @@ import {
   aiActionApprovals,
   aiFeedback,
   aiConfig,
+  aiPredictions,
 } from "../../drizzle/schema";
+import { 
+  generatePrediction, 
+  ModelType,
+  Provider,
+} from "./mlProvider";
+import {
+  triggerDemandForecastOnProduction,
+  triggerInventoryForecastOnMovement,
+  triggerQualityPrediction,
+} from "./predictionTriggers";
 import { eq, desc, and, gte, lte, count, sql } from "drizzle-orm";
 
 // Services
@@ -219,6 +230,65 @@ export const aiRouter = router({
       }
       const results = await runAllInsightChecks();
       return results;
+    }),
+
+  // ============================================================================
+  // EVENTOS
+  // ============================================================================
+
+  // ============================================================================
+  // ALERTAS
+  // ============================================================================
+
+  /**
+   * Lista alertas do sistema
+   */
+  listAlerts: protectedProcedure
+    .input(z.object({
+      status: z.enum(["pending", "sent", "failed", "read"]).optional(),
+      channel: z.enum(["email", "whatsapp", "push", "in_app"]).optional(),
+      limit: z.number().min(1).max(100).default(50),
+    }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      const conditions = [];
+      if (input?.status) {
+        conditions.push(eq(aiAlerts.status, input.status));
+      }
+      if (input?.channel) {
+        conditions.push(eq(aiAlerts.channel, input.channel));
+      }
+
+      const query = conditions.length > 0
+        ? db.select().from(aiAlerts).where(and(...conditions))
+        : db.select().from(aiAlerts);
+
+      const alerts = await query
+        .orderBy(desc(aiAlerts.createdAt))
+        .limit(input?.limit || 50);
+
+      return alerts;
+    }),
+
+  /**
+   * Marca um alerta como lido (read)
+   */
+  readAlert: protectedProcedure
+    .input(z.object({
+      alertId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      await db
+        .update(aiAlerts)
+        .set({ status: "read", readAt: new Date() })
+        .where(eq(aiAlerts.id, input.alertId));
+
+      return { success: true };
     }),
 
   // ============================================================================
@@ -749,6 +819,241 @@ export const aiRouter = router({
       
       const sentCount = await checkAndSendCriticalAlerts();
       return { sentCount };
+    }),
+
+  // ============================================================================
+  // ML PREDICTIONS
+  // ============================================================================
+
+  /**
+   * Gera previsão sob demanda
+   */
+  generatePrediction: protectedProcedure
+    .input(z.object({
+      module: z.enum(["production", "warehouse", "quality", "financial"]),
+      period: z.enum(["7days", "30days", "90days", "1year"]),
+      confidenceLevel: z.enum(["low", "medium", "high"]).optional(),
+      entityType: z.string().optional(),
+      entityId: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userRole = (ctx.user.role || "user") as UserRole;
+      
+      await enforceRateLimit(ctx.user.id, "prediction");
+      
+      const modelType: ModelType = input.module === "production" 
+        ? "demand_forecast" 
+        : input.module === "warehouse" 
+          ? "inventory_forecast" 
+          : "quality_prediction";
+      
+      const prediction = await generatePrediction({
+        modelType,
+        module: input.module,
+        entityType: input.entityType || input.module,
+        entityId: input.entityId || 0,
+        period: input.period,
+        historicalData: { requestedBy: ctx.user.id, timestamp: new Date().toISOString() },
+        confidenceLevel: input.confidenceLevel,
+      });
+      
+      await logAudit({
+        userId: ctx.user.id,
+        userRole,
+        action: "generate_prediction",
+        resource: "ai_prediction",
+        details: { module: input.module, period: input.period, predictionId: prediction.id },
+        success: true,
+      });
+      
+      return prediction;
+    }),
+
+  /**
+   * Lista histórico de previsões
+   */
+  listPredictions: protectedProcedure
+    .input(z.object({
+      module: z.string().optional(),
+      modelType: z.enum(["demand_forecast", "inventory_forecast", "quality_prediction"]).optional(),
+      limit: z.number().min(1).max(100).default(20),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      
+      let query = db.select().from(aiPredictions).orderBy(desc(aiPredictions.generatedAt)).limit(input.limit);
+      
+      const predictions = await query;
+      return predictions;
+    }),
+
+  /**
+   * Obtém detalhes de uma previsão específica
+   */
+  getPrediction: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      
+      const prediction = await db.select().from(aiPredictions).where(eq(aiPredictions.id, input.id));
+      return prediction[0] || null;
+    }),
+
+  /**
+   * Obtém métricas de acurácia dos modelos
+   */
+  getPredictionAccuracy: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { models: [], overall: 0 };
+      
+      const predictions = await db.select().from(aiPredictions)
+        .where(gte(aiPredictions.generatedAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)))
+        .orderBy(desc(aiPredictions.generatedAt));
+      
+      const modelStats = new Map<string, { total: number; sumAccuracy: number }>(); 
+      
+      for (const p of predictions) {
+        const stats = modelStats.get(p.modelType) || { total: 0, sumAccuracy: 0 };
+        stats.total++;
+        stats.sumAccuracy += Number(p.accuracyEstimate) || 0;
+        modelStats.set(p.modelType, stats);
+      }
+      
+      const models = Array.from(modelStats.entries()).map(([modelType, stats]) => ({
+        modelType,
+        totalPredictions: stats.total,
+        avgAccuracy: Math.round((stats.sumAccuracy / stats.total) * 100),
+      }));
+      
+      const overall = predictions.length > 0 
+        ? Math.round(predictions.reduce((acc, p) => acc + (Number(p.accuracyEstimate) || 0), 0) / predictions.length * 100)
+        : 0;
+      
+      return { models, overall };
+    }),
+
+  /**
+   * Obtém histórico de previsões para gráficos
+   */
+  getPredictionHistory: protectedProcedure
+    .input(z.object({
+      days: z.number().min(7).max(365).default(30),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      
+      const startDate = new Date(Date.now() - input.days * 24 * 60 * 60 * 1000);
+      
+      const predictions = await db.select().from(aiPredictions)
+        .where(gte(aiPredictions.generatedAt, startDate))
+        .orderBy(aiPredictions.generatedAt);
+      
+      // Agrupar por dia
+      const dailyData = new Map<string, { date: string; predictions: number; avgAccuracy: number; avgTime: number }>();
+      
+      for (const p of predictions) {
+        const day = p.generatedAt.toISOString().split("T")[0];
+        const existing = dailyData.get(day) || { date: day, predictions: 0, avgAccuracy: 0, avgTime: 0 };
+        const newCount = existing.predictions + 1;
+        const accuracy = Number(p.accuracyEstimate) || 0.85;
+        const time = p.executionTimeMs || 100;
+        
+        dailyData.set(day, {
+          date: day,
+          predictions: newCount,
+          avgAccuracy: Math.round(((existing.avgAccuracy * existing.predictions + accuracy * 100) / newCount)),
+          avgTime: Math.round((existing.avgTime * existing.predictions + time) / newCount),
+        });
+      }
+      
+      return Array.from(dailyData.values());
+    }),
+
+  /**
+   * Dispara previsão de demanda para produção
+   */
+  triggerDemandForecast: protectedProcedure
+    .input(z.object({
+      skuId: z.number(),
+      quantity: z.number(),
+      shift: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await triggerDemandForecastOnProduction(input.skuId, input.quantity, input.shift);
+      return { success: true };
+    }),
+
+  /**
+   * Dispara previsão de estoque
+   */
+  triggerInventoryForecast: protectedProcedure
+    .input(z.object({
+      warehouseItemId: z.number(),
+      currentStock: z.number(),
+      minimumStock: z.number(),
+      itemName: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await triggerInventoryForecastOnMovement(
+        input.warehouseItemId, 
+        input.currentStock, 
+        input.minimumStock,
+        input.itemName
+      );
+      return { success: true };
+    }),
+
+  /**
+   * Dashboard de KPIs de ML
+   */
+  getMLDashboard: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { totalPredictions: 0, avgAccuracy: 0, avgExecutionTime: 0, modelBreakdown: [], recentPredictions: [] };
+      
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      
+      const predictions = await db.select().from(aiPredictions)
+        .where(gte(aiPredictions.generatedAt, thirtyDaysAgo))
+        .orderBy(desc(aiPredictions.generatedAt))
+        .limit(100);
+      
+      const totalPredictions = predictions.length;
+      const avgAccuracy = totalPredictions > 0 
+        ? Math.round(predictions.reduce((acc, p) => acc + (Number(p.accuracyEstimate) || 0), 0) / totalPredictions * 100)
+        : 0;
+      const avgExecutionTime = totalPredictions > 0
+        ? Math.round(predictions.reduce((acc, p) => acc + (p.executionTimeMs || 0), 0) / totalPredictions)
+        : 0;
+      
+      // Breakdown por modelo
+      const modelMap = new Map<string, number>();
+      for (const p of predictions) {
+        modelMap.set(p.modelType, (modelMap.get(p.modelType) || 0) + 1);
+      }
+      const modelBreakdown = Array.from(modelMap.entries()).map(([name, value]) => ({ name, value }));
+      
+      // Últimas 5 previsões
+      const recentPredictions = predictions.slice(0, 5).map(p => ({
+        id: p.id,
+        modelType: p.modelType,
+        module: p.module,
+        accuracy: Math.round((Number(p.accuracyEstimate) || 0) * 100),
+        executionTime: p.executionTimeMs,
+        generatedAt: p.generatedAt,
+      }));
+      
+      return {
+        totalPredictions,
+        avgAccuracy,
+        avgExecutionTime,
+        modelBreakdown,
+        recentPredictions,
+      };
     }),
 });
 

@@ -1,0 +1,38 @@
+{
+  "query": "SELECT 'vw_daily_production_summary' AS view_name, COUNT(*) AS cnt FROM vw_daily_production_summary\nUNION ALL\nSELECT 'vw_payables_status_summary', COUNT(*) FROM vw_payables_status_summary\nUNION ALL\nSELECT 'vw_inventory_below_minimum_warehouse', COUNT(*) FROM vw_inventory_below_minimum_warehouse\nUNION ALL\nSELECT 'vw_inventory_below_minimum_finished_goods', COUNT(*) FROM vw_inventory_below_minimum_finished_goods\nUNION ALL\nSELECT 'vw_quality_nc_summary', COUNT(*) FROM vw_quality_nc_summary\nUNION ALL\nSELECT 'vw_purchases_pipeline_summary', COUNT(*) FROM vw_purchases_pipeline_summary\nUNION ALL\nSELECT 'vw_financial_due_summary', COUNT(*) FROM vw_financial_due_summary;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute SELECT 'vw_daily_production_summary' AS view_name, COUNT(*) AS cnt FROM vw_daily_production_summary\nUNION ALL\nSELECT 'vw_payables_status_summary', COUNT(*) FROM vw_payables_status_summary\nUNION ALL\nSELECT 'vw_inventory_below_minimum_warehouse', COUNT(*) FROM vw_inventory_below_minimum_warehouse\nUNION ALL\nSELECT 'vw_inventory_below_minimum_finished_goods', COUNT(*) FROM vw_inventory_below_minimum_finished_goods\nUNION ALL\nSELECT 'vw_quality_nc_summary', COUNT(*) FROM vw_quality_nc_summary\nUNION ALL\nSELECT 'vw_purchases_pipeline_summary', COUNT(*) FROM vw_purchases_pipeline_summary\nUNION ALL\nSELECT 'vw_financial_due_summary', COUNT(*) FROM vw_financial_due_summary;",
+  "rows": [
+    {
+      "view_name": "vw_daily_production_summary",
+      "cnt": "0"
+    },
+    {
+      "view_name": "vw_payables_status_summary",
+      "cnt": "0"
+    },
+    {
+      "view_name": "vw_inventory_below_minimum_warehouse",
+      "cnt": "31"
+    },
+    {
+      "view_name": "vw_quality_nc_summary",
+      "cnt": "0"
+    },
+    {
+      "view_name": "vw_inventory_below_minimum_finished_goods",
+      "cnt": "9"
+    },
+    {
+      "view_name": "vw_purchases_pipeline_summary",
+      "cnt": "0"
+    },
+    {
+      "view_name": "vw_financial_due_summary",
+      "cnt": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "view_name\tcnt\nvw_daily_production_summary\t0\nvw_payables_status_summary\t0\nvw_inventory_below_minimum_warehouse\t31\nvw_quality_nc_summary\t0\nvw_inventory_below_minimum_finished_goods\t9\nvw_purchases_pipeline_summary\t0\nvw_financial_due_summary\t0\n",
+  "stderr": "",
+  "execution_time_ms": 80
+}

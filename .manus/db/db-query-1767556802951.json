@@ -1,0 +1,9 @@
+{
+  "query": "DROP VIEW IF EXISTS vw_quality_nc_summary;\nCREATE VIEW vw_quality_nc_summary AS\nSELECT\n  DATE_FORMAT(nc.identificationDate, '%Y-%m-01') AS monthStart,\n  nc.origin AS category,\n  nc.area AS affectedArea,\n  'medium' AS severity,\n  nc.status,\n  COUNT(*) AS ncCount,\n  SUM(CASE WHEN nc.status IN ('aberta', 'em_analise', 'acao_corretiva') THEN 1 ELSE 0 END) AS openCount\nFROM non_conformities nc\nGROUP BY DATE_FORMAT(nc.identificationDate, '%Y-%m-01'),\n         nc.origin, nc.area, nc.status;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute DROP VIEW IF EXISTS vw_quality_nc_summary;\nCREATE VIEW vw_quality_nc_summary AS\nSELECT\n  DATE_FORMAT(nc.identificationDate, '%Y-%m-01') AS monthStart,\n  nc.origin AS category,\n  nc.area AS affectedArea,\n  'medium' AS severity,\n  nc.status,\n  COUNT(*) AS ncCount,\n  SUM(CASE WHEN nc.status IN ('aberta', 'em_analise', 'acao_corretiva') THEN 1 ELSE 0 END) AS openCount\nFROM non_conformities nc\nGROUP BY DATE_FORMAT(nc.identificationDate, '%Y-%m-01'),\n         nc.origin, nc.area, nc.status;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 186
+}

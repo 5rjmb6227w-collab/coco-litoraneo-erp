@@ -1,0 +1,8 @@
+{
+  "query": "DROP VIEW IF EXISTS vw_daily_production_summary;\nCREATE VIEW vw_daily_production_summary AS\nSELECT\n  pe.productionDate,\n  pe.shift,\n  pe.skuId,\n  s.code AS skuCode,\n  s.name AS skuName,\n  s.variation AS skuVariation,\n  SUM(pe.quantityProduced) AS totalQuantityProduced,\n  COUNT(*) AS entriesCount\nFROM production_entries pe\nJOIN skus s ON s.id = pe.skuId\nGROUP BY pe.productionDate, pe.shift, pe.skuId, s.code, s.name, s.variation;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute DROP VIEW IF EXISTS vw_daily_production_summary;\nCREATE VIEW vw_daily_production_summary AS\nSELECT\n  pe.productionDate,\n  pe.shift,\n  pe.skuId,\n  s.code AS skuCode,\n  s.name AS skuName,\n  s.variation AS skuVariation,\n  SUM(pe.quantityProduced) AS totalQuantityProduced,\n  COUNT(*) AS entriesCount\nFROM production_entries pe\nJOIN skus s ON s.id = pe.skuId\nGROUP BY pe.productionDate, pe.shift, pe.skuId, s.code, s.name, s.variation;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 's.name' in 'group statement'"
+  ]
+}

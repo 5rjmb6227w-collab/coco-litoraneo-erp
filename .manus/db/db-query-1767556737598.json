@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS ai_feedback (\n  id CHAR(36) NOT NULL,\n  userId CHAR(36) NOT NULL,\n  conversationId CHAR(36) NULL,\n  messageId CHAR(36) NULL,\n  insightId CHAR(36) NULL,\n  rating VARCHAR(12) NOT NULL,\n  comment TEXT NULL,\n  createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),\n  PRIMARY KEY (id),\n  INDEX idx_ai_feedback_user (userId),\n  INDEX idx_ai_feedback_createdAt (createdAt)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute CREATE TABLE IF NOT EXISTS ai_feedback (\n  id CHAR(36) NOT NULL,\n  userId CHAR(36) NOT NULL,\n  conversationId CHAR(36) NULL,\n  messageId CHAR(36) NULL,\n  insightId CHAR(36) NULL,\n  rating VARCHAR(12) NOT NULL,\n  comment TEXT NULL,\n  createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),\n  PRIMARY KEY (id),\n  INDEX idx_ai_feedback_user (userId),\n  INDEX idx_ai_feedback_createdAt (createdAt)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 58
+}

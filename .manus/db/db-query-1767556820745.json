@@ -1,0 +1,43 @@
+{
+  "query": "SHOW TABLES LIKE 'ai_%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute SHOW TABLES LIKE 'ai_%';",
+  "rows": [
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (ai_%)": "ai_action_approvals"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (ai_%)": "ai_actions"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (ai_%)": "ai_alerts"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (ai_%)": "ai_config"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (ai_%)": "ai_conversations"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (ai_%)": "ai_events"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (ai_%)": "ai_feedback"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (ai_%)": "ai_insights"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (ai_%)": "ai_messages"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (ai_%)": "ai_settings"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (ai_%)": "ai_sources"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_aAFi3UvfwvVXettMY36Wvq (ai_%)\nai_action_approvals\nai_actions\nai_alerts\nai_config\nai_conversations\nai_events\nai_feedback\nai_insights\nai_messages\nai_settings\nai_sources\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

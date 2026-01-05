@@ -1,0 +1,61 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'skus';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'skus';",
+  "rows": [
+    {
+      "COLUMN_NAME": "id"
+    },
+    {
+      "COLUMN_NAME": "externalCode"
+    },
+    {
+      "COLUMN_NAME": "code"
+    },
+    {
+      "COLUMN_NAME": "description"
+    },
+    {
+      "COLUMN_NAME": "category"
+    },
+    {
+      "COLUMN_NAME": "variation"
+    },
+    {
+      "COLUMN_NAME": "packageWeight"
+    },
+    {
+      "COLUMN_NAME": "packageType"
+    },
+    {
+      "COLUMN_NAME": "minimumStock"
+    },
+    {
+      "COLUMN_NAME": "currentStock"
+    },
+    {
+      "COLUMN_NAME": "shelfLifeDays"
+    },
+    {
+      "COLUMN_NAME": "suggestedPrice"
+    },
+    {
+      "COLUMN_NAME": "status"
+    },
+    {
+      "COLUMN_NAME": "createdAt"
+    },
+    {
+      "COLUMN_NAME": "createdBy"
+    },
+    {
+      "COLUMN_NAME": "updatedAt"
+    },
+    {
+      "COLUMN_NAME": "updatedBy"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nid\nexternalCode\ncode\ndescription\ncategory\nvariation\npackageWeight\npackageType\nminimumStock\ncurrentStock\nshelfLifeDays\nsuggestedPrice\nstatus\ncreatedAt\ncreatedBy\nupdatedAt\nupdatedBy\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

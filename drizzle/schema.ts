@@ -1006,3 +1006,26 @@ export const aiConfig = mysqlTable("ai_config", {
 
 export type AIConfig = typeof aiConfig.$inferSelect;
 export type InsertAIConfig = typeof aiConfig.$inferInsert;
+
+// ai_predictions - Previsões geradas por modelos ML
+export const aiPredictions = mysqlTable("ai_predictions", {
+  id: int("id").autoincrement().primaryKey(),
+  modelType: varchar("modelType", { length: 50 }).notNull(),
+  module: varchar("module", { length: 50 }).notNull(),
+  entityType: varchar("entityType", { length: 50 }).notNull(),
+  entityId: int("entityId").notNull(),
+  period: varchar("period", { length: 20 }).notNull(),
+  inputJson: json("inputJson").notNull(),
+  outputJson: json("outputJson").notNull(),
+  accuracyEstimate: decimal("accuracyEstimate", { precision: 5, scale: 2 }).default("0"),
+  validationScore: decimal("validationScore", { precision: 5, scale: 2 }),
+  lastValidatedAt: timestamp("lastValidatedAt"),
+  feedbackAggregate: json("feedbackAggregate"),
+  provider: mysqlEnum("provider", ["local_scikit", "aws_sagemaker", "hybrid"]).default("local_scikit").notNull(),
+  executionTimeMs: int("executionTimeMs"),
+  generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AIPrediction = typeof aiPredictions.$inferSelect;
+export type InsertAIPrediction = typeof aiPredictions.$inferInsert;

@@ -1,0 +1,9 @@
+{
+  "query": "CREATE INDEX IF NOT EXISTS idx_ai_predictions_modelType ON ai_predictions(modelType);\nCREATE INDEX IF NOT EXISTS idx_ai_predictions_entityId ON ai_predictions(entityId);\nCREATE INDEX IF NOT EXISTS idx_ai_predictions_generatedAt ON ai_predictions(generatedAt);\nCREATE INDEX IF NOT EXISTS idx_ai_predictions_provider ON ai_predictions(provider);\nCREATE INDEX IF NOT EXISTS idx_ai_predictions_module_entityType ON ai_predictions(module, entityType);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute CREATE INDEX IF NOT EXISTS idx_ai_predictions_modelType ON ai_predictions(modelType);\nCREATE INDEX IF NOT EXISTS idx_ai_predictions_entityId ON ai_predictions(entityId);\nCREATE INDEX IF NOT EXISTS idx_ai_predictions_generatedAt ON ai_predictions(generatedAt);\nCREATE INDEX IF NOT EXISTS idx_ai_predictions_provider ON ai_predictions(provider);\nCREATE INDEX IF NOT EXISTS idx_ai_predictions_module_entityType ON ai_predictions(module, entityType);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2424
+}

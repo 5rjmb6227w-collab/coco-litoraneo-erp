@@ -1,0 +1,9 @@
+{
+  "query": "DROP VIEW IF EXISTS vw_inventory_below_minimum_warehouse;\nCREATE VIEW vw_inventory_below_minimum_warehouse AS\nSELECT\n  wi.id AS warehouseItemId,\n  wi.name,\n  wi.category,\n  wi.unit,\n  wi.warehouseType,\n  wi.location,\n  wi.currentStock,\n  wi.minimumStock,\n  (wi.minimumStock - wi.currentStock) AS deficit\nFROM warehouse_items wi\nWHERE wi.minimumStock IS NOT NULL\n  AND wi.currentStock IS NOT NULL\n  AND wi.currentStock < wi.minimumStock;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute DROP VIEW IF EXISTS vw_inventory_below_minimum_warehouse;\nCREATE VIEW vw_inventory_below_minimum_warehouse AS\nSELECT\n  wi.id AS warehouseItemId,\n  wi.name,\n  wi.category,\n  wi.unit,\n  wi.warehouseType,\n  wi.location,\n  wi.currentStock,\n  wi.minimumStock,\n  (wi.minimumStock - wi.currentStock) AS deficit\nFROM warehouse_items wi\nWHERE wi.minimumStock IS NOT NULL\n  AND wi.currentStock IS NOT NULL\n  AND wi.currentStock < wi.minimumStock;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 270
+}

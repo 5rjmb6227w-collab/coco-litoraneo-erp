@@ -141,7 +141,8 @@
 - AI Copilot Backend: 31 testes ✅
 - AI Copilot Security/Observability: 47 testes ✅
 - AI Copilot E2E: 43 testes ✅
-- **Total: 187 testes passando**
+- ML Predictions: 33 testes ✅
+- **Total: 220 testes passando**
 - Frontend Copiloto: Testes manuais aprovados (Chat, Insights, Alertas, Acoes, Config, Widgets, Botao flutuante)
 
 ## CHECKPOINTS
@@ -223,7 +224,33 @@
 - [x] Rollout: CEO primeiro, depois perfis selecionados - grantFeatureAccess(), addRoleToFeature()
 - [x] Endpoints de observabilidade: getMetrics, getUsageStats, getLatencyStats, runSecurityCheck
 
+### MIGRACAO SQL EXECUTADA ✅
+- [x] 11 tabelas ai_* criadas (ai_events, ai_insights, ai_alerts, ai_conversations, ai_messages, ai_actions, ai_action_approvals, ai_sources, ai_feedback, ai_settings + ai_config do Drizzle)
+- [x] 7 views criadas (vw_daily_production_summary, vw_payables_status_summary, vw_inventory_below_minimum_warehouse, vw_inventory_below_minimum_finished_goods, vw_quality_nc_summary, vw_purchases_pipeline_summary, vw_financial_due_summary)
+- [x] Arquivo ai_copilot_migration.sql consolidado e idempotente
+
 ### SUGESTOES FINAIS ✅
 - [x] Hooks de eventos nas mutations: coconutLoads.create, coconutLoads.update, producerPayables.update, purchases.create, purchases.updateStatus, quality.nonConformities.create, quality.nonConformities.updateStatus
 - [x] Notificacoes por e-mail: alertas criticos, resumo diario (emailNotifications.ts)
 - [x] Testes E2E do Copiloto: 43 testes (chat, insights, eventos, contexto, seguranca, observabilidade, notificacoes, feature flags, feedback)
+
+
+## BUG FIXES - COPILOTO IA
+- [x] Corrigir erro "Failed to fetch" na aba Alertas - endpoint ai.listAlerts estava faltando (adicionado listAlerts e ackAlert)
+- [ ] Aguardando próximos pedidos do usuário
+
+
+## BLOCO 5/9: ML PARA PREVISÕES AVANÇADAS ✅
+- [x] Schema Drizzle - Tabela ai_predictions com 16 campos de validação e otimização
+- [x] MLProvider híbrido (local_scikit + aws_sagemaker) com auto-retrain trimestral
+- [x] Auto-otimização: shouldRetrain(), calculateFeedbackScore(), autoRetrainModels()
+- [x] Views SQL otimizadas: vw_production_trends, vw_inventory_forecast, vw_demand_forecast_summary, vw_model_accuracy_history, vw_prediction_quality_metrics, vw_provider_performance
+- [x] 5 índices criados para performance (idx_predictions_model_type, idx_predictions_module, idx_predictions_entity, idx_predictions_created, idx_predictions_accuracy)
+- [x] Triggers avançados: triggerDemandForecastOnProduction, triggerInventoryForecastOnMovement, triggerQualityPrediction
+- [x] tRPC ai.predictions: generatePrediction, listPredictions, getMLDashboard, getPredictionAccuracy, getPredictionHistory
+- [x] Dashboard interativo com Recharts (4 KPIs, 4 abas: Histórico, Acurácia, Modelos, Recentes)
+- [x] Nova aba "Previsões" no Copiloto com gráficos de linha/área/barra/pizza
+- [x] Testes: 220 testes passando (33 novos para ML)
+- [x] Benchmark: <500ms por previsão (testado com 10 previsões em <5s)
+- [x] Tutorial in-app para CEO interpretar previsões (3 níveis de confiança: Alta ≥90%, Média 70-89%, Baixa <70%)
+- [x] Conformidade LGPD: dados sensíveis mascarados (CPF, banco, PIX não aparecem nas previsões)

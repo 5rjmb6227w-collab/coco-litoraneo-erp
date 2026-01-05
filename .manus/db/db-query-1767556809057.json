@@ -1,0 +1,9 @@
+{
+  "query": "DROP VIEW IF EXISTS vw_purchases_pipeline_summary;\nCREATE VIEW vw_purchases_pipeline_summary AS\nSELECT\n  pr.status,\n  pr.urgency,\n  pr.sector AS category,\n  COUNT(*) AS requestCount,\n  SUM(COALESCE(pr.totalEstimated, 0)) AS estimatedValueSum\nFROM purchase_requests pr\nGROUP BY pr.status, pr.urgency, pr.sector;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute DROP VIEW IF EXISTS vw_purchases_pipeline_summary;\nCREATE VIEW vw_purchases_pipeline_summary AS\nSELECT\n  pr.status,\n  pr.urgency,\n  pr.sector AS category,\n  COUNT(*) AS requestCount,\n  SUM(COALESCE(pr.totalEstimated, 0)) AS estimatedValueSum\nFROM purchase_requests pr\nGROUP BY pr.status, pr.urgency, pr.sector;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 188
+}

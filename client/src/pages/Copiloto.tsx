@@ -5,12 +5,13 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bot, MessageSquare, Lightbulb, Bell, ListTodo, Settings } from "lucide-react";
+import { Bot, MessageSquare, Lightbulb, Bell, ListTodo, Settings, Brain } from "lucide-react";
 import { ChatPanel } from "@/components/copilot/ChatPanel";
 import { InsightCards } from "@/components/copilot/InsightCards";
 import { AlertsTable } from "@/components/copilot/AlertsTable";
 import { ActionsQueue } from "@/components/copilot/ActionsQueue";
 import { CopilotSettings } from "@/components/copilot/CopilotSettings";
+import { PredictionsDashboard } from "@/components/copilot/PredictionsDashboard";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function Copiloto() {
@@ -35,7 +36,7 @@ export default function Copiloto() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex bg-stone-100">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex bg-stone-100">
             <TabsTrigger value="chat" className="gap-2">
               <MessageSquare className="h-4 w-4" />
               <span className="hidden sm:inline">Chat</span>
@@ -51,6 +52,10 @@ export default function Copiloto() {
             <TabsTrigger value="actions" className="gap-2">
               <ListTodo className="h-4 w-4" />
               <span className="hidden sm:inline">Ações</span>
+            </TabsTrigger>
+            <TabsTrigger value="predictions" className="gap-2">
+              <Brain className="h-4 w-4" />
+              <span className="hidden sm:inline">Previsões</span>
             </TabsTrigger>
             {isAdmin && (
               <TabsTrigger value="config" className="gap-2">
@@ -75,6 +80,10 @@ export default function Copiloto() {
             
             <TabsContent value="actions" className="m-0">
               <ActionsQueue />
+            </TabsContent>
+            
+            <TabsContent value="predictions" className="m-0">
+              <PredictionsDashboard />
             </TabsContent>
             
             {isAdmin && (

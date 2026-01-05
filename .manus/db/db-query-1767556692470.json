@@ -1,0 +1,9 @@
+{
+  "query": "-- =========================================================\n-- AI COPILOT MIGRATION - COCO LITORÂNEO ERP\n-- =========================================================\n\n-- 1) Event log\nCREATE TABLE IF NOT EXISTS ai_events (\n  id CHAR(36) NOT NULL,\n  eventType VARCHAR(80) NOT NULL,\n  module VARCHAR(40) NOT NULL,\n  entityType VARCHAR(60) NOT NULL,\n  entityId CHAR(36) NOT NULL,\n  actorUserId CHAR(36) NULL,\n  severity VARCHAR(12) NULL,\n  payload JSON NULL,\n  ipAddress VARCHAR(64) NULL,\n  createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),\n  PRIMARY KEY (id),\n  INDEX idx_ai_events_createdAt (createdAt),\n  INDEX idx_ai_events_entity (entityType, entityId),\n  INDEX idx_ai_events_module_type (module, eventType),\n  INDEX idx_ai_events_actor (actorUserId)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute -- =========================================================\n-- AI COPILOT MIGRATION - COCO LITORÂNEO ERP\n-- =========================================================\n\n-- 1) Event log\nCREATE TABLE IF NOT EXISTS ai_events (\n  id CHAR(36) NOT NULL,\n  eventType VARCHAR(80) NOT NULL,\n  module VARCHAR(40) NOT NULL,\n  entityType VARCHAR(60) NOT NULL,\n  entityId CHAR(36) NOT NULL,\n  actorUserId CHAR(36) NULL,\n  severity VARCHAR(12) NULL,\n  payload JSON NULL,\n  ipAddress VARCHAR(64) NULL,\n  createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),\n  PRIMARY KEY (id),\n  INDEX idx_ai_events_createdAt (createdAt),\n  INDEX idx_ai_events_entity (entityType, entityId),\n  INDEX idx_ai_events_module_type (module, eventType),\n  INDEX idx_ai_events_actor (actorUserId)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 89
+}

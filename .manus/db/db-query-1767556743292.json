@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS ai_settings (\n  id CHAR(36) NOT NULL,\n  settingKey VARCHAR(80) NOT NULL,\n  settingValue JSON NOT NULL,\n  scope VARCHAR(16) NOT NULL DEFAULT 'GLOBAL',\n  scopeId CHAR(36) NULL,\n  updatedBy CHAR(36) NULL,\n  updatedAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),\n  PRIMARY KEY (id),\n  UNIQUE KEY uq_ai_settings_key_scope (settingKey, scope, scopeId)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute CREATE TABLE IF NOT EXISTS ai_settings (\n  id CHAR(36) NOT NULL,\n  settingKey VARCHAR(80) NOT NULL,\n  settingValue JSON NOT NULL,\n  scope VARCHAR(16) NOT NULL DEFAULT 'GLOBAL',\n  scopeId CHAR(36) NULL,\n  updatedBy CHAR(36) NULL,\n  updatedAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),\n  PRIMARY KEY (id),\n  UNIQUE KEY uq_ai_settings_key_scope (settingKey, scope, scopeId)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 190
+}

@@ -1,0 +1,9 @@
+{
+  "query": "DROP VIEW IF EXISTS vw_payables_status_summary;\nCREATE VIEW vw_payables_status_summary AS\nSELECT\n  pp.producerId,\n  p.name AS producerName,\n  pp.status,\n  pp.dueDate,\n  COUNT(*) AS payablesCount,\n  SUM(pp.totalValue) AS totalValueSum,\n  SUM(CASE\n        WHEN pp.status <> 'pago' AND pp.dueDate IS NOT NULL AND pp.dueDate < CURDATE() THEN 1\n        ELSE 0\n      END) AS overdueCount,\n  SUM(CASE\n        WHEN pp.status <> 'pago' AND pp.dueDate IS NOT NULL AND pp.dueDate < CURDATE() THEN pp.totalValue\n        ELSE 0\n      END) AS overdueValueSum\nFROM producer_payables pp\nJOIN producers p ON p.id = pp.producerId\nGROUP BY pp.producerId, p.name, pp.status, pp.dueDate;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute DROP VIEW IF EXISTS vw_payables_status_summary;\nCREATE VIEW vw_payables_status_summary AS\nSELECT\n  pp.producerId,\n  p.name AS producerName,\n  pp.status,\n  pp.dueDate,\n  COUNT(*) AS payablesCount,\n  SUM(pp.totalValue) AS totalValueSum,\n  SUM(CASE\n        WHEN pp.status <> 'pago' AND pp.dueDate IS NOT NULL AND pp.dueDate < CURDATE() THEN 1\n        ELSE 0\n      END) AS overdueCount,\n  SUM(CASE\n        WHEN pp.status <> 'pago' AND pp.dueDate IS NOT NULL AND pp.dueDate < CURDATE() THEN pp.totalValue\n        ELSE 0\n      END) AS overdueValueSum\nFROM producer_payables pp\nJOIN producers p ON p.id = pp.producerId\nGROUP BY pp.producerId, p.name, pp.status, pp.dueDate;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 251
+}

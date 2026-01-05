@@ -1,0 +1,38 @@
+{
+  "query": "SHOW FULL TABLES WHERE Table_type='VIEW';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute SHOW FULL TABLES WHERE Table_type='VIEW';",
+  "rows": [
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "vw_daily_production_summary",
+      "Table_type": "VIEW"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "vw_financial_due_summary",
+      "Table_type": "VIEW"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "vw_inventory_below_minimum_finished_goods",
+      "Table_type": "VIEW"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "vw_inventory_below_minimum_warehouse",
+      "Table_type": "VIEW"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "vw_payables_status_summary",
+      "Table_type": "VIEW"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "vw_purchases_pipeline_summary",
+      "Table_type": "VIEW"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "vw_quality_nc_summary",
+      "Table_type": "VIEW"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_aAFi3UvfwvVXettMY36Wvq\tTable_type\nvw_daily_production_summary\tVIEW\nvw_financial_due_summary\tVIEW\nvw_inventory_below_minimum_finished_goods\tVIEW\nvw_inventory_below_minimum_warehouse\tVIEW\nvw_payables_status_summary\tVIEW\nvw_purchases_pipeline_summary\tVIEW\nvw_quality_nc_summary\tVIEW\n",
+  "stderr": "",
+  "execution_time_ms": 63
+}
