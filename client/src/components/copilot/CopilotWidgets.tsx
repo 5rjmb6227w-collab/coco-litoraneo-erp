@@ -295,7 +295,7 @@ export function PendenciasWidget() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             {[1, 2, 3, 4].map((i) => (
               <Skeleton key={i} className="h-16 w-full" />
             ))}
@@ -349,7 +349,7 @@ export function PendenciasWidget() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
           {pendencias.map((item) => {
             const Icon = item.icon;
             return (
@@ -431,26 +431,32 @@ export function TendenciaEventosWidget() {
             <p className="text-sm">Sem dados de atividade</p>
           </div>
         ) : (
-          <div className="h-32">
+          <div className="h-24 sm:h-32 touch-pan-y">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
                 <XAxis 
                   dataKey="date" 
-                  tick={{ fontSize: 10 }} 
+                  tick={{ fontSize: 9 }} 
                   stroke="#a8a29e"
+                  interval="preserveStartEnd"
+                  tickMargin={4}
                 />
                 <YAxis 
-                  tick={{ fontSize: 10 }} 
+                  tick={{ fontSize: 9 }} 
                   stroke="#a8a29e"
                   allowDecimals={false}
+                  width={25}
+                  tickMargin={2}
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    fontSize: 12, 
+                    fontSize: 11, 
                     borderRadius: 8,
-                    border: "1px solid #e7e5e4"
-                  }} 
+                    border: "1px solid #e7e5e4",
+                    padding: "6px 10px"
+                  }}
+                  wrapperStyle={{ zIndex: 100 }}
                 />
                 <Line 
                   type="monotone" 

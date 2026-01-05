@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#8B7355">
+  <title>Offline - Coco Litorâneo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #FAF8F5 0%, #D4C4B0 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      text-align: center;
+      max-width: 400px;
+    }
+    
+    .icon {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 24px;
+      background: #8B7355;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: pulse 2s infinite;
+    }
+    
+    .icon svg {
+      width: 60px;
+      height: 60px;
+      fill: white;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.8; }
+    }
+    
+    h1 {
+      color: #5D4E37;
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+    
+    p {
+      color: #8B7355;
+      font-size: 16px;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(139, 115, 85, 0.1);
+      border-radius: 20px;
+      color: #5D4E37;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #EF4444;
+      border-radius: 50%;
+      animation: blink 1s infinite;
+    }
+    
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: #8B7355;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn:hover {
+      background: #5D4E37;
+      transform: translateY(-2px);
+    }
+    
+    .btn:active {
+      transform: translateY(0);
+    }
+    
+    .features {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(139, 115, 85, 0.2);
+    }
+    
+    .features h3 {
+      color: #5D4E37;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    
+    .features ul {
+      list-style: none;
+      text-align: left;
+    }
+    
+    .features li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #8B7355;
+      font-size: 14px;
+      padding: 8px 0;
+    }
+    
+    .features li svg {
+      width: 16px;
+      height: 16px;
+      fill: #8B7355;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+      </svg>
+    </div>
+    
+    <h1>Você está offline</h1>
+    
+    <p>
+      Não foi possível conectar ao servidor. Verifique sua conexão com a internet e tente novamente.
+    </p>
+    
+    <div class="status">
+      <span class="status-dot"></span>
+      Aguardando conexão...
+    </div>
+    
+    <br><br>
+    
+    <button class="btn" onclick="window.location.reload()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+      </svg>
+      Tentar novamente
+    </button>
+    
+    <div class="features">
+      <h3>Enquanto isso, você pode:</h3>
+      <ul>
+        <li>
+          <svg viewBox="0 0 24 24">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+          Ver dados salvos em cache
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+          Preparar ações para sincronizar
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+          Consultar insights salvos
+        </li>
+      </ul>
+    </div>
+  </div>
+  
+  <script>
+    // Auto-reload quando voltar online
+    window.addEventListener('online', () => {
+      window.location.reload();
+    });
+    
+    // Verificar conexão periodicamente
+    setInterval(() => {
+      fetch('/api/health', { method: 'HEAD' })
+        .then(() => window.location.reload())
+        .catch(() => {});
+    }, 5000);
+  </script>
+</body>
+</html>

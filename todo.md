@@ -143,7 +143,9 @@
 - AI Copilot E2E: 43 testes ✅
 - ML Predictions: 33 testes ✅
 - Multimodal: 41 testes ✅
-- **Total: 261 testes passando**
+- PWA/Mobile: 42 testes ✅
+- Alerta Baixa Confiança: 10 testes ✅
+- **Total: 313 testes passando**
 - Frontend Copiloto: Testes manuais aprovados (Chat, Insights, Alertas, Acoes, Config, Widgets, Botao flutuante)
 
 ## CHECKPOINTS
@@ -238,6 +240,7 @@
 
 ## BUG FIXES - COPILOTO IA
 - [x] Corrigir erro "Failed to fetch" na aba Alertas - endpoint ai.listAlerts estava faltando (adicionado listAlerts e ackAlert)
+- [x] Alerta automático quando confiança de extração de anexo < 90% (createLowConfidenceAlert)
 - [ ] Aguardando próximos pedidos do usuário
 
 
@@ -270,3 +273,20 @@
 - [x] Handling de 100 anexos/dia (batch processing com fila)
 - [x] Auditoria plena em audit_logs para processamentos (logAudit em todos os processamentos)
 - [x] Pop-up de treinamento onboard para análises rápidas
+
+
+## BLOCO 7/9: SUPORTE MOBILE E PWA ✅
+
+- [x] Mobile-first - CopilotPage.tsx responsivo com Tailwind breakpoints avançados (sm:, md:, lg:)
+- [x] Abas collapsible em <640px com gestos swipe (useTouchGestures hook)
+- [x] Dark mode adaptável para mobile (ThemeProvider com detecção de preferência)
+- [x] PWA - manifest.json com ícones customizados (8 tamanhos: 72x72 a 512x512)
+- [x] Service worker para cache completo de dados offline (sw.js com cache-first e network-first)
+- [x] Sync automático de ai_insights ao reconectar (Background Sync API + IndexedDB)
+- [x] Notificações push via PWA para alertas críticos (usePushNotifications hook)
+- [x] Widgets dashboard responsivos com Recharts adaptáveis (touch-pan-y, auto-resize)
+- [x] Gráficos auto-resize e tooltips touch-friendly (interval preserveStartEnd, tickMargin)
+- [x] Testes Vitest para simulações mobile: 42 testes (iOS/Android viewports)
+- [x] Página offline.html para quando não há conexão
+- [x] Meta tags PWA completas no index.html (apple-mobile-web-app-capable, theme-color)
+- [x] Conformidade com Apple/Google guidelines (touch targets 44px, contraste 4.5:1)

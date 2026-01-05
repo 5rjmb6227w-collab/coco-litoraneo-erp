@@ -4,7 +4,7 @@
  */
 
 import { getDb } from "../db";
-import { aiSources, auditLogs } from "../../drizzle/schema";
+import { aiSources, auditLogs, aiInsights } from "../../drizzle/schema";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
 
 // ============================================================================
@@ -577,6 +577,17 @@ export async function processAttachment(
         ipAddress: "system",
         userAgent: "MultimodalService",
       });
+      
+      // ALERTA AUTOMÁTICO: Confiança baixa (<90%)
+      if (result.confidenceScore !== undefined && result.confidenceScore < 0.90) {
+        await createLowConfidenceAlert(db, {
+          sourceId,
+          attachmentUrl,
+          attachmentType,
+          confidenceScore: result.confidenceScore,
+          entitiesFound: result.extractedEntities?.length || 0,
+        });
+      }
     } else {
       await db
         .update(aiSources)
@@ -970,4 +981,173 @@ export function redactSensitiveData(text: string): string {
   text = text.replace(/(?:pix|chave pix)\s*[:\-]?\s*[^\s]+/gi, "PIX: ******");
   
   return text;
+}
+
+// ============================================================================
+// ALERTA AUTOMÁTICO DE CONFIANÇA BAIXA
+// ============================================================================
+
+/**
+ * Cria um insight/alerta automático quando a confiança de extração é menor que 90%
+ * Isso ajuda a identificar anexos que podem precisar de revisão manual
+ */
+async function createLowConfidenceAlert(
+  db: any,
+  params: {
+    sourceId: number;
+    attachmentUrl: string;
+    attachmentType: string;
+    confidenceScore: number;
+    entitiesFound: number;
+  }
+): Promise<void> {
+  const { sourceId, attachmentUrl, attachmentType, confidenceScore, entitiesFound } = params;
+  
+  // Determinar severidade baseada na confiança
+  let severity: "critical" | "high" | "medium" | "low";
+  if (confidenceScore < 0.50) {
+    severity = "critical";
+  } else if (confidenceScore < 0.70) {
+    severity = "high";
+  } else if (confidenceScore < 0.80) {
+    severity = "medium";
+  } else {
+    severity = "low";
+  }
+  
+  // Extrair nome do arquivo da URL
+  const fileName = attachmentUrl.split("/").pop() || "anexo";
+  
+  // Formatar porcentagem
+  const confidencePercent = Math.round(confidenceScore * 100);
+  
+  // Criar insight de alerta
+  await db.insert(aiInsights).values({
+    insightType: "low_confidence_extraction",
+    severity,
+    title: `Extração de baixa confiança: ${fileName}`,
+    summary: `O processamento do anexo "${fileName}" (${attachmentType}) resultou em confiança de apenas ${confidencePercent}%. Recomenda-se revisão manual dos dados extraídos.`,
+    details: {
+      sourceId,
+      attachmentUrl,
+      attachmentType,
+      confidenceScore,
+      confidencePercent,
+      entitiesFound,
+      recommendation: confidenceScore < 0.70 
+        ? "Revisar manualmente o documento e corrigir dados extraídos"
+        : "Verificar se os dados extraídos estão corretos",
+      possibleCauses: [
+        "Qualidade da imagem/documento baixa",
+        "Texto manuscrito ou ilegível",
+        "Formato não padrão",
+        "Documento parcialmente visível",
+      ],
+    },
+    module: "multimodal",
+    entityType: "ai_source",
+    entityId: sourceId,
+    status: "active",
+    generatedAt: new Date(),
+  });
+  
+  // Log de auditoria para o alerta
+  await db.insert(auditLogs).values({
+    userId: 0,
+    userName: "Sistema",
+    action: "low_confidence_alert_created",
+    module: "ai_copilot",
+    entityType: "ai_insight",
+    entityId: sourceId,
+    details: {
+      attachmentUrl,
+      attachmentType,
+      confidenceScore,
+      confidencePercent,
+      severity,
+      entitiesFound,
+    },
+    ipAddress: "system",
+    userAgent: "MultimodalService",
+  });
+  
+  console.log(
+    `[Multimodal] Alerta de baixa confiança criado: ${fileName} (${confidencePercent}%, severidade: ${severity})`
+  );
+}
+
+/**
+ * Busca alertas de baixa confiança ativos
+ */
+export async function getLowConfidenceAlerts(limit: number = 20): Promise<Array<{
+  id: number;
+  title: string;
+  summary: string;
+  severity: string;
+  confidenceScore: number;
+  sourceId: number;
+  createdAt: Date;
+}>> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const alerts = await db
+    .select()
+    .from(aiInsights)
+    .where(
+      and(
+        eq(aiInsights.module, "multimodal"),
+        eq(aiInsights.status, "active"),
+        eq(aiInsights.insightType, "low_confidence_extraction")
+      )
+    )
+    .orderBy(desc(aiInsights.generatedAt))
+    .limit(limit);
+  
+  return alerts.map((a) => ({
+    id: a.id,
+    title: a.title,
+    summary: a.summary,
+    severity: a.severity,
+    confidenceScore: (a.details as any)?.confidenceScore || 0,
+    sourceId: (a.details as any)?.sourceId || 0,
+    createdAt: a.generatedAt,
+  }));
+}
+
+/**
+ * Marca um alerta de baixa confiança como resolvido após revisão manual
+ */
+export async function resolveLowConfidenceAlert(
+  insightId: number,
+  userId: number,
+  userName: string,
+  resolution: string
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  
+  await db
+    .update(aiInsights)
+    .set({
+      status: "resolved",
+      resolvedAt: new Date(),
+      dismissedBy: userId, // Usando dismissedBy para armazenar quem resolveu
+    })
+    .where(eq(aiInsights.id, insightId));
+  
+  // Log de auditoria
+  await db.insert(auditLogs).values({
+    userId,
+    userName,
+    action: "low_confidence_alert_resolved",
+    module: "ai_copilot",
+    entityType: "ai_insight",
+    entityId: insightId,
+    details: { resolution },
+    ipAddress: "system",
+    userAgent: "MultimodalService",
+  });
+  
+  return true;
 }
