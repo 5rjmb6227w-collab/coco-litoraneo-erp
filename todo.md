@@ -337,3 +337,53 @@
 - [ ] Testes Vitest para feedback avançado
 - [ ] Testes Vitest para relatórios de performance
 - [ ] Testes Vitest para testes A/B
+
+
+## BLOCO 9/9: INTEGRAÇÕES EXTERNAS E OBSERVABILITY AVANÇADA ✅
+
+### IntegrationService
+- [x] Criar IntegrationService base com interface de adapters
+- [x] Implementar TwilioAdapter para WhatsApp (grupos de produção)
+- [x] Implementar ZapierAdapter para automações externas
+- [x] Criar fallback para e-mail quando WhatsApp falhar
+- [x] Implementar triggers automáticos para ai_alerts
+
+### Observabilidade
+- [x] Implementar SentryService para erros realtime (frontend/backend/LLM)
+- [x] Criar MetricsService estilo Prometheus (latência, uso por módulo)
+- [x] Implementar alertas automáticos para erros críticos
+- [x] Criar dashboard de métricas no admin
+
+### Integrações de Calendário
+- [x] Implementar GoogleCalendarAdapter para sync de datas
+- [x] Sync dueDates de producer_payables com calendário
+- [x] Sync dueDates de financial_entries com calendário
+
+### Dashboard KPIs
+- [x] Criar página AdminMetrics com KPIs mensais
+- [x] Implementar gráficos de latência ai.chat
+- [x] Implementar gráficos de uso por módulo
+- [x] Implementar gráficos de erros por período
+
+### LGPD e Auditoria
+- [x] Criar relatórios LGPD automáticos
+- [x] Implementar auditoria de integrações externas
+- [x] Criar export de dados do usuário (LGPD)
+
+### Feature Flags Avançados
+- [x] Expandir sistema de feature flags existente
+- [x] Implementar rollout por percentual de usuários
+- [x] Implementar A/B testing com variáveis
+
+### Tutoriais In-App
+- [x] Criar IntegrationsTutorial para configurações
+- [x] Criar HelpTooltip para ajuda contextual
+
+### Testes
+- [x] Testes para TwilioAdapter (5 testes)
+- [x] Testes para ZapierAdapter (3 testes)
+- [x] Testes para ObservabilityService (15 testes)
+- [x] Testes para CalendarService (5 testes)
+- [x] Testes para LGPDService (10 testes)
+- [x] Testes para FeatureFlagsService (12 testes)
+- **Total: 419 testes passando**

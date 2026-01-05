@@ -38,6 +38,7 @@ import Login from "./pages/Login";
 // Copiloto IA
 import Copiloto from "./pages/Copiloto";
 import CopilotPerformance from "./pages/CopilotPerformance";
+import AdminMetrics from "./pages/AdminMetrics";
 import { CopilotFloatingButton } from "./components/copilot/CopilotFloatingButton";
 
 function Router() {
@@ -73,6 +74,7 @@ function Router() {
         {/* Copiloto IA */}
         <Route path="/copiloto" component={Copiloto} />
         <Route path="/copiloto/performance" component={CopilotPerformance} />
+        <Route path="/admin/metricas" component={AdminMetrics} />
         
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
