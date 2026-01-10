@@ -1229,3 +1229,522 @@ export const aiAbExperiments = mysqlTable("ai_ab_experiments", {
 
 export type AIAbExperiment = typeof aiAbExperiments.$inferSelect;
 export type InsertAIAbExperiment = typeof aiAbExperiments.$inferInsert;
+
+
+// ============================================================================
+// EQUIPAMENTOS E MANUTENÇÃO
+// ============================================================================
+export const equipments = mysqlTable("equipments", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 20 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  type: mysqlEnum("type", ["secadora", "ralador", "peneira", "embaladora", "balanca", "esteira", "lavadora", "outro"]).notNull(),
+  manufacturer: varchar("manufacturer", { length: 255 }),
+  model: varchar("model", { length: 100 }),
+  serialNumber: varchar("serialNumber", { length: 100 }),
+  location: varchar("location", { length: 100 }),
+  acquisitionDate: date("acquisitionDate"),
+  acquisitionCost: decimal("acquisitionCost", { precision: 14, scale: 2 }),
+  warrantyExpiration: date("warrantyExpiration"),
+  status: mysqlEnum("status", ["operacional", "manutencao", "parado", "desativado"]).default("operacional").notNull(),
+  lastMaintenanceDate: date("lastMaintenanceDate"),
+  nextMaintenanceDate: date("nextMaintenanceDate"),
+  maintenanceIntervalDays: int("maintenanceIntervalDays").default(90),
+  hourMeter: decimal("hourMeter", { precision: 10, scale: 2 }).default("0"),
+  specifications: json("specifications"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Equipment = typeof equipments.$inferSelect;
+export type InsertEquipment = typeof equipments.$inferInsert;
+
+export const maintenanceRecords = mysqlTable("maintenance_records", {
+  id: int("id").autoincrement().primaryKey(),
+  equipmentId: int("equipmentId").notNull(),
+  type: mysqlEnum("type", ["preventiva", "corretiva", "preditiva", "emergencial"]).notNull(),
+  description: text("description").notNull(),
+  cause: text("cause"),
+  solution: text("solution"),
+  startedAt: timestamp("startedAt").notNull(),
+  completedAt: timestamp("completedAt"),
+  downtimeMinutes: int("downtimeMinutes"),
+  cost: decimal("cost", { precision: 14, scale: 2 }),
+  laborCost: decimal("laborCost", { precision: 14, scale: 2 }),
+  partsCost: decimal("partsCost", { precision: 14, scale: 2 }),
+  technicianName: varchar("technicianName", { length: 255 }),
+  externalService: boolean("externalService").default(false),
+  status: mysqlEnum("status", ["agendada", "em_andamento", "concluida", "cancelada"]).default("agendada").notNull(),
+  priority: mysqlEnum("priority", ["baixa", "media", "alta", "critica"]).default("media").notNull(),
+  photoUrl: varchar("photoUrl", { length: 500 }),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type MaintenanceRecord = typeof maintenanceRecords.$inferSelect;
+export type InsertMaintenanceRecord = typeof maintenanceRecords.$inferInsert;
+
+// ============================================================================
+// ORDENS DE PRODUÇÃO
+// ============================================================================
+export const productionOrders = mysqlTable("production_orders", {
+  id: int("id").autoincrement().primaryKey(),
+  orderNumber: varchar("orderNumber", { length: 20 }).notNull().unique(),
+  skuId: int("skuId").notNull(),
+  variation: mysqlEnum("variation", ["flocos", "medio", "fino"]).notNull(),
+  plannedQuantity: decimal("plannedQuantity", { precision: 10, scale: 2 }).notNull(),
+  producedQuantity: decimal("producedQuantity", { precision: 10, scale: 2 }).default("0"),
+  plannedStartDate: date("plannedStartDate").notNull(),
+  plannedEndDate: date("plannedEndDate"),
+  actualStartDate: timestamp("actualStartDate"),
+  actualEndDate: timestamp("actualEndDate"),
+  priority: mysqlEnum("priority", ["baixa", "normal", "alta", "urgente"]).default("normal").notNull(),
+  status: mysqlEnum("status", ["aguardando", "em_producao", "qualidade", "concluida", "cancelada"]).default("aguardando").notNull(),
+  batchNumber: varchar("batchNumber", { length: 50 }),
+  estimatedYield: decimal("estimatedYield", { precision: 5, scale: 2 }),
+  actualYield: decimal("actualYield", { precision: 5, scale: 2 }),
+  observations: text("observations"),
+  kanbanColumn: mysqlEnum("kanbanColumn", ["backlog", "aguardando", "em_producao", "qualidade", "concluida"]).default("backlog"),
+  kanbanPosition: int("kanbanPosition").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ProductionOrder = typeof productionOrders.$inferSelect;
+export type InsertProductionOrder = typeof productionOrders.$inferInsert;
+
+// ============================================================================
+// ETAPAS DE PRODUÇÃO
+// ============================================================================
+export const productionStages = mysqlTable("production_stages", {
+  id: int("id").autoincrement().primaryKey(),
+  productionOrderId: int("productionOrderId").notNull(),
+  stage: mysqlEnum("stage", ["recepcao", "selecao", "lavagem", "ralagem", "secagem", "peneiramento", "embalagem"]).notNull(),
+  sequence: int("sequence").notNull(),
+  equipmentId: int("equipmentId"),
+  responsibleId: int("responsibleId"),
+  responsibleName: varchar("responsibleName", { length: 255 }),
+  plannedDurationMinutes: int("plannedDurationMinutes"),
+  actualDurationMinutes: int("actualDurationMinutes"),
+  inputQuantity: decimal("inputQuantity", { precision: 10, scale: 2 }),
+  outputQuantity: decimal("outputQuantity", { precision: 10, scale: 2 }),
+  lossQuantity: decimal("lossQuantity", { precision: 10, scale: 2 }).default("0"),
+  lossReason: text("lossReason"),
+  temperature: decimal("temperature", { precision: 5, scale: 2 }),
+  humidity: decimal("humidity", { precision: 5, scale: 2 }),
+  status: mysqlEnum("status", ["pendente", "em_andamento", "concluida", "pulada"]).default("pendente").notNull(),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ProductionStage = typeof productionStages.$inferSelect;
+export type InsertProductionStage = typeof productionStages.$inferInsert;
+
+// ============================================================================
+// PARADAS DE PRODUÇÃO
+// ============================================================================
+export const productionStops = mysqlTable("production_stops", {
+  id: int("id").autoincrement().primaryKey(),
+  productionOrderId: int("productionOrderId"),
+  equipmentId: int("equipmentId"),
+  shift: mysqlEnum("shift", ["manha", "tarde", "noite"]).notNull(),
+  stopDate: date("stopDate").notNull(),
+  reason: mysqlEnum("reason", ["setup", "manutencao_preventiva", "manutencao_corretiva", "falta_material", "falta_operador", "quebra", "limpeza", "qualidade", "energia", "outro"]).notNull(),
+  reasonDetail: text("reasonDetail"),
+  startedAt: timestamp("startedAt").notNull(),
+  endedAt: timestamp("endedAt"),
+  durationMinutes: int("durationMinutes"),
+  plannedStop: boolean("plannedStop").default(false),
+  productionLostKg: decimal("productionLostKg", { precision: 10, scale: 2 }),
+  costImpact: decimal("costImpact", { precision: 14, scale: 2 }),
+  actionTaken: text("actionTaken"),
+  preventable: boolean("preventable"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type ProductionStop = typeof productionStops.$inferSelect;
+export type InsertProductionStop = typeof productionStops.$inferInsert;
+
+// ============================================================================
+// REPROCESSO
+// ============================================================================
+export const productionReprocesses = mysqlTable("production_reprocesses", {
+  id: int("id").autoincrement().primaryKey(),
+  originalBatchNumber: varchar("originalBatchNumber", { length: 50 }).notNull(),
+  newBatchNumber: varchar("newBatchNumber", { length: 50 }),
+  productionOrderId: int("productionOrderId"),
+  skuId: int("skuId").notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  reason: mysqlEnum("reason", ["umidade_alta", "granulometria", "cor", "contaminacao_leve", "embalagem_danificada", "outro"]).notNull(),
+  reasonDetail: text("reasonDetail"),
+  reprocessDate: date("reprocessDate").notNull(),
+  reprocessedQuantity: decimal("reprocessedQuantity", { precision: 10, scale: 2 }),
+  lossQuantity: decimal("lossQuantity", { precision: 10, scale: 2 }),
+  additionalCost: decimal("additionalCost", { precision: 14, scale: 2 }),
+  status: mysqlEnum("status", ["aguardando", "em_reprocesso", "concluido", "descartado"]).default("aguardando").notNull(),
+  qualityApproved: boolean("qualityApproved"),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type ProductionReprocess = typeof productionReprocesses.$inferSelect;
+export type InsertProductionReprocess = typeof productionReprocesses.$inferInsert;
+
+// ============================================================================
+// METAS DE PRODUÇÃO
+// ============================================================================
+export const productionGoals = mysqlTable("production_goals", {
+  id: int("id").autoincrement().primaryKey(),
+  type: mysqlEnum("type", ["diaria", "semanal", "mensal", "turno"]).notNull(),
+  shift: mysqlEnum("shift", ["manha", "tarde", "noite", "todos"]),
+  skuId: int("skuId"),
+  targetQuantity: decimal("targetQuantity", { precision: 10, scale: 2 }).notNull(),
+  targetYield: decimal("targetYield", { precision: 5, scale: 2 }),
+  maxLossPercent: decimal("maxLossPercent", { precision: 5, scale: 2 }),
+  startDate: date("startDate").notNull(),
+  endDate: date("endDate"),
+  status: mysqlEnum("status", ["ativa", "inativa", "concluida"]).default("ativa").notNull(),
+  achievedQuantity: decimal("achievedQuantity", { precision: 10, scale: 2 }).default("0"),
+  achievedPercent: decimal("achievedPercent", { precision: 5, scale: 2 }).default("0"),
+  achievedAt: timestamp("achievedAt"),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type ProductionGoal = typeof productionGoals.$inferSelect;
+export type InsertProductionGoal = typeof productionGoals.$inferInsert;
+
+// ============================================================================
+// CHECKLIST DE TURNO
+// ============================================================================
+export const shiftChecklists = mysqlTable("shift_checklists", {
+  id: int("id").autoincrement().primaryKey(),
+  checklistDate: date("checklistDate").notNull(),
+  shift: mysqlEnum("shift", ["manha", "tarde", "noite"]).notNull(),
+  responsibleId: int("responsibleId"),
+  responsibleName: varchar("responsibleName", { length: 255 }).notNull(),
+  status: mysqlEnum("status", ["pendente", "em_andamento", "concluido", "incompleto"]).default("pendente").notNull(),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  totalItems: int("totalItems").default(0),
+  completedItems: int("completedItems").default(0),
+  blocksProduction: boolean("blocksProduction").default(true),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ShiftChecklist = typeof shiftChecklists.$inferSelect;
+export type InsertShiftChecklist = typeof shiftChecklists.$inferInsert;
+
+export const checklistItems = mysqlTable("checklist_items", {
+  id: int("id").autoincrement().primaryKey(),
+  checklistId: int("checklistId").notNull(),
+  category: mysqlEnum("category", ["limpeza", "epi", "calibracao", "seguranca", "qualidade", "documentacao"]).notNull(),
+  description: varchar("description", { length: 500 }).notNull(),
+  required: boolean("required").default(true),
+  checked: boolean("checked").default(false),
+  checkedAt: timestamp("checkedAt"),
+  checkedBy: int("checkedBy"),
+  photoUrl: varchar("photoUrl", { length: 500 }),
+  observations: text("observations"),
+  nonConformity: boolean("nonConformity").default(false),
+});
+
+export type ChecklistItem = typeof checklistItems.$inferSelect;
+export type InsertChecklistItem = typeof checklistItems.$inferInsert;
+
+// ============================================================================
+// TEMPLATES DE CHECKLIST
+// ============================================================================
+export const checklistTemplates = mysqlTable("checklist_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  shift: mysqlEnum("shift", ["manha", "tarde", "noite", "todos"]).default("todos"),
+  active: boolean("active").default(true),
+  items: json("items").notNull(), // Array de { category, description, required }
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ChecklistTemplate = typeof checklistTemplates.$inferSelect;
+export type InsertChecklistTemplate = typeof checklistTemplates.$inferInsert;
+
+// ============================================================================
+// LEITURAS DE SENSORES (IoT)
+// ============================================================================
+export const sensorReadings = mysqlTable("sensor_readings", {
+  id: int("id").autoincrement().primaryKey(),
+  equipmentId: int("equipmentId"),
+  sensorType: mysqlEnum("sensorType", ["temperatura", "umidade", "peso", "pressao", "vibracao", "energia"]).notNull(),
+  sensorCode: varchar("sensorCode", { length: 50 }),
+  value: decimal("value", { precision: 10, scale: 4 }).notNull(),
+  unit: varchar("unit", { length: 20 }).notNull(),
+  minLimit: decimal("minLimit", { precision: 10, scale: 4 }),
+  maxLimit: decimal("maxLimit", { precision: 10, scale: 4 }),
+  outOfSpec: boolean("outOfSpec").default(false),
+  productionOrderId: int("productionOrderId"),
+  batchNumber: varchar("batchNumber", { length: 50 }),
+  readAt: timestamp("readAt").defaultNow().notNull(),
+  source: mysqlEnum("source", ["manual", "automatico", "iot"]).default("manual"),
+});
+
+export type SensorReading = typeof sensorReadings.$inferSelect;
+export type InsertSensorReading = typeof sensorReadings.$inferInsert;
+
+// ============================================================================
+// DOCUMENTOS E COMPLIANCE
+// ============================================================================
+export const complianceDocuments = mysqlTable("compliance_documents", {
+  id: int("id").autoincrement().primaryKey(),
+  type: mysqlEnum("type", ["alvara", "licenca_ambiental", "licenca_sanitaria", "certificado", "iso", "organico", "outro"]).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  documentNumber: varchar("documentNumber", { length: 100 }),
+  issuingBody: varchar("issuingBody", { length: 255 }),
+  issueDate: date("issueDate"),
+  expirationDate: date("expirationDate"),
+  renewalAlertDays: int("renewalAlertDays").default(30),
+  status: mysqlEnum("status", ["vigente", "vencido", "em_renovacao", "cancelado"]).default("vigente").notNull(),
+  fileUrl: varchar("fileUrl", { length: 500 }),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ComplianceDocument = typeof complianceDocuments.$inferSelect;
+export type InsertComplianceDocument = typeof complianceDocuments.$inferInsert;
+
+// ============================================================================
+// CLIENTES (para Agente de Vendas)
+// ============================================================================
+export const customers = mysqlTable("customers", {
+  id: int("id").autoincrement().primaryKey(),
+  externalCode: varchar("externalCode", { length: 50 }),
+  name: varchar("name", { length: 255 }).notNull(),
+  tradeName: varchar("tradeName", { length: 255 }),
+  cpfCnpj: varchar("cpfCnpj", { length: 20 }).notNull(),
+  type: mysqlEnum("type", ["varejo", "atacado", "industria", "distribuidor", "exportacao"]).notNull(),
+  phone: varchar("phone", { length: 20 }),
+  email: varchar("email", { length: 320 }),
+  address: text("address"),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 2 }),
+  contactName: varchar("contactName", { length: 255 }),
+  paymentTerms: varchar("paymentTerms", { length: 100 }),
+  creditLimit: decimal("creditLimit", { precision: 14, scale: 2 }),
+  status: mysqlEnum("status", ["ativo", "inativo", "bloqueado"]).default("ativo").notNull(),
+  firstPurchaseDate: date("firstPurchaseDate"),
+  lastPurchaseDate: date("lastPurchaseDate"),
+  totalPurchases: decimal("totalPurchases", { precision: 14, scale: 2 }).default("0"),
+  averageTicket: decimal("averageTicket", { precision: 14, scale: 2 }).default("0"),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Customer = typeof customers.$inferSelect;
+export type InsertCustomer = typeof customers.$inferInsert;
+
+// ============================================================================
+// PEDIDOS DE VENDA (para Agente de Vendas)
+// ============================================================================
+export const salesOrders = mysqlTable("sales_orders", {
+  id: int("id").autoincrement().primaryKey(),
+  orderNumber: varchar("orderNumber", { length: 20 }).notNull().unique(),
+  customerId: int("customerId").notNull(),
+  orderDate: timestamp("orderDate").defaultNow().notNull(),
+  deliveryDate: date("deliveryDate"),
+  status: mysqlEnum("status", ["orcamento", "confirmado", "em_separacao", "faturado", "enviado", "entregue", "cancelado"]).default("orcamento").notNull(),
+  totalValue: decimal("totalValue", { precision: 14, scale: 2 }).notNull(),
+  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }).default("0"),
+  discountValue: decimal("discountValue", { precision: 14, scale: 2 }).default("0"),
+  netValue: decimal("netValue", { precision: 14, scale: 2 }).notNull(),
+  paymentMethod: varchar("paymentMethod", { length: 100 }),
+  paymentTerms: varchar("paymentTerms", { length: 100 }),
+  shippingMethod: varchar("shippingMethod", { length: 100 }),
+  shippingCost: decimal("shippingCost", { precision: 14, scale: 2 }).default("0"),
+  observations: text("observations"),
+  internalNotes: text("internalNotes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SalesOrder = typeof salesOrders.$inferSelect;
+export type InsertSalesOrder = typeof salesOrders.$inferInsert;
+
+export const salesOrderItems = mysqlTable("sales_order_items", {
+  id: int("id").autoincrement().primaryKey(),
+  salesOrderId: int("salesOrderId").notNull(),
+  skuId: int("skuId").notNull(),
+  variation: mysqlEnum("variation", ["flocos", "medio", "fino"]),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  unitPrice: decimal("unitPrice", { precision: 14, scale: 2 }).notNull(),
+  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }).default("0"),
+  totalPrice: decimal("totalPrice", { precision: 14, scale: 2 }).notNull(),
+  batchNumber: varchar("batchNumber", { length: 50 }),
+});
+
+export type SalesOrderItem = typeof salesOrderItems.$inferSelect;
+export type InsertSalesOrderItem = typeof salesOrderItems.$inferInsert;
+
+// ============================================================================
+// CUSTOS DE PRODUÇÃO (para Agente de Custos)
+// ============================================================================
+export const productionCosts = mysqlTable("production_costs", {
+  id: int("id").autoincrement().primaryKey(),
+  productionOrderId: int("productionOrderId"),
+  batchNumber: varchar("batchNumber", { length: 50 }),
+  skuId: int("skuId").notNull(),
+  productionDate: date("productionDate").notNull(),
+  quantityProduced: decimal("quantityProduced", { precision: 10, scale: 2 }).notNull(),
+  
+  // Custos diretos
+  rawMaterialCost: decimal("rawMaterialCost", { precision: 14, scale: 2 }).default("0"),
+  packagingCost: decimal("packagingCost", { precision: 14, scale: 2 }).default("0"),
+  laborCost: decimal("laborCost", { precision: 14, scale: 2 }).default("0"),
+  energyCost: decimal("energyCost", { precision: 14, scale: 2 }).default("0"),
+  
+  // Custos indiretos
+  overheadCost: decimal("overheadCost", { precision: 14, scale: 2 }).default("0"),
+  maintenanceCost: decimal("maintenanceCost", { precision: 14, scale: 2 }).default("0"),
+  depreciationCost: decimal("depreciationCost", { precision: 14, scale: 2 }).default("0"),
+  
+  // Totais
+  totalDirectCost: decimal("totalDirectCost", { precision: 14, scale: 2 }).default("0"),
+  totalIndirectCost: decimal("totalIndirectCost", { precision: 14, scale: 2 }).default("0"),
+  totalCost: decimal("totalCost", { precision: 14, scale: 2 }).default("0"),
+  unitCost: decimal("unitCost", { precision: 14, scale: 4 }).default("0"),
+  
+  // Comparação com padrão
+  standardUnitCost: decimal("standardUnitCost", { precision: 14, scale: 4 }),
+  costVariance: decimal("costVariance", { precision: 14, scale: 4 }),
+  costVariancePercent: decimal("costVariancePercent", { precision: 5, scale: 2 }),
+  
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type ProductionCost = typeof productionCosts.$inferSelect;
+export type InsertProductionCost = typeof productionCosts.$inferInsert;
+
+// ============================================================================
+// MOMENTOS MÁGICOS - REGISTRO DE EVENTOS
+// ============================================================================
+export const magicMoments = mysqlTable("magic_moments", {
+  id: int("id").autoincrement().primaryKey(),
+  type: mysqlEnum("type", [
+    "fechamento_turno", "pagamento_produtor", "estoque_critico", "meta_batida",
+    "novo_recorde", "economia_identificada", "problema_evitado", "cliente_especial",
+    "aniversario_parceria", "fim_semana_tranquilo", "novo_funcionario", "auditoria_simplificada"
+  ]).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  data: json("data"), // Dados específicos do momento
+  targetUserId: int("targetUserId"), // Usuário que deve ver
+  targetRole: varchar("targetRole", { length: 50 }), // Ou role específica
+  seen: boolean("seen").default(false),
+  seenAt: timestamp("seenAt"),
+  notificationSent: boolean("notificationSent").default(false),
+  notificationSentAt: timestamp("notificationSentAt"),
+  notificationChannel: mysqlEnum("notificationChannel", ["app", "email", "whatsapp", "push"]),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type MagicMoment = typeof magicMoments.$inferSelect;
+export type InsertMagicMoment = typeof magicMoments.$inferInsert;
+
+// ============================================================================
+// CONFIGURAÇÕES DE SEGURANÇA EXPANDIDAS
+// ============================================================================
+export const securityPolicies = mysqlTable("security_policies", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  
+  // Política de senhas
+  minPasswordLength: int("minPasswordLength").default(8),
+  requireUppercase: boolean("requireUppercase").default(true),
+  requireLowercase: boolean("requireLowercase").default(true),
+  requireNumbers: boolean("requireNumbers").default(true),
+  requireSpecialChars: boolean("requireSpecialChars").default(false),
+  passwordExpirationDays: int("passwordExpirationDays").default(90),
+  passwordHistoryCount: int("passwordHistoryCount").default(5),
+  
+  // Política de bloqueio
+  maxLoginAttempts: int("maxLoginAttempts").default(5),
+  lockoutDurationMinutes: int("lockoutDurationMinutes").default(30),
+  
+  // Política de sessão
+  sessionTimeoutMinutes: int("sessionTimeoutMinutes").default(480),
+  maxConcurrentSessions: int("maxConcurrentSessions").default(3),
+  
+  // 2FA
+  require2FA: boolean("require2FA").default(false),
+  require2FAForRoles: json("require2FAForRoles"), // ['admin', 'financeiro', 'ceo']
+  
+  active: boolean("active").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SecurityPolicy = typeof securityPolicies.$inferSelect;
+export type InsertSecurityPolicy = typeof securityPolicies.$inferInsert;
+
+// ============================================================================
+// 2FA - AUTENTICAÇÃO DE DOIS FATORES
+// ============================================================================
+export const userTwoFactor = mysqlTable("user_two_factor", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  method: mysqlEnum("method", ["totp", "sms", "email"]).default("totp").notNull(),
+  secret: varchar("secret", { length: 255 }), // Encrypted TOTP secret
+  phone: varchar("phone", { length: 20 }), // Para SMS
+  backupCodes: json("backupCodes"), // Array de códigos de backup
+  enabled: boolean("enabled").default(false),
+  verifiedAt: timestamp("verifiedAt"),
+  lastUsedAt: timestamp("lastUsedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserTwoFactor = typeof userTwoFactor.$inferSelect;
+export type InsertUserTwoFactor = typeof userTwoFactor.$inferInsert;
+
+// ============================================================================
+// BACKUP E RECUPERAÇÃO
+// ============================================================================
+export const backupRecords = mysqlTable("backup_records", {
+  id: int("id").autoincrement().primaryKey(),
+  type: mysqlEnum("type", ["full", "incremental", "differential"]).notNull(),
+  status: mysqlEnum("status", ["running", "completed", "failed"]).default("running").notNull(),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+  sizeBytes: int("sizeBytes"),
+  location: varchar("location", { length: 500 }),
+  checksum: varchar("checksum", { length: 64 }),
+  retentionDays: int("retentionDays").default(30),
+  expiresAt: timestamp("expiresAt"),
+  errorMessage: text("errorMessage"),
+  restorable: boolean("restorable").default(true),
+  lastRestoreTest: timestamp("lastRestoreTest"),
+  createdBy: int("createdBy"),
+});
+
+export type BackupRecord = typeof backupRecords.$inferSelect;
+export type InsertBackupRecord = typeof backupRecords.$inferInsert;

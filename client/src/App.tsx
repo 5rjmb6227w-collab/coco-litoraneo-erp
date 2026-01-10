@@ -39,6 +39,10 @@ import Login from "./pages/Login";
 import Copiloto from "./pages/Copiloto";
 import CopilotPerformance from "./pages/CopilotPerformance";
 import AdminMetrics from "./pages/AdminMetrics";
+import ProductionExpanded from "./pages/ProductionExpanded";
+import AdminSecurity from "./pages/AdminSecurity";
+import AIAgents from "./pages/AIAgents";
+import MagicMoments from "./pages/MagicMoments";
 import { CopilotFloatingButton } from "./components/copilot/CopilotFloatingButton";
 
 function Router() {
@@ -75,6 +79,14 @@ function Router() {
         <Route path="/copiloto" component={Copiloto} />
         <Route path="/copiloto/performance" component={CopilotPerformance} />
         <Route path="/admin/metricas" component={AdminMetrics} />
+        <Route path="/admin/seguranca" component={AdminSecurity} />
+        
+        {/* Produção Expandida */}
+        <Route path="/producao/expandida" component={ProductionExpanded} />
+        
+        {/* IA Avançada */}
+        <Route path="/ia/agentes" component={AIAgents} />
+        <Route path="/ia/momentos-magicos" component={MagicMoments} />
         
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
