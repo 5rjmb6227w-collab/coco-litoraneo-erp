@@ -981,6 +981,8 @@ export async function getFinancialEntries(filters?: {
   status?: string;
   startDate?: string;
   endDate?: string;
+  referenceType?: string;
+  referenceId?: number;
 }) {
   const db = await getDb();
   if (!db) return [];
@@ -1001,6 +1003,12 @@ export async function getFinancialEntries(filters?: {
   }
   if (filters?.endDate) {
     conditions.push(lte(financialEntries.dueDate, new Date(filters.endDate)));
+  }
+  if (filters?.referenceType) {
+    conditions.push(eq(financialEntries.referenceType, filters.referenceType));
+  }
+  if (filters?.referenceId) {
+    conditions.push(eq(financialEntries.referenceId, filters.referenceId));
   }
 
   const query = conditions.length > 0
@@ -1314,40 +1322,54 @@ export async function getQualityStats(months: number = 6) {
   const db = await getDb();
   if (!db) return { ncsByMonth: [], ncsByOrigin: [], conformityRate: [] };
 
-  const startDate = new Date();
-  startDate.setMonth(startDate.getMonth() - months);
+  try {
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - months);
+    // Formatar data como string YYYY-MM-DD para compatibilidade com campo DATE do MySQL
+    const startDateStr = startDate.toISOString().split('T')[0];
 
-  // NCs por mês
-  const ncsByMonth = await db.select({
-    month: sql<string>`DATE_FORMAT(${nonConformities.identificationDate}, '%Y-%m')`,
-    count: sql<number>`COUNT(*)`,
-  })
-    .from(nonConformities)
-    .where(gte(nonConformities.identificationDate, startDate))
-    .groupBy(sql`DATE_FORMAT(${nonConformities.identificationDate}, '%Y-%m')`)
-    .orderBy(sql`DATE_FORMAT(${nonConformities.identificationDate}, '%Y-%m')`);
+    // NCs por mês - usando sql.raw para evitar problemas de escaping
+    const ncsByMonth = await db.execute(
+      sql`SELECT DATE_FORMAT(identificationDate, '%Y-%m') as month, COUNT(*) as count 
+          FROM non_conformities 
+          WHERE identificationDate >= ${startDateStr} 
+          GROUP BY DATE_FORMAT(identificationDate, '%Y-%m') 
+          ORDER BY month`
+    );
 
-  // NCs por origem
-  const ncsByOrigin = await db.select({
-    origin: nonConformities.origin,
-    count: sql<number>`COUNT(*)`,
-  })
-    .from(nonConformities)
-    .where(gte(nonConformities.identificationDate, startDate))
-    .groupBy(nonConformities.origin);
+    // NCs por origem
+    const ncsByOrigin = await db.execute(
+      sql`SELECT origin, COUNT(*) as count 
+          FROM non_conformities 
+          WHERE identificationDate >= ${startDateStr} 
+          GROUP BY origin`
+    );
 
-  // Taxa de conformidade por mês
-  const conformityRate = await db.select({
-    month: sql<string>`DATE_FORMAT(${qualityAnalyses.analysisDate}, '%Y-%m')`,
-    total: sql<number>`COUNT(*)`,
-    conformes: sql<number>`SUM(CASE WHEN ${qualityAnalyses.result} = 'conforme' THEN 1 ELSE 0 END)`,
-  })
-    .from(qualityAnalyses)
-    .where(gte(qualityAnalyses.analysisDate, startDate))
-    .groupBy(sql`DATE_FORMAT(${qualityAnalyses.analysisDate}, '%Y-%m')`)
-    .orderBy(sql`DATE_FORMAT(${qualityAnalyses.analysisDate}, '%Y-%m')`);
+    // Taxa de conformidade por mês
+    const conformityRate = await db.execute(
+      sql`SELECT DATE_FORMAT(analysisDate, '%Y-%m') as month, 
+                 COUNT(*) as total, 
+                 SUM(CASE WHEN result = 'conforme' THEN 1 ELSE 0 END) as conformes 
+          FROM quality_analyses 
+          WHERE analysisDate >= ${startDateStr} 
+          GROUP BY DATE_FORMAT(analysisDate, '%Y-%m') 
+          ORDER BY month`
+    );
 
-  return { ncsByMonth, ncsByOrigin, conformityRate };
+    // Converter resultados para o formato esperado
+    const ncsByMonthResult = Array.isArray(ncsByMonth) ? ncsByMonth : (ncsByMonth as any)[0] || [];
+    const ncsByOriginResult = Array.isArray(ncsByOrigin) ? ncsByOrigin : (ncsByOrigin as any)[0] || [];
+    const conformityRateResult = Array.isArray(conformityRate) ? conformityRate : (conformityRate as any)[0] || [];
+
+    return { 
+      ncsByMonth: ncsByMonthResult as { month: string; count: number }[], 
+      ncsByOrigin: ncsByOriginResult as { origin: string; count: number }[], 
+      conformityRate: conformityRateResult as { month: string; total: number; conformes: number }[] 
+    };
+  } catch (error) {
+    console.error('Error in getQualityStats:', error);
+    return { ncsByMonth: [], ncsByOrigin: [], conformityRate: [] };
+  }
 }
 
 // ============================================================================

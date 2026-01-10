@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id, requestNumber, status, totalEstimated, totalApproved, chosenQuotationId, createdAt FROM purchase_requests ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute SELECT id, requestNumber, status, totalEstimated, totalApproved, chosenQuotationId, createdAt FROM purchase_requests ORDER BY id DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "requestNumber": "SC-0001",
+      "status": "solicitado",
+      "totalEstimated": "1490.00",
+      "totalApproved": "NULL",
+      "chosenQuotationId": "NULL",
+      "createdAt": "2026-01-06 16:32:24"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\trequestNumber\tstatus\ttotalEstimated\ttotalApproved\tchosenQuotationId\tcreatedAt\n1\tSC-0001\tsolicitado\t1490.00\tNULL\tNULL\t2026-01-06 16:32:24\n",
+  "stderr": "",
+  "execution_time_ms": 389
+}

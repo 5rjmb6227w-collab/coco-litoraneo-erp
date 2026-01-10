@@ -1,0 +1,9 @@
+{
+  "query": "SELECT DATE_FORMAT(identificationDate, '%Y-%m') as month, COUNT(*) as count FROM non_conformities WHERE identificationDate >= '2025-07-06' GROUP BY DATE_FORMAT(identificationDate, '%Y-%m') ORDER BY DATE_FORMAT(identificationDate, '%Y-%m') LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute SELECT DATE_FORMAT(identificationDate, '%Y-%m') as month, COUNT(*) as count FROM non_conformities WHERE identificationDate >= '2025-07-06' GROUP BY DATE_FORMAT(identificationDate, '%Y-%m') ORDER BY DATE_FORMAT(identificationDate, '%Y-%m') LIMIT 10;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 773
+}

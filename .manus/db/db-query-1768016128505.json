@@ -1,0 +1,9 @@
+{
+  "query": "SELECT id, requestNumber, status, totalApproved, chosenQuotationId, approvedAt FROM purchase_requests WHERE status = 'aprovado' ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute SELECT id, requestNumber, status, totalApproved, chosenQuotationId, approvedAt FROM purchase_requests WHERE status = 'aprovado' ORDER BY id DESC LIMIT 10;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 396
+}

@@ -387,3 +387,12 @@
 - [x] Testes para LGPDService (10 testes)
 - [x] Testes para FeatureFlagsService (12 testes)
 - **Total: 419 testes passando**
+
+
+## AUDITORIA DE INTERCONEXÃO ENTRE MÓDULOS
+- [ ] Mapear schema do banco e relações entre tabelas
+- [ ] Analisar fluxos de dados entre módulos
+- [ ] Verificar integração Compras → Financeiro (bug reportado: pedido de açúcar não apareceu)
+- [ ] Auditar todas as interconexões entre módulos
+- [ ] Documentar gaps encontrados
+- [ ] Corrigir integrações faltantes

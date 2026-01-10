@@ -340,6 +340,23 @@ export const appRouter = router({
         if (input.status === "aprovado" && payable.status !== "aprovado") {
           updateData.approvedAt = new Date();
           updateData.approvedBy = ctx.user?.id;
+          
+          // INTEGRAÇÃO: Criar entrada financeira quando pagamento é aprovado
+          const producer = await db.getProducerById(payable.producerId);
+          const load = await db.getCoconutLoadById(payable.coconutLoadId);
+          await db.createFinancialEntry({
+            entryType: "pagar",
+            origin: "produtor",
+            referenceType: "producer_payable",
+            referenceId: id,
+            description: `Pagamento Produtor - Carga ${load?.id || payable.coconutLoadId}`,
+            entityName: producer?.name || "Produtor",
+            value: payable.totalValue,
+            dueDate: payable.dueDate ? new Date(payable.dueDate) : new Date(),
+            status: "pendente",
+            createdBy: ctx.user?.id,
+            updatedBy: ctx.user?.id,
+          });
         }
         if (input.status === "programado" && payable.status !== "programado") {
           updateData.scheduledAt = new Date();
@@ -348,6 +365,20 @@ export const appRouter = router({
         if (input.status === "pago" && payable.status !== "pago") {
           updateData.paidAt = new Date();
           updateData.paidBy = ctx.user?.id;
+          
+          // INTEGRAÇÃO: Atualizar entrada financeira quando pagamento é efetivado
+          const financialEntries = await db.getFinancialEntries({
+            referenceType: "producer_payable",
+            referenceId: id,
+          });
+          if (financialEntries.length > 0) {
+            await db.updateFinancialEntry(financialEntries[0].id, {
+              status: "pago",
+              paidAt: new Date(),
+              paidBy: ctx.user?.id,
+              paymentMethod: input.paymentMethod,
+            });
+          }
         }
         
         await db.updateProducerPayable(id, updateData);
@@ -1040,6 +1071,26 @@ export const appRouter = router({
 
         if (status === "reprovado") {
           updateData.rejectionReason = rejectionReason;
+        }
+        
+        // INTEGRAÇÃO: Quando compra é entregue, criar movimentações de entrada no almoxarifado
+        if (status === "entregue") {
+          const requestItems = await db.getPurchaseRequestItems(id);
+          const request = await db.getPurchaseRequestById(id);
+          
+          for (const item of requestItems) {
+            if (item.warehouseItemId) {
+              // Item vinculado ao almoxarifado - criar movimentação de entrada
+              await db.createWarehouseMovement({
+                warehouseItemId: item.warehouseItemId,
+                movementType: "entrada",
+                quantity: item.quantity,
+                reason: "Recebimento de compra",
+                observations: `Compra ${request?.requestNumber || id} - ${item.itemName}`,
+                createdBy: ctx.user?.id,
+              });
+            }
+          }
         }
 
         await db.updatePurchaseRequest(id, updateData);
