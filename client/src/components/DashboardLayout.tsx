@@ -49,6 +49,12 @@ import {
   FileText,
   Settings,
   Bell,
+  Bot,
+  Sparkles,
+  Cog,
+  Target,
+  CheckSquare,
+  Lock,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -86,6 +92,7 @@ const menuGroups: Array<{
     items: [
       { icon: Factory, label: "Apontamentos", path: "/producao/apontamentos" },
       { icon: AlertTriangle, label: "Problemas do Dia", path: "/producao/problemas" },
+      { icon: Target, label: "OP & Metas", path: "/producao-expandida" },
     ],
   },
   {
@@ -131,6 +138,15 @@ const menuGroups: Array<{
       { icon: FileText, label: "Logs de Auditoria", path: "/admin/logs" },
       { icon: Bell, label: "Alertas", path: "/admin/alertas" },
       { icon: Settings, label: "Configurações", path: "/admin/configuracoes" },
+      { icon: Lock, label: "Segurança", path: "/admin/seguranca" },
+    ],
+  },
+  {
+    label: "Copiloto IA",
+    adminOnly: true,
+    items: [
+      { icon: Bot, label: "Agentes de IA", path: "/ai/agentes" },
+      { icon: Sparkles, label: "Momentos Mágicos", path: "/ai/momentos" },
     ],
   },
 ];
@@ -229,7 +245,7 @@ function DashboardLayoutContent({
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const [openGroups, setOpenGroups] = useState<string[]>(["Principal", "Operações", "Produção", "Almoxarifado", "Estoque", "Gestão", "Qualidade", "Pessoas"]);
+  const [openGroups, setOpenGroups] = useState<string[]>(["Principal", "Operações", "Produção", "Almoxarifado", "Estoque", "Gestão", "Qualidade", "Pessoas", "Administração", "Copiloto IA"]);
 
   // Find active menu item
   const activeMenuItem = menuGroups.flatMap(g => g.items).find(item => item.path === location);
