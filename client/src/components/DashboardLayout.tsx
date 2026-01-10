@@ -92,7 +92,7 @@ const menuGroups: Array<{
     items: [
       { icon: Factory, label: "Apontamentos", path: "/producao/apontamentos" },
       { icon: AlertTriangle, label: "Problemas do Dia", path: "/producao/problemas" },
-      { icon: Target, label: "OP & Metas", path: "/producao-expandida" },
+      { icon: Target, label: "OP & Metas", path: "/producao/expandida" },
     ],
   },
   {
@@ -145,8 +145,8 @@ const menuGroups: Array<{
     label: "Copiloto IA",
     adminOnly: true,
     items: [
-      { icon: Bot, label: "Agentes de IA", path: "/ai/agentes" },
-      { icon: Sparkles, label: "Momentos Mágicos", path: "/ai/momentos" },
+      { icon: Bot, label: "Agentes de IA", path: "/ia/agentes" },
+      { icon: Sparkles, label: "Momentos Mágicos", path: "/ia/momentos-magicos" },
     ],
   },
 ];
