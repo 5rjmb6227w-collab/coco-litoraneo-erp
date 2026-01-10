@@ -256,6 +256,29 @@ export async function createProductionGoal(input: {
 }
 
 /**
+ * Listar metas de produção
+ */
+export async function listProductionGoals(filters?: {
+  type?: string;
+  active?: boolean;
+}): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  let query = db.select().from(productionGoals);
+  
+  const conditions = [];
+  if (filters?.type) conditions.push(eq(productionGoals.type, filters.type as any));
+  if (filters?.active === true) conditions.push(eq(productionGoals.status, 'ativa'));
+  
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as any;
+  }
+  
+  return query.orderBy(desc(productionGoals.createdAt));
+}
+
+/**
  * Listar metas ativas
  */
 export async function listActiveGoals(): Promise<any[]> {

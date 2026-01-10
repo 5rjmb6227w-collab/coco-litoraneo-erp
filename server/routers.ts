@@ -909,6 +909,143 @@ export const appRouter = router({
           return { success: true };
         }),
     }),
+
+    // ORDENS DE PRODUÇÃO
+    orders: router({
+      list: protectedProcedure
+        .input(z.object({
+          status: z.string().optional(),
+          priority: z.string().optional(),
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+        }).optional())
+        .query(async ({ input }) => {
+          const productionService = await import('./production/productionService');
+          return productionService.listProductionOrders(input ? {
+            status: input.status,
+            priority: input.priority,
+            startDate: input.startDate ? new Date(input.startDate) : undefined,
+            endDate: input.endDate ? new Date(input.endDate) : undefined,
+          } : undefined);
+        }),
+
+      create: protectedProcedure
+        .input(z.object({
+          skuId: z.number(),
+          variation: z.enum(["flocos", "medio", "fino"]),
+          plannedQuantity: z.number(),
+          plannedStartDate: z.string(),
+          plannedEndDate: z.string().optional(),
+          priority: z.enum(["baixa", "normal", "alta", "urgente"]).optional(),
+          observations: z.string().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const productionService = await import('./production/productionService');
+          const result = await productionService.createProductionOrder({
+            ...input,
+            plannedStartDate: new Date(input.plannedStartDate),
+            plannedEndDate: input.plannedEndDate ? new Date(input.plannedEndDate) : undefined,
+            createdBy: ctx.user?.id || 0,
+          });
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_CREATE",
+            module: "production",
+            entityType: "production_order",
+            entityId: result.id,
+          });
+
+          return result;
+        }),
+
+      updateStatus: protectedProcedure
+        .input(z.object({
+          id: z.number(),
+          status: z.enum(["aguardando", "em_producao", "qualidade", "concluida", "cancelada"]),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const productionService = await import('./production/productionService');
+          await productionService.updateOrderStatus(input.id, input.status, ctx.user?.id || 0);
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_EDIT",
+            module: "production",
+            entityType: "production_order",
+            entityId: input.id,
+            details: JSON.stringify({ status: input.status }),
+          });
+
+          return { success: true };
+        }),
+
+      getKanban: protectedProcedure
+        .query(async () => {
+          const productionService = await import('./production/productionService');
+          return productionService.getKanbanView();
+        }),
+
+      moveKanban: protectedProcedure
+        .input(z.object({
+          orderId: z.number(),
+          newColumn: z.enum(["backlog", "aguardando", "em_producao", "qualidade", "concluida"]),
+          newPosition: z.number(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const productionService = await import('./production/productionService');
+          await productionService.moveKanbanCard(input.orderId, input.newColumn, input.newPosition, ctx.user?.id || 0);
+          return { success: true };
+        }),
+    }),
+
+    // METAS DE PRODUÇÃO
+    goals: router({
+      list: protectedProcedure
+        .input(z.object({
+          type: z.string().optional(),
+          active: z.boolean().optional(),
+        }).optional())
+        .query(async ({ input }) => {
+          const productionService = await import('./production/productionService');
+          return productionService.listProductionGoals(input);
+        }),
+
+      create: protectedProcedure
+        .input(z.object({
+          type: z.enum(["diaria", "semanal", "mensal", "turno"]),
+          targetQuantity: z.number(),
+          shift: z.enum(["manha", "tarde", "noite", "todos"]).optional(),
+          skuId: z.number().optional(),
+          targetYield: z.number().optional(),
+          maxLossPercent: z.number().optional(),
+          startDate: z.string(),
+          endDate: z.string().optional(),
+          observations: z.string().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const productionService = await import('./production/productionService');
+          const result = await productionService.createProductionGoal({
+            ...input,
+            startDate: new Date(input.startDate),
+            endDate: input.endDate ? new Date(input.endDate) : undefined,
+            createdBy: ctx.user?.id || 0,
+          });
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_CREATE",
+            module: "production",
+            entityType: "production_goal",
+            entityId: result.id,
+          });
+
+          return result;
+        }),
+    }),
   }),
 
   // ============================================================================

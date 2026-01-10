@@ -443,3 +443,7 @@
 - [ ] 6. Plano de Continuidade (doc)
 - [ ] 7. Gestão de Vulnerabilidades
 - [ ] 8. Dashboard de Segurança
+
+
+## BUG FIXES - PRODUÇÃO EXPANDIDA
+- [x] Botão "Nova OP" não abre modal - CORRIGIDO: modal funcional implementado com campos SKU, variação, quantidade, prioridade, datas e observações
