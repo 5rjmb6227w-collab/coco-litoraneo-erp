@@ -447,3 +447,8 @@
 
 ## BUG FIXES - PRODUÇÃO EXPANDIDA
 - [x] Botão "Nova OP" não abre modal - CORRIGIDO: modal funcional implementado com campos SKU, variação, quantidade, prioridade, datas e observações
+
+- [x] Botão "Nova Meta" não abre modal - CORRIGIDO: modal funcional com tipo, turno, quantidade, SKU, rendimento, perda máxima, datas
+- [x] Botão "Novo Checklist" não abre modal - CORRIGIDO: modal funcional com seleção de turno e data
+- [x] Botão "Registrar Perda" não abre modal - CORRIGIDO: modal funcional com lote, OP, SKU, quantidade, motivo, detalhes
+- [x] Kanban não permite arrastar cards entre colunas - CORRIGIDO: drag-and-drop funcional com HTML5 Drag API

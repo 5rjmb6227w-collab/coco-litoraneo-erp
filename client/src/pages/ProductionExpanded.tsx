@@ -3,13 +3,13 @@
  * 
  * Página completa de gestão de produção com:
  * - Ordens de Produção (OP)
- * - Kanban de Produção
+ * - Kanban de Produção com Drag-and-Drop
  * - Metas de Produção
  * - Checklists de Turno
  * - Controle de Perdas e Reprocesso
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -47,7 +47,8 @@ import {
   TrendingUp,
   AlertCircle,
   Info,
-  Plus
+  Plus,
+  GripVertical
 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -57,6 +58,9 @@ export default function ProductionExpanded() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('kanban');
   const [showNewOPModal, setShowNewOPModal] = useState(false);
+  const [showNewMetaModal, setShowNewMetaModal] = useState(false);
+  const [showNewChecklistModal, setShowNewChecklistModal] = useState(false);
+  const [showRegistrarPerdaModal, setShowRegistrarPerdaModal] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -132,25 +136,25 @@ export default function ProductionExpanded() {
 
         {/* METAS */}
         <TabsContent value="metas" className="space-y-4">
-          <MetasProducao />
+          <MetasProducao onNewMeta={() => setShowNewMetaModal(true)} />
         </TabsContent>
 
         {/* CHECKLIST */}
         <TabsContent value="checklist" className="space-y-4">
-          <ChecklistTurno />
+          <ChecklistTurno onNewChecklist={() => setShowNewChecklistModal(true)} />
         </TabsContent>
 
         {/* PERDAS E REPROCESSO */}
         <TabsContent value="perdas" className="space-y-4">
-          <PerdasReprocesso />
+          <PerdasReprocesso onRegistrarPerda={() => setShowRegistrarPerdaModal(true)} />
         </TabsContent>
       </Tabs>
 
-      {/* Modal Nova OP */}
-      <NovaOPModal 
-        open={showNewOPModal} 
-        onOpenChange={setShowNewOPModal} 
-      />
+      {/* Modais */}
+      <NovaOPModal open={showNewOPModal} onOpenChange={setShowNewOPModal} />
+      <NovaMetaModal open={showNewMetaModal} onOpenChange={setShowNewMetaModal} />
+      <NovoChecklistModal open={showNewChecklistModal} onOpenChange={setShowNewChecklistModal} />
+      <RegistrarPerdaModal open={showRegistrarPerdaModal} onOpenChange={setShowRegistrarPerdaModal} />
     </div>
   );
 }
@@ -178,7 +182,6 @@ function NovaOPModal({ open, onOpenChange }: { open: boolean; onOpenChange: (ope
       utils.production.orders.list.invalidate();
       utils.production.orders.getKanban.invalidate();
       onOpenChange(false);
-      // Reset form
       setFormData({
         skuId: '',
         variation: 'flocos',
@@ -351,19 +354,584 @@ function NovaOPModal({ open, onOpenChange }: { open: boolean; onOpenChange: (ope
 }
 
 // ============================================================================
-// COMPONENTE: KANBAN BOARD
+// MODAL: NOVA META DE PRODUÇÃO
+// ============================================================================
+function NovaMetaModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [formData, setFormData] = useState({
+    type: 'diaria' as 'diaria' | 'semanal' | 'mensal' | 'turno',
+    targetQuantity: '',
+    shift: 'todos' as 'manha' | 'tarde' | 'noite' | 'todos',
+    skuId: '',
+    targetYield: '',
+    maxLossPercent: '',
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: '',
+    observations: '',
+  });
+
+  const utils = trpc.useUtils();
+  const { data: skus } = trpc.skus.list.useQuery({});
+  
+  const createMeta = trpc.production.goals.create.useMutation({
+    onSuccess: () => {
+      toast.success('Meta de produção criada com sucesso!');
+      utils.production.goals.list.invalidate();
+      onOpenChange(false);
+      setFormData({
+        type: 'diaria',
+        targetQuantity: '',
+        shift: 'todos',
+        skuId: '',
+        targetYield: '',
+        maxLossPercent: '',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: '',
+        observations: '',
+      });
+    },
+    onError: (error) => {
+      toast.error(`Erro ao criar meta: ${error.message}`);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.targetQuantity) {
+      toast.error('Preencha a quantidade alvo');
+      return;
+    }
+
+    createMeta.mutate({
+      type: formData.type,
+      targetQuantity: parseFloat(formData.targetQuantity),
+      shift: formData.shift,
+      skuId: formData.skuId ? parseInt(formData.skuId) : undefined,
+      targetYield: formData.targetYield ? parseFloat(formData.targetYield) : undefined,
+      maxLossPercent: formData.maxLossPercent ? parseFloat(formData.maxLossPercent) : undefined,
+      startDate: formData.startDate,
+      endDate: formData.endDate || undefined,
+      observations: formData.observations || undefined,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            Nova Meta de Produção
+          </DialogTitle>
+          <DialogDescription>
+            Defina uma meta de produção para acompanhar o desempenho
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Tipo de Meta *</Label>
+              <Select 
+                value={formData.type} 
+                onValueChange={(value: 'diaria' | 'semanal' | 'mensal' | 'turno') => setFormData({ ...formData, type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="diaria">Diária</SelectItem>
+                  <SelectItem value="semanal">Semanal</SelectItem>
+                  <SelectItem value="mensal">Mensal</SelectItem>
+                  <SelectItem value="turno">Por Turno</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Turno</Label>
+              <Select 
+                value={formData.shift} 
+                onValueChange={(value: 'manha' | 'tarde' | 'noite' | 'todos') => setFormData({ ...formData, shift: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Turnos</SelectItem>
+                  <SelectItem value="manha">Manhã</SelectItem>
+                  <SelectItem value="tarde">Tarde</SelectItem>
+                  <SelectItem value="noite">Noite</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Quantidade Alvo (kg) *</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.targetQuantity}
+                onChange={(e) => setFormData({ ...formData, targetQuantity: e.target.value })}
+                placeholder="Ex: 5000"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Produto (SKU)</Label>
+              <Select 
+                value={formData.skuId} 
+                onValueChange={(value) => setFormData({ ...formData, skuId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os produtos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os produtos</SelectItem>
+                  {skus?.map((sku) => (
+                    <SelectItem key={sku.id} value={sku.id.toString()}>
+                      {sku.code} - {sku.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Rendimento Alvo (%)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                value={formData.targetYield}
+                onChange={(e) => setFormData({ ...formData, targetYield: e.target.value })}
+                placeholder="Ex: 95"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Perda Máxima (%)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                value={formData.maxLossPercent}
+                onChange={(e) => setFormData({ ...formData, maxLossPercent: e.target.value })}
+                placeholder="Ex: 2"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Data Início *</Label>
+              <Input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Data Fim</Label>
+              <Input
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Observações</Label>
+            <Textarea
+              value={formData.observations}
+              onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
+              placeholder="Informações adicionais sobre a meta..."
+              rows={2}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={createMeta.isPending}>
+              {createMeta.isPending ? 'Criando...' : 'Criar Meta'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ============================================================================
+// MODAL: NOVO CHECKLIST DE TURNO
+// ============================================================================
+function NovoChecklistModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [formData, setFormData] = useState({
+    shift: 'manha' as 'manha' | 'tarde' | 'noite',
+    date: new Date().toISOString().split('T')[0],
+  });
+
+  const utils = trpc.useUtils();
+  
+  const createChecklist = trpc.production.checklists.create.useMutation({
+    onSuccess: () => {
+      toast.success('Checklist de turno criado com sucesso!');
+      utils.production.checklists.listToday.invalidate();
+      onOpenChange(false);
+      setFormData({
+        shift: 'manha',
+        date: new Date().toISOString().split('T')[0],
+      });
+    },
+    onError: (error) => {
+      toast.error(`Erro ao criar checklist: ${error.message}`);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createChecklist.mutate(formData);
+  };
+
+  const getShiftLabel = (shift: string) => {
+    const labels: Record<string, string> = {
+      manha: 'Manhã (06:00 - 14:00)',
+      tarde: 'Tarde (14:00 - 22:00)',
+      noite: 'Noite (22:00 - 06:00)',
+    };
+    return labels[shift] || shift;
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[400px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CheckSquare className="h-5 w-5" />
+            Novo Checklist de Turno
+          </DialogTitle>
+          <DialogDescription>
+            Inicie um novo checklist para o turno selecionado
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Turno *</Label>
+            <Select 
+              value={formData.shift} 
+              onValueChange={(value: 'manha' | 'tarde' | 'noite') => setFormData({ ...formData, shift: value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="manha">{getShiftLabel('manha')}</SelectItem>
+                <SelectItem value="tarde">{getShiftLabel('tarde')}</SelectItem>
+                <SelectItem value="noite">{getShiftLabel('noite')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Data *</Label>
+            <Input
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            />
+          </div>
+
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              O checklist será criado com os itens padrão configurados para o turno. 
+              Você poderá marcar cada item como concluído durante o turno.
+            </AlertDescription>
+          </Alert>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={createChecklist.isPending}>
+              {createChecklist.isPending ? 'Criando...' : 'Criar Checklist'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ============================================================================
+// MODAL: REGISTRAR PERDA/REPROCESSO
+// ============================================================================
+function RegistrarPerdaModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [formData, setFormData] = useState({
+    originalBatchNumber: '',
+    productionOrderId: '',
+    skuId: '',
+    quantity: '',
+    reason: 'umidade_alta' as 'umidade_alta' | 'granulometria' | 'cor' | 'contaminacao_leve' | 'embalagem_danificada' | 'outro',
+    reasonDetail: '',
+    reprocessDate: new Date().toISOString().split('T')[0],
+  });
+
+  const utils = trpc.useUtils();
+  const { data: skus } = trpc.skus.list.useQuery({});
+  const { data: orders } = trpc.production.orders.list.useQuery({});
+  
+  const registerReprocess = trpc.production.reprocesses.register.useMutation({
+    onSuccess: () => {
+      toast.success('Perda/Reprocesso registrado com sucesso!');
+      utils.production.reprocesses.listPending.invalidate();
+      onOpenChange(false);
+      setFormData({
+        originalBatchNumber: '',
+        productionOrderId: '',
+        skuId: '',
+        quantity: '',
+        reason: 'umidade_alta',
+        reasonDetail: '',
+        reprocessDate: new Date().toISOString().split('T')[0],
+      });
+    },
+    onError: (error) => {
+      toast.error(`Erro ao registrar: ${error.message}`);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.originalBatchNumber || !formData.skuId || !formData.quantity) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    registerReprocess.mutate({
+      originalBatchNumber: formData.originalBatchNumber,
+      productionOrderId: formData.productionOrderId ? parseInt(formData.productionOrderId) : undefined,
+      skuId: parseInt(formData.skuId),
+      quantity: parseFloat(formData.quantity),
+      reason: formData.reason,
+      reasonDetail: formData.reasonDetail || undefined,
+      reprocessDate: formData.reprocessDate,
+    });
+  };
+
+  const getReasonLabel = (reason: string) => {
+    const labels: Record<string, string> = {
+      umidade_alta: 'Umidade Alta',
+      granulometria: 'Granulometria Fora do Padrão',
+      cor: 'Cor Fora do Padrão',
+      contaminacao_leve: 'Contaminação Leve',
+      embalagem_danificada: 'Embalagem Danificada',
+      outro: 'Outro',
+    };
+    return labels[reason] || reason;
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            Registrar Perda / Reprocesso
+          </DialogTitle>
+          <DialogDescription>
+            Registre uma perda ou material para reprocessamento
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Lote Original *</Label>
+              <Input
+                value={formData.originalBatchNumber}
+                onChange={(e) => setFormData({ ...formData, originalBatchNumber: e.target.value })}
+                placeholder="Ex: LOTE-2026-001"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Ordem de Produção</Label>
+              <Select 
+                value={formData.productionOrderId} 
+                onValueChange={(value) => setFormData({ ...formData, productionOrderId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {orders?.map((order) => (
+                    <SelectItem key={order.id} value={order.id.toString()}>
+                      {order.orderNumber}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Produto (SKU) *</Label>
+              <Select 
+                value={formData.skuId} 
+                onValueChange={(value) => setFormData({ ...formData, skuId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o produto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {skus?.map((sku) => (
+                    <SelectItem key={sku.id} value={sku.id.toString()}>
+                      {sku.code} - {sku.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Quantidade (kg) *</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.quantity}
+                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                placeholder="Ex: 50"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Motivo *</Label>
+              <Select 
+                value={formData.reason} 
+                onValueChange={(value: any) => setFormData({ ...formData, reason: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="umidade_alta">{getReasonLabel('umidade_alta')}</SelectItem>
+                  <SelectItem value="granulometria">{getReasonLabel('granulometria')}</SelectItem>
+                  <SelectItem value="cor">{getReasonLabel('cor')}</SelectItem>
+                  <SelectItem value="contaminacao_leve">{getReasonLabel('contaminacao_leve')}</SelectItem>
+                  <SelectItem value="embalagem_danificada">{getReasonLabel('embalagem_danificada')}</SelectItem>
+                  <SelectItem value="outro">{getReasonLabel('outro')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Data *</Label>
+              <Input
+                type="date"
+                value={formData.reprocessDate}
+                onChange={(e) => setFormData({ ...formData, reprocessDate: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Detalhes do Motivo</Label>
+            <Textarea
+              value={formData.reasonDetail}
+              onChange={(e) => setFormData({ ...formData, reasonDetail: e.target.value })}
+              placeholder="Descreva detalhes adicionais sobre o problema..."
+              rows={2}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={registerReprocess.isPending}>
+              {registerReprocess.isPending ? 'Registrando...' : 'Registrar'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ============================================================================
+// COMPONENTE: KANBAN BOARD COM DRAG-AND-DROP
 // ============================================================================
 function KanbanBoard({ onNewOP }: { onNewOP: () => void }) {
   const { data: kanban, isLoading } = trpc.production.orders.getKanban.useQuery();
+  const utils = trpc.useUtils();
+  
+  const moveKanban = trpc.production.orders.moveKanban.useMutation({
+    onSuccess: () => {
+      utils.production.orders.getKanban.invalidate();
+      utils.production.orders.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(`Erro ao mover card: ${error.message}`);
+    },
+  });
+
+  const [draggedOrder, setDraggedOrder] = useState<any>(null);
   
   const columns = [
-    { id: 'aguardando', title: 'Aguardando', color: 'bg-gray-100', data: kanban?.aguardando || [] },
-    { id: 'em_producao', title: 'Em Produção', color: 'bg-blue-100', data: kanban?.em_producao || [] },
-    { id: 'qualidade', title: 'Qualidade', color: 'bg-yellow-100', data: kanban?.qualidade || [] },
-    { id: 'concluida', title: 'Finalizado', color: 'bg-green-100', data: kanban?.concluida || [] },
+    { id: 'aguardando' as const, title: 'Aguardando', color: 'bg-gray-100', data: kanban?.aguardando || [] },
+    { id: 'em_producao' as const, title: 'Em Produção', color: 'bg-blue-100', data: kanban?.em_producao || [] },
+    { id: 'qualidade' as const, title: 'Qualidade', color: 'bg-yellow-100', data: kanban?.qualidade || [] },
+    { id: 'concluida' as const, title: 'Finalizado', color: 'bg-green-100', data: kanban?.concluida || [] },
   ];
 
   const totalOrders = columns.reduce((sum, col) => sum + col.data.length, 0);
+
+  const handleDragStart = (e: React.DragEvent, order: any) => {
+    setDraggedOrder(order);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetColumn: 'aguardando' | 'em_producao' | 'qualidade' | 'concluida') => {
+    e.preventDefault();
+    
+    if (draggedOrder && draggedOrder.kanbanColumn !== targetColumn) {
+      moveKanban.mutate({
+        orderId: draggedOrder.id,
+        newColumn: targetColumn,
+        newPosition: 0,
+      });
+      toast.success(`OP ${draggedOrder.orderNumber} movida para ${columns.find(c => c.id === targetColumn)?.title}`);
+    }
+    
+    setDraggedOrder(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedOrder(null);
+  };
 
   return (
     <div className="space-y-4">
@@ -383,7 +951,14 @@ function KanbanBoard({ onNewOP }: { onNewOP: () => void }) {
 
       <div className="grid grid-cols-4 gap-4">
         {columns.map((column) => (
-          <div key={column.id} className={`${column.color} rounded-lg p-4 min-h-[400px]`}>
+          <div 
+            key={column.id} 
+            className={`${column.color} rounded-lg p-4 min-h-[400px] transition-all ${
+              draggedOrder ? 'ring-2 ring-dashed ring-gray-400' : ''
+            }`}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, column.id)}
+          >
             <h3 className="font-medium mb-4 flex items-center justify-between">
               {column.title}
               <Badge variant="secondary">{column.data.length}</Badge>
@@ -392,10 +967,23 @@ function KanbanBoard({ onNewOP }: { onNewOP: () => void }) {
             <div className="space-y-2">
               {column.data.length > 0 ? (
                 column.data.map((order: any) => (
-                  <div key={order.id} className="bg-white rounded-lg p-3 shadow-sm border">
-                    <div className="font-medium text-sm">{order.orderNumber}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {order.plannedQuantity} kg
+                  <div 
+                    key={order.id} 
+                    className={`bg-white rounded-lg p-3 shadow-sm border cursor-grab active:cursor-grabbing transition-all ${
+                      draggedOrder?.id === order.id ? 'opacity-50 scale-95' : 'hover:shadow-md'
+                    }`}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, order)}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <div className="flex items-center gap-2">
+                      <GripVertical className="h-4 w-4 text-gray-400" />
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{order.orderNumber}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {order.plannedQuantity} kg
+                        </div>
+                      </div>
                     </div>
                     <Badge 
                       variant={order.priority === 'urgente' ? 'destructive' : order.priority === 'alta' ? 'default' : 'secondary'}
@@ -419,7 +1007,7 @@ function KanbanBoard({ onNewOP }: { onNewOP: () => void }) {
         <Info className="h-4 w-4" />
         <AlertTitle>Como usar o Kanban</AlertTitle>
         <AlertDescription>
-          1. Crie ordens de produção na aba "Ordens" | 
+          1. Crie ordens de produção clicando em "Nova OP" | 
           2. Arraste os cards entre colunas para atualizar status | 
           3. Clique em um card para ver detalhes e registrar apontamentos
         </AlertDescription>
@@ -438,7 +1026,7 @@ function OrdensProducao({ onNewOP }: { onNewOP: () => void }) {
     aguardando: orders?.filter(o => o.status === 'aguardando').length || 0,
     em_producao: orders?.filter(o => o.status === 'em_producao').length || 0,
     concluida: orders?.filter(o => o.status === 'concluida').length || 0,
-    atrasadas: 0, // TODO: calcular baseado em datas
+    atrasadas: 0,
   };
 
   return (
@@ -553,14 +1141,14 @@ function OrdensProducao({ onNewOP }: { onNewOP: () => void }) {
 // ============================================================================
 // COMPONENTE: METAS DE PRODUÇÃO
 // ============================================================================
-function MetasProducao() {
+function MetasProducao({ onNewMeta }: { onNewMeta: () => void }) {
   const { data: goals } = trpc.production.goals.list.useQuery({});
   
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Metas de Produção</h2>
-        <Button>
+        <Button onClick={onNewMeta}>
           <Target className="mr-2 h-4 w-4" />
           Nova Meta
         </Button>
@@ -572,7 +1160,7 @@ function MetasProducao() {
             <CardTitle className="flex items-center justify-between">
               Meta Diária
               <Badge variant="outline">
-                {goals?.find(g => g.type === 'diaria') ? 'Ativa' : 'Não definida'}
+                {goals?.find(g => g.type === 'diaria' && g.status === 'ativa') ? 'Ativa' : 'Não definida'}
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -595,7 +1183,7 @@ function MetasProducao() {
             <CardTitle className="flex items-center justify-between">
               Meta Semanal
               <Badge variant="outline">
-                {goals?.find(g => g.type === 'semanal') ? 'Ativa' : 'Não definida'}
+                {goals?.find(g => g.type === 'semanal' && g.status === 'ativa') ? 'Ativa' : 'Não definida'}
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -618,7 +1206,7 @@ function MetasProducao() {
             <CardTitle className="flex items-center justify-between">
               Meta Mensal
               <Badge variant="outline">
-                {goals?.find(g => g.type === 'mensal') ? 'Ativa' : 'Não definida'}
+                {goals?.find(g => g.type === 'mensal' && g.status === 'ativa') ? 'Ativa' : 'Não definida'}
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -676,12 +1264,14 @@ function MetasProducao() {
 // ============================================================================
 // COMPONENTE: CHECKLIST DE TURNO
 // ============================================================================
-function ChecklistTurno() {
+function ChecklistTurno({ onNewChecklist }: { onNewChecklist: () => void }) {
+  const { data: checklists } = trpc.production.checklists.listToday.useQuery();
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Checklist de Turno</h2>
-        <Button>
+        <Button onClick={onNewChecklist}>
           <CheckSquare className="mr-2 h-4 w-4" />
           Novo Checklist
         </Button>
@@ -697,10 +1287,19 @@ function ChecklistTurno() {
             <CardDescription>06:00 - 14:00</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-4 text-muted-foreground">
-              <CheckSquare className="mx-auto h-8 w-8 mb-2 opacity-50" />
-              <p className="text-sm">Nenhum checklist registrado</p>
-            </div>
+            {checklists?.find(c => c.shift === 'manha') ? (
+              <div className="space-y-2">
+                <Badge variant="default">Em andamento</Badge>
+                <p className="text-sm text-muted-foreground">
+                  Responsável: {checklists.find(c => c.shift === 'manha')?.responsibleName}
+                </p>
+              </div>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                <CheckSquare className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                <p className="text-sm">Nenhum checklist registrado</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -713,10 +1312,19 @@ function ChecklistTurno() {
             <CardDescription>14:00 - 22:00</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-4 text-muted-foreground">
-              <CheckSquare className="mx-auto h-8 w-8 mb-2 opacity-50" />
-              <p className="text-sm">Nenhum checklist registrado</p>
-            </div>
+            {checklists?.find(c => c.shift === 'tarde') ? (
+              <div className="space-y-2">
+                <Badge variant="default">Em andamento</Badge>
+                <p className="text-sm text-muted-foreground">
+                  Responsável: {checklists.find(c => c.shift === 'tarde')?.responsibleName}
+                </p>
+              </div>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                <CheckSquare className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                <p className="text-sm">Nenhum checklist registrado</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -729,10 +1337,19 @@ function ChecklistTurno() {
             <CardDescription>22:00 - 06:00</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-4 text-muted-foreground">
-              <CheckSquare className="mx-auto h-8 w-8 mb-2 opacity-50" />
-              <p className="text-sm">Nenhum checklist registrado</p>
-            </div>
+            {checklists?.find(c => c.shift === 'noite') ? (
+              <div className="space-y-2">
+                <Badge variant="default">Em andamento</Badge>
+                <p className="text-sm text-muted-foreground">
+                  Responsável: {checklists.find(c => c.shift === 'noite')?.responsibleName}
+                </p>
+              </div>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                <CheckSquare className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                <p className="text-sm">Nenhum checklist registrado</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -751,12 +1368,14 @@ function ChecklistTurno() {
 // ============================================================================
 // COMPONENTE: PERDAS E REPROCESSO
 // ============================================================================
-function PerdasReprocesso() {
+function PerdasReprocesso({ onRegistrarPerda }: { onRegistrarPerda: () => void }) {
+  const { data: pendingReprocesses } = trpc.production.reprocesses.listPending.useQuery();
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Perdas e Reprocesso</h2>
-        <Button>
+        <Button onClick={onRegistrarPerda}>
           <AlertTriangle className="mr-2 h-4 w-4" />
           Registrar Perda
         </Button>
@@ -778,12 +1397,14 @@ function PerdasReprocesso() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Reprocesso Hoje
+              Reprocesso Pendente
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">0 kg</div>
-            <p className="text-xs text-muted-foreground">0% da produção</p>
+            <div className="text-2xl font-bold text-yellow-600">
+              {pendingReprocesses?.length || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">Aguardando processamento</p>
           </CardContent>
         </Card>
 
@@ -814,19 +1435,35 @@ function PerdasReprocesso() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Histórico de Perdas</CardTitle>
+          <CardTitle>Reprocessos Pendentes</CardTitle>
           <CardDescription>
-            Registros de perdas e reprocesso dos últimos 30 dias
+            Material aguardando reprocessamento
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <AlertTriangle className="mx-auto h-12 w-12 mb-4 opacity-50" />
-            <p>Nenhuma perda registrada</p>
-            <p className="text-sm mt-2">
-              Registre perdas durante o processo produtivo para acompanhar indicadores
-            </p>
-          </div>
+          {pendingReprocesses && pendingReprocesses.length > 0 ? (
+            <div className="space-y-2">
+              {pendingReprocesses.map((reprocess: any) => (
+                <div key={reprocess.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <div className="font-medium">Lote: {reprocess.originalBatchNumber}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {reprocess.quantity} kg - {reprocess.reason}
+                    </div>
+                  </div>
+                  <Badge variant="outline">Aguardando</Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <AlertTriangle className="mx-auto h-12 w-12 mb-4 opacity-50" />
+              <p>Nenhum reprocesso pendente</p>
+              <p className="text-sm mt-2">
+                Registre perdas durante o processo produtivo para acompanhar indicadores
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

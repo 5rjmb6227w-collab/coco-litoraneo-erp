@@ -1046,6 +1046,172 @@ export const appRouter = router({
           return result;
         }),
     }),
+
+    // CHECKLISTS DE TURNO
+    checklists: router({
+      listToday: protectedProcedure
+        .query(async () => {
+          const productionService = await import('./production/productionService');
+          return productionService.listTodayChecklists();
+        }),
+
+      create: protectedProcedure
+        .input(z.object({
+          shift: z.enum(["manha", "tarde", "noite"]),
+          date: z.string(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const productionService = await import('./production/productionService');
+          const result = await productionService.createShiftChecklist({
+            shift: input.shift,
+            date: new Date(input.date),
+            responsibleId: ctx.user?.id || 0,
+            responsibleName: ctx.user?.name || 'Usuário',
+          });
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_CREATE",
+            module: "production",
+            entityType: "shift_checklist",
+            entityId: result.id,
+          });
+
+          return result;
+        }),
+
+      checkItem: protectedProcedure
+        .input(z.object({
+          itemId: z.number(),
+          checked: z.boolean(),
+          notes: z.string().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const productionService = await import('./production/productionService');
+          await productionService.checkItem(input.itemId, input.checked, input.notes, ctx.user?.id);
+          return { success: true };
+        }),
+
+      finalize: protectedProcedure
+        .input(z.object({ checklistId: z.number() }))
+        .mutation(async ({ input }) => {
+          const productionService = await import('./production/productionService');
+          await productionService.finalizeChecklist(input.checklistId);
+          return { success: true };
+        }),
+    }),
+
+    // PARADAS DE PRODUÇÃO
+    stops: router({
+      listActive: protectedProcedure
+        .query(async () => {
+          const productionService = await import('./production/productionService');
+          return productionService.listActiveStops();
+        }),
+
+      register: protectedProcedure
+        .input(z.object({
+          productionOrderId: z.number().optional(),
+          equipmentId: z.number().optional(),
+          shift: z.enum(["manha", "tarde", "noite"]),
+          stopDate: z.string(),
+          reason: z.enum(["setup", "manutencao_preventiva", "manutencao_corretiva", "falta_material", "falta_operador", "quebra", "limpeza", "qualidade", "energia", "outro"]),
+          reasonDetail: z.string().optional(),
+          startedAt: z.string(),
+          plannedStop: z.boolean().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const productionService = await import('./production/productionService');
+          const result = await productionService.registerStop({
+            ...input,
+            stopDate: new Date(input.stopDate),
+            startedAt: new Date(input.startedAt),
+            createdBy: ctx.user?.id || 0,
+          });
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_CREATE",
+            module: "production",
+            entityType: "production_stop",
+            entityId: result.id,
+          });
+
+          return result;
+        }),
+
+      finalize: protectedProcedure
+        .input(z.object({
+          stopId: z.number(),
+          actionTaken: z.string().optional(),
+        }))
+        .mutation(async ({ input }) => {
+          const productionService = await import('./production/productionService');
+          await productionService.finalizeStop(input.stopId, input.actionTaken);
+          return { success: true };
+        }),
+    }),
+
+    // REPROCESSO E PERDAS
+    reprocesses: router({
+      listPending: protectedProcedure
+        .query(async () => {
+          const productionService = await import('./production/productionService');
+          return productionService.listPendingReprocesses();
+        }),
+
+      register: protectedProcedure
+        .input(z.object({
+          originalBatchNumber: z.string(),
+          productionOrderId: z.number().optional(),
+          skuId: z.number(),
+          quantity: z.number(),
+          reason: z.enum(["umidade_alta", "granulometria", "cor", "contaminacao_leve", "embalagem_danificada", "outro"]),
+          reasonDetail: z.string().optional(),
+          reprocessDate: z.string(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const productionService = await import('./production/productionService');
+          const result = await productionService.registerReprocess({
+            ...input,
+            reprocessDate: new Date(input.reprocessDate),
+            createdBy: ctx.user?.id || 0,
+          });
+
+          await db.createAuditLog({
+            userId: ctx.user?.id,
+            userName: ctx.user?.name || undefined,
+            action: "RECORD_CREATE",
+            module: "production",
+            entityType: "production_reprocess",
+            entityId: result.id,
+          });
+
+          return result;
+        }),
+
+      finalize: protectedProcedure
+        .input(z.object({
+          reprocessId: z.number(),
+          reprocessedQuantity: z.number(),
+          lossQuantity: z.number(),
+          newBatchNumber: z.string().optional(),
+          observations: z.string().optional(),
+        }))
+        .mutation(async ({ input }) => {
+          const productionService = await import('./production/productionService');
+          await productionService.finalizeReprocess(
+            input.reprocessId,
+            input.reprocessedQuantity,
+            input.lossQuantity,
+            input.newBatchNumber,
+            input.observations
+          );
+          return { success: true };
+        }),
+    }),
   }),
 
   // ============================================================================
