@@ -84,38 +84,49 @@
     
     <!-- Service Worker Registration -->
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('[App] Service Worker registered:', registration.scope);
-              
-              // Check for updates
-              registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing;
-                if (newWorker) {
-                  newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                      // New content available
-                      if (confirm('Nova versão disponível! Deseja atualizar?')) {
-                        newWorker.postMessage({ type: 'SKIP_WAITING' });
-                        window.location.reload();
-                      }
-                    }
-                  });
-                }
-              });
-            })
-            .catch((error) => {
-              console.error('[App] Service Worker registration failed:', error);
-            });
-        });
+      // Service Worker registration with graceful fallback
+      // Disabled in development/preview environments to avoid errors
+      (function() {
+        const isDevelopment = window.location.hostname.includes('manus.computer') || 
+                              window.location.hostname === 'localhost' ||
+                              window.location.hostname === '127.0.0.1';
         
-        // Handle controller change
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          window.location.reload();
-        });
-      }
+        if ('serviceWorker' in navigator && !isDevelopment) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+              .then((registration) => {
+                console.log('[App] Service Worker registered:', registration.scope);
+                
+                // Check for updates
+                registration.addEventListener('updatefound', () => {
+                  const newWorker = registration.installing;
+                  if (newWorker) {
+                    newWorker.addEventListener('statechange', () => {
+                      if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // New content available
+                        if (confirm('Nova versão disponível! Deseja atualizar?')) {
+                          newWorker.postMessage({ type: 'SKIP_WAITING' });
+                          window.location.reload();
+                        }
+                      }
+                    });
+                  }
+                });
+              })
+              .catch((error) => {
+                // Silently fail in development - SW not critical for functionality
+                console.warn('[App] Service Worker registration skipped:', error.message);
+              });
+          });
+          
+          // Handle controller change
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            window.location.reload();
+          });
+        } else if (isDevelopment) {
+          console.log('[App] Service Worker disabled in development environment');
+        }
+      })();
     </script>
   </body>
 

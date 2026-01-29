@@ -692,3 +692,7 @@
 - [ ] Recomendações preditivas sazonais
 - [ ] Otimização de alocação entre centros de custo
 - [ ] Alertas antecipados de esgotamento de orçamento
+
+
+## BUG FIXES - SERVICE WORKER
+- [x] Erro de registro do Service Worker - "Operation has been aborted" - CORRIGIDO: SW desabilitado em ambiente de desenvolvimento
