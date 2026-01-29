@@ -82,7 +82,10 @@ const menuGroups: Array<{
   {
     label: "Principal",
     items: [
-      { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+      { icon: LayoutDashboard, label: "Dashboard Geral", path: "/" },
+      { icon: Target, label: "Dashboard CEO", path: "/dashboard/ceo" },
+      { icon: Factory, label: "Dashboard Gerente", path: "/dashboard/gerente" },
+      { icon: Activity, label: "Dashboard Operador", path: "/dashboard/operador" },
     ],
   },
   {

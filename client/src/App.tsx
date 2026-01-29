@@ -52,6 +52,9 @@ import Relatorios from "./pages/Relatorios";
 import { useKeyboardShortcuts } from "./components/KeyboardShortcuts";
 import HistoricoPrecos from "./pages/HistoricoPrecos";
 import RankingProdutores from "./pages/RankingProdutores";
+import DashboardCEO from "./pages/DashboardCEO";
+import DashboardGerente from "./pages/DashboardGerente";
+import DashboardOperador from "./pages/DashboardOperador";
 
 function Router() {
   return (
@@ -59,6 +62,10 @@ function Router() {
       <Switch>
         {/* Tarefa 1 */}
         <Route path="/" component={Dashboard} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/dashboard/ceo" component={DashboardCEO} />
+        <Route path="/dashboard/gerente" component={DashboardGerente} />
+        <Route path="/dashboard/operador" component={DashboardOperador} />
         <Route path="/recebimento" component={Recebimento} />
         <Route path="/produtores" component={Produtores} />
         <Route path="/pagamentos" component={Pagamentos} />

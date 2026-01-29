@@ -545,11 +545,11 @@
 - [ ] Cálculo de ponto de equilíbrio (pendente)
 - [ ] Exportação para Excel (pendente)
 
-### Fase 7: Dashboards por Perfil (16h)
-- [ ] Dashboard CEO: visão estratégica, KPIs financeiros, tendências
-- [ ] Dashboard Gerente: operacional, produção, qualidade
-- [ ] Dashboard Operador: chão de fábrica, OPs do dia, metas
-- [ ] Seletor de dashboard no header
+### Fase 7: Dashboards por Perfil (16h) ✅
+- [x] Dashboard CEO: visão estratégica, KPIs financeiros, tendências
+- [x] Dashboard Gerente: operacional, produção, qualidade, OEE, status das linhas
+- [x] Dashboard Operador: chão de fábrica, OPs do turno, checklist, metas
+- [x] Seletor de dashboard no menu lateral (Principal > Dashboard CEO/Gerente/Operador)
 
 ### Fase 8: Gráficos Interativos e KPIs Clicáveis (12h) ✅
 - [x] Tornar todos os KPIs do dashboard clicáveis
@@ -603,3 +603,11 @@
 - [ ] Sync automático ao reconectar
 
 **ESFORÇO TOTAL ESTIMADO: ~182 horas (4-5 semanas)**
+
+
+## IMPLEMENTAÇÃO DOS 3 DASHBOARDS POR PERFIL (29/01/2026)
+- [ ] Dashboard CEO (estratégico) - KPIs financeiros, tendências, visão macro
+- [ ] Dashboard Gerente (operacional) - produção, qualidade, equipe
+- [ ] Dashboard Operador (chão de fábrica) - OPs do dia, metas, tarefas
+- [ ] Seletor de dashboard no header/menu
+- [ ] Rotas /dashboard/ceo, /dashboard/gerente, /dashboard/operador
