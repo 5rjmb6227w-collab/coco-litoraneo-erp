@@ -491,3 +491,115 @@
 - Nenhuma deficiência crítica identificada
 - 6 deficiências médias documentadas
 - 8 deficiências baixas documentadas
+
+
+
+## IMPLEMENTAÇÃO COMPLETA - FUNCIONALIDADES DO SISTEMA EXTERNO (29/01/2026)
+
+### Fase 1: Autenticação Independente (24h) ✅
+- [x] Implementar login com email/senha (sem OAuth Manus)
+- [x] Criar tabela de usuários com hash de senha (bcrypt)
+- [x] Implementar 2FA com TOTP (Google Authenticator)
+- [x] Criar tabela de sessões ativas
+- [x] Adicionar endpoints /auth/login, /auth/verify-2fa, /auth/setup-2fa
+- [x] Criar página de login própria
+- [ ] Implementar recuperação de senha por email (pendente)
+
+### Fase 2: QR Codes para Rastreabilidade (12h) ✅
+- [x] Implementar geração de QR Codes para lotes
+- [x] Criar endpoint /api/batches/:id/qrcode
+- [x] Implementar QR Code para cargas
+- [x] Criar endpoint /api/loads/qr/:numeroCarga
+- [x] Adicionar botão de impressão de etiquetas
+- [ ] Criar página de leitura de QR Code (pendente)
+
+### Fase 3: Relatórios PDF e Excel (16h) ✅
+- [x] Implementar geração de relatórios PDF
+- [x] Relatório de produção diário em PDF
+- [x] Relatório de rastreabilidade em PDF
+- [x] Relatório financeiro em PDF
+- [x] Exportação para Excel (.xlsx) em todos os módulos
+
+### Fase 4: Tema Dark com Toggle (8h) ✅
+- [x] Implementar tema escuro
+- [x] Aplicar cores consistentes com paleta coco
+- [x] Criar toggle de tema no menu do usuário
+- [x] Persistência de preferência de tema
+
+### Fase 5: Calendário de Produção (20h) ✅
+- [x] Implementar visualização em calendário mensal
+- [x] Adicionar planejamento semanal
+- [x] Cores por status de OP
+- [x] Navegação entre meses
+- [ ] Permitir drag-and-drop de OPs no calendário (pendente)
+
+### Fase 6: Módulo de Custos Completo (24h) ✅
+- [x] Criar tabela de custos fixos (aluguel, energia, mão de obra)
+- [x] Implementar cálculo de custo por SKU usando BOMs
+- [x] Criar página /custos com interface completa
+- [x] Cards de resumo: Custo Total, Custo/kg, Margem Média
+- [x] Gráfico de distribuição de custos (pizza)
+- [x] Gráfico de evolução temporal de custos
+- [x] Análise de rentabilidade por produto
+- [x] Tabela de custos por SKU
+- [ ] Cálculo de ponto de equilíbrio (pendente)
+- [ ] Exportação para Excel (pendente)
+
+### Fase 7: Dashboards por Perfil (16h)
+- [ ] Dashboard CEO: visão estratégica, KPIs financeiros, tendências
+- [ ] Dashboard Gerente: operacional, produção, qualidade
+- [ ] Dashboard Operador: chão de fábrica, OPs do dia, metas
+- [ ] Seletor de dashboard no header
+
+### Fase 8: Gráficos Interativos e KPIs Clicáveis (12h) ✅
+- [x] Tornar todos os KPIs do dashboard clicáveis
+- [x] Navegação para página de origem
+- [x] Gráficos clicáveis com navegação
+- [x] Tooltips informativos em todos os gráficos
+
+### Fase 9: Alertas Clicáveis com Navegação (6h)
+- [ ] Estoque baixo → Página de Estoque filtrada pelo SKU
+- [ ] Lote vencendo → Página de Lotes com lote destacado
+- [ ] Conta vencendo → Página Financeira filtrada
+- [ ] Carga pendente → Página de Cargas com carga em questão
+- [ ] OP atrasada → Página de Produção com OP destacada
+
+### Fase 10: Histórico de Preços e Ranking de Produtores (8h) ✅
+- [x] Registrar histórico de preços por fornecedor/SKU
+- [x] Criar gráfico de evolução de preços
+- [x] Adicionar métricas de qualidade histórica por produtor
+- [x] Criar ranking de produtores por qualidade (com pódio visual)
+
+### Fase 11: Atalhos de Teclado Completos (4h) ✅
+- [x] Ctrl+K: Busca global
+- [x] Shift+?: Ajuda/lista de atalhos
+- [x] 1-9: Navegação rápida entre páginas
+- [x] Alt+N: Nova OP
+- [x] Alt+C: Nova Carga
+- [x] Alt+P: Novo Produtor
+- [x] Esc: Fechar modais
+
+### Fase 12: Notificações Push Browser + Email (12h)
+- [ ] Implementar Web Push API
+- [ ] Configurar envio de emails (SMTP)
+- [ ] Criar sistema de preferências de notificação
+- [ ] Notificar estoque baixo
+- [ ] Notificar lotes vencendo
+- [ ] Notificar contas a vencer
+
+### Fase 13: Log de Alterações Detalhado (8h)
+- [ ] Implementar histórico de alterações em registros críticos
+- [ ] Rastreabilidade de mudanças em OPs
+- [ ] Rastreabilidade de mudanças em lotes
+- [ ] Rastreabilidade de mudanças no financeiro
+- [ ] Visualização de diff (antes/depois)
+
+### Fase 14: PWA/Offline Completo (12h)
+- [ ] Criar Service Worker avançado (sw.js)
+- [ ] Implementar IndexedDB para dados offline
+- [ ] Criar manifest.json com ícones
+- [ ] Adicionar página offline customizada
+- [ ] Configurar instalação como app nativo
+- [ ] Sync automático ao reconectar
+
+**ESFORÇO TOTAL ESTIMADO: ~182 horas (4-5 semanas)**

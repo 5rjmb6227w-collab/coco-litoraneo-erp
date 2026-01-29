@@ -44,6 +44,14 @@ import AdminSecurity from "./pages/AdminSecurity";
 import AIAgents from "./pages/AIAgents";
 import MagicMoments from "./pages/MagicMoments";
 import { CopilotFloatingButton } from "./components/copilot/CopilotFloatingButton";
+import LoginLocal from "./pages/LoginLocal";
+import Setup2FA from "./pages/Setup2FA";
+import Custos from "./pages/Custos";
+import CalendarioProducao from "./pages/CalendarioProducao";
+import Relatorios from "./pages/Relatorios";
+import { useKeyboardShortcuts } from "./components/KeyboardShortcuts";
+import HistoricoPrecos from "./pages/HistoricoPrecos";
+import RankingProdutores from "./pages/RankingProdutores";
 
 function Router() {
   return (
@@ -88,6 +96,24 @@ function Router() {
         <Route path="/ia/agentes" component={AIAgents} />
         <Route path="/ia/momentos-magicos" component={MagicMoments} />
         
+        {/* Gestão de Custos */}
+        <Route path="/custos" component={Custos} />
+        
+        {/* Calendário de Produção */}
+        <Route path="/producao/calendario" component={CalendarioProducao} />
+        
+        {/* Relatórios */}
+        <Route path="/relatorios" component={Relatorios} />
+        
+        {/* Histórico de Preços */}
+        <Route path="/historico-precos" component={HistoricoPrecos} />
+        
+        {/* Ranking de Produtores */}
+        <Route path="/ranking-produtores" component={RankingProdutores} />
+        
+        {/* Segurança e Autenticação */}
+        <Route path="/seguranca/2fa" component={Setup2FA} />
+        
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>
@@ -104,19 +130,27 @@ function LoginRouter() {
   );
 }
 
+function KeyboardShortcutsProvider({ children }: { children: React.ReactNode }) {
+  useKeyboardShortcuts();
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
+      <ThemeProvider defaultTheme="light" switchable={true}>
         <TooltipProvider>
           <Toaster richColors position="bottom-right" />
-          <Switch>
-            <Route path="/login" component={Login} />
-            <Route>
-              <Router />
-              <CopilotFloatingButton />
-            </Route>
-          </Switch>
+          <KeyboardShortcutsProvider>
+            <Switch>
+              <Route path="/login" component={Login} />
+              <Route path="/login-local" component={LoginLocal} />
+              <Route>
+                <Router />
+                <CopilotFloatingButton />
+              </Route>
+            </Switch>
+          </KeyboardShortcutsProvider>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

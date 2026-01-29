@@ -1748,3 +1748,240 @@ export const backupRecords = mysqlTable("backup_records", {
 
 export type BackupRecord = typeof backupRecords.$inferSelect;
 export type InsertBackupRecord = typeof backupRecords.$inferInsert;
+
+
+// ============================================================================
+// AUTENTICAÇÃO PRÓPRIA - LOGIN COM EMAIL/SENHA
+// ============================================================================
+export const userCredentials = mysqlTable("user_credentials", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+  passwordSalt: varchar("passwordSalt", { length: 64 }).notNull(),
+  passwordChangedAt: timestamp("passwordChangedAt").defaultNow().notNull(),
+  passwordHistory: json("passwordHistory"), // Array of previous hashes
+  failedLoginAttempts: int("failedLoginAttempts").default(0),
+  lockedUntil: timestamp("lockedUntil"),
+  mustChangePassword: boolean("mustChangePassword").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserCredential = typeof userCredentials.$inferSelect;
+export type InsertUserCredential = typeof userCredentials.$inferInsert;
+
+// ============================================================================
+// SESSÕES DE USUÁRIO - GESTÃO DE SESSÕES ATIVAS
+// ============================================================================
+export const userActiveSessions = mysqlTable("user_active_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  sessionToken: varchar("sessionToken", { length: 255 }).notNull().unique(),
+  refreshToken: varchar("refreshToken", { length: 255 }),
+  deviceInfo: text("deviceInfo"),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+  lastActivityAt: timestamp("lastActivityAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  isValid: boolean("isValid").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type UserActiveSession = typeof userActiveSessions.$inferSelect;
+export type InsertUserActiveSession = typeof userActiveSessions.$inferInsert;
+
+// ============================================================================
+// RECUPERAÇÃO DE SENHA
+// ============================================================================
+export const passwordResetTokens = mysqlTable("password_reset_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  usedAt: timestamp("usedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
+// ============================================================================
+// QR CODES - RASTREABILIDADE
+// ============================================================================
+export const qrCodes = mysqlTable("qr_codes", {
+  id: int("id").autoincrement().primaryKey(),
+  type: mysqlEnum("type", ["batch", "load", "product", "equipment"]).notNull(),
+  entityId: int("entityId").notNull(),
+  code: varchar("code", { length: 100 }).notNull().unique(),
+  data: json("data"), // Dados adicionais do QR
+  generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+  generatedBy: int("generatedBy"),
+  printedAt: timestamp("printedAt"),
+  printedBy: int("printedBy"),
+  scannedCount: int("scannedCount").default(0),
+  lastScannedAt: timestamp("lastScannedAt"),
+  active: boolean("active").default(true),
+});
+
+export type QRCode = typeof qrCodes.$inferSelect;
+export type InsertQRCode = typeof qrCodes.$inferInsert;
+
+// ============================================================================
+// HISTÓRICO DE PREÇOS DE COMPRA
+// ============================================================================
+export const priceHistory = mysqlTable("price_history", {
+  id: int("id").autoincrement().primaryKey(),
+  type: mysqlEnum("type", ["supplier", "producer", "sku"]).notNull(),
+  entityId: int("entityId").notNull(),
+  skuId: int("skuId"),
+  price: decimal("price", { precision: 14, scale: 4 }).notNull(),
+  unit: varchar("unit", { length: 20 }).notNull(),
+  effectiveDate: date("effectiveDate").notNull(),
+  endDate: date("endDate"),
+  source: varchar("source", { length: 100 }), // "purchase_order", "contract", "manual"
+  sourceId: int("sourceId"),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type PriceHistoryRecord = typeof priceHistory.$inferSelect;
+export type InsertPriceHistory = typeof priceHistory.$inferInsert;
+
+// ============================================================================
+// RANKING DE PRODUTORES
+// ============================================================================
+export const producerRankings = mysqlTable("producer_rankings", {
+  id: int("id").autoincrement().primaryKey(),
+  producerId: int("producerId").notNull(),
+  period: varchar("period", { length: 7 }).notNull(), // "2026-01" (YYYY-MM)
+  
+  // Métricas de volume
+  totalLoads: int("totalLoads").default(0),
+  totalWeight: decimal("totalWeight", { precision: 14, scale: 2 }).default("0"),
+  avgWeightPerLoad: decimal("avgWeightPerLoad", { precision: 10, scale: 2 }).default("0"),
+  
+  // Métricas de qualidade
+  avgQualityScore: decimal("avgQualityScore", { precision: 5, scale: 2 }),
+  qualityALoads: int("qualityALoads").default(0),
+  qualityBLoads: int("qualityBLoads").default(0),
+  qualityCLoads: int("qualityCLoads").default(0),
+  rejectedLoads: int("rejectedLoads").default(0),
+  
+  // Métricas financeiras
+  totalPaid: decimal("totalPaid", { precision: 14, scale: 2 }).default("0"),
+  avgPricePerKg: decimal("avgPricePerKg", { precision: 10, scale: 4 }).default("0"),
+  
+  // Rankings
+  volumeRank: int("volumeRank"),
+  qualityRank: int("qualityRank"),
+  overallRank: int("overallRank"),
+  overallScore: decimal("overallScore", { precision: 5, scale: 2 }),
+  
+  calculatedAt: timestamp("calculatedAt").defaultNow().notNull(),
+});
+
+export type ProducerRanking = typeof producerRankings.$inferSelect;
+export type InsertProducerRanking = typeof producerRankings.$inferInsert;
+
+// ============================================================================
+// CUSTOS FIXOS (para Módulo de Custos)
+// ============================================================================
+export const fixedCosts = mysqlTable("fixed_costs", {
+  id: int("id").autoincrement().primaryKey(),
+  category: mysqlEnum("category", [
+    "aluguel", "energia", "agua", "gas", "internet", "telefone",
+    "manutencao", "seguro", "impostos", "salarios", "beneficios",
+    "depreciacao", "limpeza", "seguranca", "outros"
+  ]).notNull(),
+  description: varchar("description", { length: 255 }).notNull(),
+  monthlyValue: decimal("monthlyValue", { precision: 14, scale: 2 }).notNull(),
+  effectiveFrom: date("effectiveFrom").notNull(),
+  effectiveTo: date("effectiveTo"),
+  allocationMethod: mysqlEnum("allocationMethod", ["direto", "proporcional_producao", "proporcional_horas", "fixo"]).default("proporcional_producao"),
+  allocationPercentage: decimal("allocationPercentage", { precision: 5, scale: 2 }).default("100"),
+  observations: text("observations"),
+  active: boolean("active").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type FixedCost = typeof fixedCosts.$inferSelect;
+export type InsertFixedCost = typeof fixedCosts.$inferInsert;
+
+// ============================================================================
+// NOTIFICAÇÕES PUSH
+// ============================================================================
+export const pushSubscriptions = mysqlTable("push_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  endpoint: text("endpoint").notNull(),
+  p256dh: varchar("p256dh", { length: 255 }).notNull(),
+  auth: varchar("auth", { length: 255 }).notNull(),
+  deviceType: varchar("deviceType", { length: 50 }),
+  deviceName: varchar("deviceName", { length: 100 }),
+  active: boolean("active").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  lastUsedAt: timestamp("lastUsedAt"),
+});
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
+
+// ============================================================================
+// PREFERÊNCIAS DE NOTIFICAÇÃO
+// ============================================================================
+export const notificationPreferences = mysqlTable("notification_preferences", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  
+  // Canais
+  emailEnabled: boolean("emailEnabled").default(true),
+  pushEnabled: boolean("pushEnabled").default(true),
+  whatsappEnabled: boolean("whatsappEnabled").default(false),
+  
+  // Tipos de notificação
+  stockAlerts: boolean("stockAlerts").default(true),
+  expirationAlerts: boolean("expirationAlerts").default(true),
+  paymentAlerts: boolean("paymentAlerts").default(true),
+  productionAlerts: boolean("productionAlerts").default(true),
+  qualityAlerts: boolean("qualityAlerts").default(true),
+  systemAlerts: boolean("systemAlerts").default(true),
+  
+  // Horários
+  quietHoursStart: varchar("quietHoursStart", { length: 5 }), // "22:00"
+  quietHoursEnd: varchar("quietHoursEnd", { length: 5 }), // "07:00"
+  
+  // Frequência de resumos
+  dailySummary: boolean("dailySummary").default(true),
+  weeklySummary: boolean("weeklySummary").default(true),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type NotificationPreference = typeof notificationPreferences.$inferSelect;
+export type InsertNotificationPreference = typeof notificationPreferences.$inferInsert;
+
+// ============================================================================
+// LOG DE ALTERAÇÕES DETALHADO
+// ============================================================================
+export const changeLog = mysqlTable("change_log", {
+  id: int("id").autoincrement().primaryKey(),
+  tableName: varchar("tableName", { length: 100 }).notNull(),
+  recordId: int("recordId").notNull(),
+  action: mysqlEnum("action", ["create", "update", "delete"]).notNull(),
+  fieldName: varchar("fieldName", { length: 100 }),
+  oldValue: text("oldValue"),
+  newValue: text("newValue"),
+  changedAt: timestamp("changedAt").defaultNow().notNull(),
+  changedBy: int("changedBy"),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+});
+
+export type ChangeLogEntry = typeof changeLog.$inferSelect;
+export type InsertChangeLog = typeof changeLog.$inferInsert;

@@ -55,7 +55,13 @@ import {
   Target,
   CheckSquare,
   Lock,
+  Sun,
+  Moon,
+  Calculator,
+  Calendar as CalendarIcon,
+  TrendingUp,
 } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -85,6 +91,7 @@ const menuGroups: Array<{
       { icon: Truck, label: "Recebimento", path: "/recebimento" },
       { icon: Users, label: "Produtores", path: "/produtores" },
       { icon: Wallet, label: "Pagamentos", path: "/pagamentos" },
+      { icon: Activity, label: "Ranking Produtores", path: "/ranking-produtores" },
     ],
   },
   {
@@ -93,6 +100,7 @@ const menuGroups: Array<{
       { icon: Factory, label: "Apontamentos", path: "/producao/apontamentos" },
       { icon: AlertTriangle, label: "Problemas do Dia", path: "/producao/problemas" },
       { icon: Target, label: "OP & Metas", path: "/producao/expandida" },
+      { icon: CalendarIcon, label: "Calendário", path: "/producao/calendario" },
     ],
   },
   {
@@ -113,6 +121,9 @@ const menuGroups: Array<{
     items: [
       { icon: ShoppingCart, label: "Compras", path: "/compras" },
       { icon: DollarSign, label: "Financeiro", path: "/financeiro" },
+      { icon: Calculator, label: "Custos", path: "/custos" },
+      { icon: FileText, label: "Relatórios", path: "/relatorios" },
+      { icon: TrendingUp, label: "Hist. Preços", path: "/historico-precos" },
     ],
   },
   {
@@ -245,6 +256,7 @@ function DashboardLayoutContent({
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const { theme, toggleTheme, switchable } = useTheme();
   const [openGroups, setOpenGroups] = useState<string[]>(["Principal", "Operações", "Produção", "Almoxarifado", "Estoque", "Gestão", "Qualidade", "Pessoas", "Administração", "Copiloto IA"]);
 
   // Find active menu item
@@ -391,6 +403,19 @@ function DashboardLayoutContent({
                   {user?.role === "ceo" || user?.role === "admin" ? "Administrador" : "Usuário"}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                {switchable && toggleTheme && (
+                  <DropdownMenuItem
+                    onClick={toggleTheme}
+                    className="cursor-pointer"
+                  >
+                    {theme === "dark" ? (
+                      <><Sun className="mr-2 h-4 w-4" /><span>Tema Claro</span></>
+                    ) : (
+                      <><Moon className="mr-2 h-4 w-4" /><span>Tema Escuro</span></>
+                    )}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer text-destructive focus:text-destructive"
@@ -426,7 +451,19 @@ function DashboardLayoutContent({
                 </div>
               </div>
             </div>
-            <LanguageSwitcher variant="compact" />
+            <div className="flex items-center gap-2">
+              {switchable && toggleTheme && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleTheme}
+                  className="h-9 w-9"
+                >
+                  {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                </Button>
+              )}
+              <LanguageSwitcher variant="compact" />
+            </div>
           </div>
         )}
         <main className="flex-1 p-4 md:p-6 bg-background min-h-screen">{children}</main>

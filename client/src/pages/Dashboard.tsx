@@ -322,15 +322,18 @@ export default function Dashboard() {
               <div className="h-[300px]">
                 {productionChartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={productionChartData}>
+                    <BarChart data={productionChartData} onClick={() => navigate("/producao/apontamentos")} style={{ cursor: 'pointer' }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="sku" />
                       <YAxis />
-                      <Tooltip formatter={(value: number) => `${formatNumber(value)} kg`} />
+                      <Tooltip 
+                        formatter={(value: number) => `${formatNumber(value)} kg`}
+                        contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
+                      />
                       <Legend />
-                      <Bar dataKey="flocos" name="Flocos" fill="#8B7355" />
-                      <Bar dataKey="medio" name="Médio" fill="#D4C4B0" />
-                      <Bar dataKey="fino" name="Fino" fill="#5D4E37" />
+                      <Bar dataKey="flocos" name="Flocos" fill="#8B7355" className="cursor-pointer hover:opacity-80" />
+                      <Bar dataKey="medio" name="Médio" fill="#D4C4B0" className="cursor-pointer hover:opacity-80" />
+                      <Bar dataKey="fino" name="Fino" fill="#5D4E37" className="cursor-pointer hover:opacity-80" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -392,11 +395,14 @@ export default function Dashboard() {
               <div className="h-[300px]">
                 {loadsChartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={loadsChartData}>
+                    <LineChart data={loadsChartData} onClick={() => navigate("/recebimento")} style={{ cursor: 'pointer' }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" />
                       <YAxis />
-                      <Tooltip formatter={(value: number) => `${formatNumber(value)} kg`} />
+                      <Tooltip 
+                        formatter={(value: number) => `${formatNumber(value)} kg`}
+                        contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
+                      />
                       <Legend />
                       <Line type="monotone" dataKey="peso" name="Peso (kg)" stroke="#8B7355" strokeWidth={2} />
                     </LineChart>

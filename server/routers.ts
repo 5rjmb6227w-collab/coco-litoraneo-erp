@@ -5,6 +5,10 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { aiRouter } from "./ai/aiRouter";
+import { authLocalRouter } from "./auth/authRouter";
+import { qrcodeRouter } from "./qrcode/qrcodeRouter";
+import { reportRouter } from "./reports/reportRouter";
+import { costsRouter } from "./costs/costsRouter";
 import { emitEvent, EVENT_TYPES } from "./ai/eventEmitter";
 
 export const appRouter = router({
@@ -2453,6 +2457,26 @@ export const appRouter = router({
   // AI COPILOT ROUTER
   // ============================================================================
   ai: aiRouter,
+
+  // ============================================================================
+  // AUTENTICAÇÃO PRÓPRIA (EMAIL/SENHA + 2FA)
+  // ============================================================================
+  authLocal: authLocalRouter,
+
+  // ============================================================================
+  // QR CODES
+  // ============================================================================
+  qrcode: qrcodeRouter,
+
+  // ============================================================================
+  // RELATÓRIOS
+  // ============================================================================
+  reports: reportRouter,
+
+  // ============================================================================
+  // CUSTOS
+  // ============================================================================
+  costs: costsRouter,
 });
 
 export type AppRouter = typeof appRouter;
