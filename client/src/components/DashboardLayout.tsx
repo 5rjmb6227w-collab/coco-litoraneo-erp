@@ -60,6 +60,8 @@ import {
   Calculator,
   Calendar as CalendarIcon,
   TrendingUp,
+  CheckCircle,
+  BarChart3,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -127,6 +129,19 @@ const menuGroups: Array<{
       { icon: Calculator, label: "Custos", path: "/custos" },
       { icon: FileText, label: "Relatórios", path: "/relatorios" },
       { icon: TrendingUp, label: "Hist. Preços", path: "/historico-precos" },
+    ],
+  },
+  {
+    label: "Orçamento",
+    items: [
+      { icon: Target, label: "Preparação", path: "/orcamento/preparacao" },
+      { icon: Activity, label: "Acompanhamento", path: "/orcamento/acompanhamento" },
+      { icon: Bot, label: "Análise IA", path: "/orcamento/analise-ia" },
+      { icon: BarChart3, label: "Cenários", path: "/orcamento/cenarios" },
+      { icon: DollarSign, label: "CAPEX", path: "/orcamento/capex" },
+      { icon: TrendingUp, label: "Forecast", path: "/orcamento/forecast" },
+      { icon: CheckCircle, label: "Aprovação", path: "/orcamento/aprovacao" },
+      { icon: FileText, label: "Relatórios", path: "/orcamento/relatorios" },
     ],
   },
   {

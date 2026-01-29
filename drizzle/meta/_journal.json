@@ -78,6 +78,13 @@
       "when": 1769712846283,
       "tag": "0010_neat_greymalkin",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1769725865543,
+      "tag": "0011_perpetual_lyja",
+      "breakpoints": true
     }
   ]
 }

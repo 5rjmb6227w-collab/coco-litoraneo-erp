@@ -1985,3 +1985,248 @@ export const changeLog = mysqlTable("change_log", {
 
 export type ChangeLogEntry = typeof changeLog.$inferSelect;
 export type InsertChangeLog = typeof changeLog.$inferInsert;
+
+
+// ============================================================================
+// ORÇAMENTO - BUDGETS (Orçamentos Anuais/Mensais)
+// ============================================================================
+export const budgets = mysqlTable("budgets", {
+  id: int("id").autoincrement().primaryKey(),
+  year: int("year").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  type: mysqlEnum("type", ["anual", "mensal", "trimestral"]).default("anual").notNull(),
+  scenario: mysqlEnum("scenario", ["conservador", "moderado", "otimista", "base_zero"]).default("moderado").notNull(),
+  status: mysqlEnum("status", ["rascunho", "em_aprovacao", "aprovado", "revisao", "encerrado"]).default("rascunho").notNull(),
+  baseYear: int("baseYear"), // Ano base para importação de histórico
+  adjustmentPercent: decimal("adjustmentPercent", { precision: 5, scale: 2 }).default("0"),
+  totalRevenue: decimal("totalRevenue", { precision: 18, scale: 2 }).default("0"),
+  totalExpenses: decimal("totalExpenses", { precision: 18, scale: 2 }).default("0"),
+  totalCapex: decimal("totalCapex", { precision: 18, scale: 2 }).default("0"),
+  approvedBy: int("approvedBy"),
+  approvedAt: timestamp("approvedAt"),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type Budget = typeof budgets.$inferSelect;
+export type InsertBudget = typeof budgets.$inferInsert;
+
+// ============================================================================
+// ORÇAMENTO - LINHAS DO ORÇAMENTO (Budget Lines)
+// ============================================================================
+export const budgetLines = mysqlTable("budget_lines", {
+  id: int("id").autoincrement().primaryKey(),
+  budgetId: int("budgetId").notNull(),
+  costCenter: mysqlEnum("costCenter", ["producao", "comercial", "administrativo", "rh", "manutencao", "qualidade", "logistica", "ti"]).notNull(),
+  category: mysqlEnum("category", [
+    "receita_vendas", "receita_servicos", "receita_outras",
+    "custo_materia_prima", "custo_mao_obra_direta", "custo_energia", "custo_embalagem",
+    "despesa_pessoal", "despesa_aluguel", "despesa_utilidades", "despesa_marketing",
+    "despesa_manutencao", "despesa_transporte", "despesa_administrativa", "despesa_outras",
+    "investimento_equipamento", "investimento_infraestrutura", "investimento_tecnologia", "investimento_outros"
+  ]).notNull(),
+  isCapex: boolean("isCapex").default(false),
+  description: varchar("description", { length: 500 }),
+  jan: decimal("jan", { precision: 14, scale: 2 }).default("0"),
+  fev: decimal("fev", { precision: 14, scale: 2 }).default("0"),
+  mar: decimal("mar", { precision: 14, scale: 2 }).default("0"),
+  abr: decimal("abr", { precision: 14, scale: 2 }).default("0"),
+  mai: decimal("mai", { precision: 14, scale: 2 }).default("0"),
+  jun: decimal("jun", { precision: 14, scale: 2 }).default("0"),
+  jul: decimal("jul", { precision: 14, scale: 2 }).default("0"),
+  ago: decimal("ago", { precision: 14, scale: 2 }).default("0"),
+  set: decimal("set", { precision: 14, scale: 2 }).default("0"),
+  out: decimal("out", { precision: 14, scale: 2 }).default("0"),
+  nov: decimal("nov", { precision: 14, scale: 2 }).default("0"),
+  dez: decimal("dez", { precision: 14, scale: 2 }).default("0"),
+  totalYear: decimal("totalYear", { precision: 18, scale: 2 }).default("0"),
+  justification: text("justification"), // Justificativa obrigatória para OBZ
+  priority: mysqlEnum("priority", ["essencial", "importante", "desejavel"]).default("importante"),
+  roiPercent: decimal("roiPercent", { precision: 8, scale: 2 }), // Para CAPEX
+  paybackMonths: int("paybackMonths"), // Para CAPEX
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type BudgetLine = typeof budgetLines.$inferSelect;
+export type InsertBudgetLine = typeof budgetLines.$inferInsert;
+
+// ============================================================================
+// ORÇAMENTO - REALIZADO (Budget Actuals)
+// ============================================================================
+export const budgetActuals = mysqlTable("budget_actuals", {
+  id: int("id").autoincrement().primaryKey(),
+  budgetLineId: int("budgetLineId").notNull(),
+  month: int("month").notNull(), // 1-12
+  year: int("year").notNull(),
+  actualValue: decimal("actualValue", { precision: 14, scale: 2 }).notNull(),
+  budgetedValue: decimal("budgetedValue", { precision: 14, scale: 2 }).notNull(),
+  varianceValue: decimal("varianceValue", { precision: 14, scale: 2 }).notNull(),
+  variancePercent: decimal("variancePercent", { precision: 8, scale: 2 }).notNull(),
+  status: mysqlEnum("status", ["verde", "amarelo", "vermelho"]).notNull(), // Semáforo
+  sourceType: varchar("sourceType", { length: 100 }), // "financial_entry", "purchase", "payroll"
+  sourceId: int("sourceId"),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BudgetActual = typeof budgetActuals.$inferSelect;
+export type InsertBudgetActual = typeof budgetActuals.$inferInsert;
+
+// ============================================================================
+// ORÇAMENTO - CENÁRIOS (Budget Scenarios)
+// ============================================================================
+export const budgetScenarios = mysqlTable("budget_scenarios", {
+  id: int("id").autoincrement().primaryKey(),
+  budgetId: int("budgetId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  type: mysqlEnum("type", ["conservador", "moderado", "otimista"]).notNull(),
+  assumptions: json("assumptions"), // Premissas do cenário
+  revenueAdjustment: decimal("revenueAdjustment", { precision: 8, scale: 2 }).default("0"),
+  expenseAdjustment: decimal("expenseAdjustment", { precision: 8, scale: 2 }).default("0"),
+  inflationRate: decimal("inflationRate", { precision: 5, scale: 2 }).default("0"),
+  growthRate: decimal("growthRate", { precision: 5, scale: 2 }).default("0"),
+  totalRevenue: decimal("totalRevenue", { precision: 18, scale: 2 }).default("0"),
+  totalExpenses: decimal("totalExpenses", { precision: 18, scale: 2 }).default("0"),
+  netResult: decimal("netResult", { precision: 18, scale: 2 }).default("0"),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BudgetScenario = typeof budgetScenarios.$inferSelect;
+export type InsertBudgetScenario = typeof budgetScenarios.$inferInsert;
+
+// ============================================================================
+// ORÇAMENTO - WORKFLOW DE APROVAÇÃO
+// ============================================================================
+export const budgetApprovals = mysqlTable("budget_approvals", {
+  id: int("id").autoincrement().primaryKey(),
+  budgetId: int("budgetId").notNull(),
+  step: int("step").notNull(), // 1=Gerente, 2=Diretor, 3=CEO
+  role: mysqlEnum("role", ["gerente", "diretor", "ceo"]).notNull(),
+  status: mysqlEnum("status", ["pendente", "aprovado", "rejeitado", "delegado"]).default("pendente").notNull(),
+  assignedTo: int("assignedTo").notNull(),
+  delegatedTo: int("delegatedTo"),
+  delegatedReason: text("delegatedReason"),
+  approvedBy: int("approvedBy"),
+  approvedAt: timestamp("approvedAt"),
+  comments: text("comments"),
+  minValue: decimal("minValue", { precision: 18, scale: 2 }), // Alçada mínima
+  maxValue: decimal("maxValue", { precision: 18, scale: 2 }), // Alçada máxima
+  dueDate: timestamp("dueDate"),
+  reminderSent: boolean("reminderSent").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BudgetApproval = typeof budgetApprovals.$inferSelect;
+export type InsertBudgetApproval = typeof budgetApprovals.$inferInsert;
+
+// ============================================================================
+// ORÇAMENTO - FORECAST ROLLING (Previsão Contínua)
+// ============================================================================
+export const budgetForecasts = mysqlTable("budget_forecasts", {
+  id: int("id").autoincrement().primaryKey(),
+  budgetId: int("budgetId").notNull(),
+  budgetLineId: int("budgetLineId"),
+  forecastMonth: int("forecastMonth").notNull(), // Mês da previsão (1-12)
+  forecastYear: int("forecastYear").notNull(),
+  targetMonth: int("targetMonth").notNull(), // Mês alvo (1-12)
+  targetYear: int("targetYear").notNull(),
+  originalBudget: decimal("originalBudget", { precision: 14, scale: 2 }).notNull(),
+  previousForecast: decimal("previousForecast", { precision: 14, scale: 2 }),
+  currentForecast: decimal("currentForecast", { precision: 14, scale: 2 }).notNull(),
+  actualToDate: decimal("actualToDate", { precision: 14, scale: 2 }).default("0"),
+  varianceFromBudget: decimal("varianceFromBudget", { precision: 14, scale: 2 }),
+  varianceFromPrevious: decimal("varianceFromPrevious", { precision: 14, scale: 2 }),
+  confidenceLevel: mysqlEnum("confidenceLevel", ["alta", "media", "baixa"]).default("media"),
+  aiSuggestion: text("aiSuggestion"),
+  aiConfidence: decimal("aiConfidence", { precision: 5, scale: 2 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type BudgetForecast = typeof budgetForecasts.$inferSelect;
+export type InsertBudgetForecast = typeof budgetForecasts.$inferInsert;
+
+// ============================================================================
+// ORÇAMENTO - INDICADORES AVANÇADOS
+// ============================================================================
+export const budgetIndicators = mysqlTable("budget_indicators", {
+  id: int("id").autoincrement().primaryKey(),
+  budgetId: int("budgetId").notNull(),
+  month: int("month").notNull(),
+  year: int("year").notNull(),
+  burnRate: decimal("burnRate", { precision: 8, scale: 2 }), // Velocidade de consumo (%)
+  runRate: decimal("runRate", { precision: 18, scale: 2 }), // Projeção anualizada
+  varianceAccumulated: decimal("varianceAccumulated", { precision: 18, scale: 2 }), // Desvio acumulado
+  adherenceIndex: decimal("adherenceIndex", { precision: 5, scale: 2 }), // % de linhas dentro do orçado
+  linesOnBudget: int("linesOnBudget").default(0),
+  linesOverBudget: int("linesOverBudget").default(0),
+  linesUnderBudget: int("linesUnderBudget").default(0),
+  projectedYearEnd: decimal("projectedYearEnd", { precision: 18, scale: 2 }),
+  projectedVariance: decimal("projectedVariance", { precision: 18, scale: 2 }),
+  riskLevel: mysqlEnum("riskLevel", ["baixo", "medio", "alto", "critico"]).default("baixo"),
+  aiAnalysis: text("aiAnalysis"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BudgetIndicator = typeof budgetIndicators.$inferSelect;
+export type InsertBudgetIndicator = typeof budgetIndicators.$inferInsert;
+
+// ============================================================================
+// ORÇAMENTO - HISTÓRICO DE REVISÕES
+// ============================================================================
+export const budgetRevisions = mysqlTable("budget_revisions", {
+  id: int("id").autoincrement().primaryKey(),
+  budgetId: int("budgetId").notNull(),
+  budgetLineId: int("budgetLineId"),
+  revisionNumber: int("revisionNumber").notNull(),
+  revisionType: mysqlEnum("revisionType", ["criacao", "ajuste", "realocacao", "corte", "suplementacao"]).notNull(),
+  previousValue: decimal("previousValue", { precision: 14, scale: 2 }),
+  newValue: decimal("newValue", { precision: 14, scale: 2 }),
+  changePercent: decimal("changePercent", { precision: 8, scale: 2 }),
+  reason: text("reason").notNull(),
+  approvedBy: int("approvedBy"),
+  approvedAt: timestamp("approvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type BudgetRevision = typeof budgetRevisions.$inferSelect;
+export type InsertBudgetRevision = typeof budgetRevisions.$inferInsert;
+
+// ============================================================================
+// ORÇAMENTO - ALERTAS E INSIGHTS DA IA
+// ============================================================================
+export const budgetAiInsights = mysqlTable("budget_ai_insights", {
+  id: int("id").autoincrement().primaryKey(),
+  budgetId: int("budgetId").notNull(),
+  budgetLineId: int("budgetLineId"),
+  type: mysqlEnum("type", ["alerta", "previsao", "sugestao", "anomalia", "otimizacao"]).notNull(),
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("info").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  actionSuggested: text("actionSuggested"),
+  potentialSavings: decimal("potentialSavings", { precision: 14, scale: 2 }),
+  confidence: decimal("confidence", { precision: 5, scale: 2 }),
+  dataPoints: json("dataPoints"), // Dados que geraram o insight
+  status: mysqlEnum("status", ["novo", "visualizado", "em_analise", "resolvido", "ignorado"]).default("novo").notNull(),
+  resolvedBy: int("resolvedBy"),
+  resolvedAt: timestamp("resolvedAt"),
+  resolution: text("resolution"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt"),
+});
+
+export type BudgetAiInsight = typeof budgetAiInsights.$inferSelect;
+export type InsertBudgetAiInsight = typeof budgetAiInsights.$inferInsert;

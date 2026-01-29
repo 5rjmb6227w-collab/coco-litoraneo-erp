@@ -9,6 +9,7 @@ import { authLocalRouter } from "./auth/authRouter";
 import { qrcodeRouter } from "./qrcode/qrcodeRouter";
 import { reportRouter } from "./reports/reportRouter";
 import { costsRouter } from "./costs/costsRouter";
+import { budgetRouter } from "./budget/budgetRouter";
 import { emitEvent, EVENT_TYPES } from "./ai/eventEmitter";
 
 export const appRouter = router({
@@ -2477,6 +2478,11 @@ export const appRouter = router({
   // CUSTOS
   // ============================================================================
   costs: costsRouter,
+
+  // ============================================================================
+  // ORÇAMENTO
+  // ============================================================================
+  budget: budgetRouter,
 });
 
 export type AppRouter = typeof appRouter;

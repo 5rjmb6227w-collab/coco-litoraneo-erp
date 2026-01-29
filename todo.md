@@ -611,3 +611,84 @@
 - [ ] Dashboard Operador (chão de fábrica) - OPs do dia, metas, tarefas
 - [ ] Seletor de dashboard no header/menu
 - [ ] Rotas /dashboard/ceo, /dashboard/gerente, /dashboard/operador
+
+
+## MÓDULO DE ORÇAMENTO COMPLETO (29/01/2026)
+
+### Estrutura Base
+- [ ] Schema: tabela budgets (id, ano, nome, tipo, status, cenario, aprovado_por, aprovado_em)
+- [ ] Schema: tabela budget_lines (centro_custo, categoria, jan-dez, justificativa)
+- [ ] Schema: tabela budget_actuals (realizado linkado com financeiro)
+- [ ] Schema: tabela budget_scenarios (cenários conservador, moderado, otimista)
+- [ ] Schema: tabela budget_approvals (workflow de aprovação)
+- [ ] Schema: tabela budget_forecasts (forecast rolling 12 meses)
+
+### Fase 1: Preparação do Orçamento
+- [ ] Criar orçamento anual/mensal por centro de custo
+- [ ] Centros de custo: Produção, Comercial, Administrativo, RH, Manutenção
+- [ ] Definir metas de receita, custos e investimentos
+- [ ] Importar histórico do ano anterior como base
+- [ ] Permitir ajustes percentuais ou valores absolutos
+- [ ] Página /orcamento/preparacao
+
+### Fase 2: Acompanhamento Orçado x Realizado
+- [ ] Dashboard visual com gráficos comparativos
+- [ ] Variação percentual e absoluta por categoria
+- [ ] Semáforo de status: Verde (dentro), Amarelo (até 10%), Vermelho (>10%)
+- [ ] Drill-down por período (mês, trimestre, ano)
+- [ ] Página /orcamento/acompanhamento
+
+### Fase 3: Integração com IA (Copiloto)
+- [ ] Alertas automáticos de desvios orçamentários
+- [ ] Previsões de estouro de orçamento
+- [ ] Sugestões de ação para economia
+- [ ] Insights comparativos
+- [ ] Página /orcamento/analise-ia
+
+### Funcionalidade Adicional 1: Cenários de Orçamento
+- [ ] Criar múltiplos cenários: Conservador, Moderado, Otimista
+- [ ] Comparar cenários lado a lado
+- [ ] Simular impacto de variáveis
+- [ ] Análise de sensibilidade automática pela IA
+
+### Funcionalidade Adicional 2: Orçamento Base Zero (OBZ)
+- [ ] Opção de começar do zero
+- [ ] Justificativa obrigatória para cada linha
+- [ ] Aprovação hierárquica por alçada
+- [ ] Histórico de revisões com motivos
+
+### Funcionalidade Adicional 3: Orçamento de Capital (CAPEX)
+- [ ] Separar investimentos de custeio (OPEX)
+- [ ] Cálculo automático de ROI e Payback
+- [ ] Cronograma de desembolso de projetos
+- [ ] Integração com módulo de Compras
+
+### Funcionalidade Adicional 4: Forecast Rolling
+- [ ] Atualização mensal da previsão de fechamento
+- [ ] IA sugere ajustes baseado em tendências
+- [ ] Comparativo: Original vs Forecast vs Realizado
+- [ ] Projeção automática dos próximos 12 meses
+
+### Funcionalidade Adicional 5: Indicadores Avançados
+- [ ] Burn Rate: Velocidade de consumo do orçamento
+- [ ] Run Rate: Projeção anualizada baseada no realizado
+- [ ] Variância Acumulada: Desvio total desde início do ano
+- [ ] Índice de Aderência: % de linhas dentro do orçado
+
+### Funcionalidade Adicional 6: Workflow de Aprovação
+- [ ] Fluxo configurável: Solicitante → Gerente → Diretor → CEO
+- [ ] Notificações automáticas de pendências
+- [ ] Histórico de aprovações/rejeições com comentários
+- [ ] Delegação temporária (férias)
+
+### Funcionalidade Adicional 7: Relatórios Executivos
+- [ ] Resumo mensal automático para diretoria
+- [ ] Comparativo com benchmark do setor
+- [ ] Exportação para PDF/PowerPoint
+- [ ] Envio automático por email no fechamento
+
+### Funcionalidade Adicional 8: Integração IA Avançada
+- [ ] Detecção de anomalias em gastos
+- [ ] Recomendações preditivas sazonais
+- [ ] Otimização de alocação entre centros de custo
+- [ ] Alertas antecipados de esgotamento de orçamento

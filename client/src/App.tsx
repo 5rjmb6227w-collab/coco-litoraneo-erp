@@ -55,6 +55,14 @@ import RankingProdutores from "./pages/RankingProdutores";
 import DashboardCEO from "./pages/DashboardCEO";
 import DashboardGerente from "./pages/DashboardGerente";
 import DashboardOperador from "./pages/DashboardOperador";
+import OrcamentoPreparacao from "./pages/OrcamentoPreparacao";
+import OrcamentoAcompanhamento from "./pages/OrcamentoAcompanhamento";
+import OrcamentoAnaliseIA from "./pages/OrcamentoAnaliseIA";
+import OrcamentoCenarios from "./pages/OrcamentoCenarios";
+import OrcamentoCAPEX from "./pages/OrcamentoCAPEX";
+import OrcamentoForecast from "./pages/OrcamentoForecast";
+import OrcamentoAprovacao from "./pages/OrcamentoAprovacao";
+import OrcamentoRelatorios from "./pages/OrcamentoRelatorios";
 
 function Router() {
   return (
@@ -117,6 +125,16 @@ function Router() {
         
         {/* Ranking de Produtores */}
         <Route path="/ranking-produtores" component={RankingProdutores} />
+        
+        {/* Orçamento */}
+        <Route path="/orcamento/preparacao" component={OrcamentoPreparacao} />
+        <Route path="/orcamento/acompanhamento" component={OrcamentoAcompanhamento} />
+        <Route path="/orcamento/analise-ia" component={OrcamentoAnaliseIA} />
+        <Route path="/orcamento/cenarios" component={OrcamentoCenarios} />
+        <Route path="/orcamento/capex" component={OrcamentoCAPEX} />
+        <Route path="/orcamento/forecast" component={OrcamentoForecast} />
+        <Route path="/orcamento/aprovacao" component={OrcamentoAprovacao} />
+        <Route path="/orcamento/relatorios" component={OrcamentoRelatorios} />
         
         {/* Segurança e Autenticação */}
         <Route path="/seguranca/2fa" component={Setup2FA} />
