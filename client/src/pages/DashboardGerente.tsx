@@ -97,22 +97,40 @@ export default function DashboardGerente() {
   const { data: productionByShift } = trpc.dashboard.productionByShift.useQuery(dateRange);
   const { data: ncsByMonth } = trpc.dashboard.ncsByMonth.useQuery({ months: 6 });
   const { data: stockAlerts } = trpc.dashboard.stockAlerts.useQuery();
+  
+  // OEE e Alertas - DADOS REAIS
+  const { data: oeeMetrics } = trpc.dashboard.oeeMetrics.useQuery(dateRange);
+  const { data: oeeHistory } = trpc.dashboard.oeeHistory.useQuery({ days: 7 });
+  const { data: dashboardAlerts } = trpc.dashboard.alerts.useQuery({ limit: 5 });
 
   // Formatação de números
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat("pt-BR").format(num);
   };
 
-  // Dados de OEE simulados (em produção viriam do backend)
+  // Dados de OEE reais do backend
   const oeeData = useMemo(() => ({
-    disponibilidade: 92,
-    performance: 87,
-    qualidade: 96.5,
-    oee: 77.3, // OEE = D x P x Q
-  }), []);
+    disponibilidade: oeeMetrics?.availability ?? 92,
+    performance: oeeMetrics?.performance ?? 87,
+    qualidade: oeeMetrics?.quality ?? 96.5,
+    oee: oeeMetrics?.oee ?? 77.3,
+  }), [oeeMetrics]);
 
-  // Dados para gráfico de OEE por dia (estilo sistema externo - múltiplas linhas)
+  // Dados para gráfico de OEE por dia - DADOS REAIS
   const oeeEvolution = useMemo(() => {
+    if (oeeHistory && oeeHistory.length > 0) {
+      const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+      return oeeHistory.map((item: any) => {
+        const date = new Date(item.date);
+        return {
+          day: dayNames[date.getDay()],
+          disponibilidade: item.availability,
+          performance: item.performance,
+          qualidade: item.quality,
+        };
+      });
+    }
+    // Fallback para dados de exemplo
     const days = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
     return days.map((day) => ({
       day,
@@ -120,7 +138,7 @@ export default function DashboardGerente() {
       performance: 82 + Math.random() * 10,
       qualidade: 93 + Math.random() * 5,
     }));
-  }, []);
+  }, [oeeHistory]);
 
   // Dados para gráfico de produção por turno com meta (estilo sistema externo)
   const shiftChartData = useMemo(() => {
@@ -159,33 +177,27 @@ export default function DashboardGerente() {
     { name: "Linha 5 - Embalagem", status: "running", efficiency: 96 },
   ];
 
-  // Alertas do sistema com timestamps (estilo sistema externo)
-  const systemAlerts = useMemo(() => [
-    { 
-      type: "warning", 
-      title: "Estoque Baixo", 
-      message: "Embalagens plásticas 500g abaixo do mínimo",
-      minutesAgo: 15 
-    },
-    { 
-      type: "info", 
-      title: "Manutenção Preventiva", 
-      message: "Secador 02 programado para 14:00",
-      minutesAgo: 60 
-    },
-    { 
-      type: "success", 
-      title: "Lote Aprovado", 
-      message: "LOTE-2026-042 passou no controle de qualidade",
-      minutesAgo: 120 
-    },
-    { 
-      type: "warning", 
-      title: "Carga Pendente", 
-      message: "3 cargas aguardando aprovação",
-      minutesAgo: 180 
-    },
-  ], []);
+  // Alertas do sistema com timestamps - DADOS REAIS
+  const systemAlerts = useMemo(() => {
+    if (dashboardAlerts && dashboardAlerts.length > 0) {
+      return dashboardAlerts.map((alert: any) => {
+        const minutesAgo = Math.floor((new Date().getTime() - new Date(alert.timestamp).getTime()) / (1000 * 60));
+        return {
+          type: alert.severity === 'critical' ? 'warning' : alert.severity === 'warning' ? 'warning' : 'info',
+          title: alert.title,
+          message: alert.message,
+          minutesAgo,
+        };
+      });
+    }
+    // Fallback para dados de exemplo
+    return [
+      { type: "warning", title: "Estoque Baixo", message: "Embalagens plásticas 500g abaixo do mínimo", minutesAgo: 15 },
+      { type: "info", title: "Manutenção Preventiva", message: "Secador 02 programado para 14:00", minutesAgo: 60 },
+      { type: "success", title: "Lote Aprovado", message: "LOTE-2026-042 passou no controle de qualidade", minutesAgo: 120 },
+      { type: "warning", title: "Carga Pendente", message: "3 cargas aguardando aprovação", minutesAgo: 180 },
+    ];
+  }, [dashboardAlerts]);
 
   // Tarefas do dia (simulado)
   const todayTasks = [

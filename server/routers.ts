@@ -2441,6 +2441,41 @@ export const appRouter = router({
         const end = input?.endDate ? new Date(input.endDate) : undefined;
         return db.getConformityIndex(start, end);
       }),
+
+    // OEE - Overall Equipment Effectiveness
+    oeeMetrics: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        const start = input?.startDate ? new Date(input.startDate) : undefined;
+        const end = input?.endDate ? new Date(input.endDate) : undefined;
+        return db.getOEEMetrics(start, end);
+      }),
+
+    oeeHistory: protectedProcedure
+      .input(z.object({
+        days: z.number().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return db.getOEEHistory(input?.days || 7);
+      }),
+
+    // Alertas dinâmicos
+    alerts: protectedProcedure
+      .input(z.object({
+        limit: z.number().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return db.getDashboardAlerts(input?.limit || 10);
+      }),
+
+    // Métricas do turno atual
+    currentShift: protectedProcedure
+      .query(async () => {
+        return db.getCurrentShiftMetrics();
+      }),
   }),
 
   // ============================================================================

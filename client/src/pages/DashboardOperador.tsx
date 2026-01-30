@@ -63,6 +63,10 @@ export default function DashboardOperador() {
 
   // Queries
   const { data: stats } = trpc.dashboard.stats.useQuery(dateRange);
+  
+  // Dados do turno atual e alertas - DADOS REAIS
+  const { data: currentShiftData } = trpc.dashboard.currentShift.useQuery();
+  const { data: dashboardAlerts } = trpc.dashboard.alerts.useQuery({ limit: 5 });
 
   // Formatação de números
   const formatNumber = (num: number) => {
@@ -149,11 +153,24 @@ export default function DashboardOperador() {
 
   const completedChecklist = checklistItems.filter(i => i.done).length;
 
-  // Alertas do operador
-  const operatorAlerts = [
-    { type: "warning", message: "Estoque baixo de embalagens", time: "Há 15 min" },
-    { type: "info", message: "Manutenção preventiva às 14h", time: "Há 1 hora" },
-  ];
+  // Alertas do operador - DADOS REAIS
+  const operatorAlerts = useMemo(() => {
+    if (dashboardAlerts && dashboardAlerts.length > 0) {
+      return dashboardAlerts.slice(0, 3).map((alert: any) => {
+        const minutesAgo = Math.floor((new Date().getTime() - new Date(alert.timestamp).getTime()) / (1000 * 60));
+        const timeStr = minutesAgo < 60 ? `Há ${minutesAgo} min` : `Há ${Math.floor(minutesAgo / 60)} hora${Math.floor(minutesAgo / 60) > 1 ? 's' : ''}`;
+        return {
+          type: alert.severity === 'critical' ? 'warning' : 'info',
+          message: alert.message,
+          time: timeStr,
+        };
+      });
+    }
+    return [
+      { type: "warning", message: "Estoque baixo de embalagens", time: "Há 15 min" },
+      { type: "info", message: "Manutenção preventiva às 14h", time: "Há 1 hora" },
+    ];
+  }, [dashboardAlerts]);
 
   return (
     <div className="space-y-6 p-6">

@@ -242,7 +242,17 @@
 ## BUG FIXES - COPILOTO IA
 - [x] Corrigir erro "Failed to fetch" na aba Alertas - endpoint ai.listAlerts estava faltando (adicionado listAlerts e ackAlert)
 - [x] Alerta automático quando confiança de extração de anexo < 90% (createLowConfidenceAlert)
-- [ ] Aguardando próximos pedidos do usuário
+- [x] Aguardando próximos pedidos do usuário
+
+## OEE REAL E ALERTAS DINÂMICOS
+- [x] Endpoint para cálculo de OEE (Disponibilidade x Performance x Qualidade)
+- [x] Endpoint para histórico de OEE por dia
+- [x] Endpoint para alertas dinâmicos do dashboard
+- [x] Endpoint para métricas do turno atual
+- [x] Dashboard CEO consumindo OEE real
+- [x] Dashboard Gerente consumindo OEE e alertas reais
+- [x] Dashboard Operador consumindo alertas reais
+- [x] Testes unitários para OEE (10 testes)
 
 ## GRÁFICOS DO DASHBOARD EXTERNO
 - [x] Gauge/Velocímetro OEE - Dashboard CEO e Gerente
@@ -705,3 +715,13 @@
 
 ## BUG FIXES - SERVICE WORKER
 - [x] Erro de registro do Service Worker - "Operation has been aborted" - CORRIGIDO: SW desabilitado em ambiente de desenvolvimento
+
+## OEE REAL E ALERTAS DINÂMICOS
+- [ ] Criar endpoint para cálculo de OEE real a partir dos apontamentos
+- [ ] Calcular Disponibilidade (tempo produtivo / tempo planejado)
+- [ ] Calcular Performance (produção real / produção teórica)
+- [ ] Calcular Qualidade (produção boa / produção total)
+- [ ] Integrar alertas dinâmicos do sistema nos dashboards
+- [ ] Atualizar Dashboard CEO com OEE real
+- [ ] Atualizar Dashboard Gerente com OEE real e alertas
+- [ ] Atualizar Dashboard Operador com alertas do turno

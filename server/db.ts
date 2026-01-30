@@ -2151,3 +2151,379 @@ export async function globalSearch(query: string) {
     ncs: ncsResults,
   };
 }
+
+
+// ============================================================================
+// OEE (OVERALL EQUIPMENT EFFECTIVENESS) QUERIES
+// ============================================================================
+
+import { productionOrders, productionStages, productionIssues as prodIssues } from "../drizzle/schema";
+
+/**
+ * Calcula o OEE (Overall Equipment Effectiveness) baseado nos apontamentos de produção
+ * OEE = Disponibilidade × Performance × Qualidade
+ * 
+ * - Disponibilidade = Tempo Produtivo / Tempo Planejado
+ * - Performance = Produção Real / Produção Teórica
+ * - Qualidade = Produção Boa / Produção Total
+ */
+export async function getOEEMetrics(startDate?: Date, endDate?: Date) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const start = startDate || new Date(new Date().setDate(new Date().getDate() - 7));
+  const end = endDate || new Date();
+  const startStr = start.toISOString().split('T')[0];
+  const endStr = end.toISOString().split('T')[0];
+
+  // Tempo planejado por turno (em minutos): 8 horas = 480 minutos
+  const PLANNED_TIME_PER_SHIFT = 480;
+  
+  // Produção teórica por turno (kg) - baseado na capacidade nominal
+  const THEORETICAL_PRODUCTION_PER_SHIFT = 2000;
+
+  // Buscar apontamentos de produção no período
+  const productionData = await db.select({
+    date: productionEntries.productionDate,
+    shift: productionEntries.shift,
+    quantityProduced: productionEntries.quantityProduced,
+    losses: productionEntries.losses,
+  }).from(productionEntries)
+    .where(sql`${productionEntries.productionDate} >= ${startStr} AND ${productionEntries.productionDate} <= ${endStr}`);
+
+  // Buscar problemas/paradas no período
+  const issuesData = await db.select({
+    downtimeMinutes: prodIssues.downtimeMinutes,
+    shift: prodIssues.shift,
+  }).from(prodIssues)
+    .where(and(
+      gte(prodIssues.occurredAt, start),
+      lte(prodIssues.occurredAt, end)
+    ));
+
+  // Calcular métricas
+  const totalShifts = productionData.length || 1;
+  const totalPlannedTime = totalShifts * PLANNED_TIME_PER_SHIFT;
+  const totalDowntime = issuesData.reduce((sum, issue) => sum + (issue.downtimeMinutes || 0), 0);
+  const totalProductiveTime = totalPlannedTime - totalDowntime;
+
+  const totalProduced = productionData.reduce((sum, entry) => sum + Number(entry.quantityProduced || 0), 0);
+  const totalLosses = productionData.reduce((sum, entry) => sum + Number(entry.losses || 0), 0);
+  const totalTheoreticalProduction = totalShifts * THEORETICAL_PRODUCTION_PER_SHIFT;
+
+  // Disponibilidade (%)
+  const availability = totalPlannedTime > 0 
+    ? (totalProductiveTime / totalPlannedTime) * 100 
+    : 0;
+
+  // Performance (%)
+  const performance = totalTheoreticalProduction > 0 
+    ? ((totalProduced + totalLosses) / totalTheoreticalProduction) * 100 
+    : 0;
+
+  // Qualidade (%)
+  const quality = (totalProduced + totalLosses) > 0 
+    ? (totalProduced / (totalProduced + totalLosses)) * 100 
+    : 100;
+
+  // OEE (%)
+  const oee = (availability * performance * quality) / 10000;
+
+  return {
+    oee: Math.min(oee, 100),
+    availability: Math.min(availability, 100),
+    performance: Math.min(performance, 100),
+    quality: Math.min(quality, 100),
+    totalProduced,
+    totalLosses,
+    totalDowntimeMinutes: totalDowntime,
+    totalProductiveMinutes: totalProductiveTime,
+    totalPlannedMinutes: totalPlannedTime,
+    shiftsCount: totalShifts,
+  };
+}
+
+/**
+ * Retorna o histórico de OEE por dia para gráfico de linha
+ */
+export async function getOEEHistory(days: number = 7) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  const startStr = startDate.toISOString().split('T')[0];
+  const endStr = new Date().toISOString().split('T')[0];
+
+  // Constantes de capacidade
+  const PLANNED_TIME_PER_SHIFT = 480;
+  const THEORETICAL_PRODUCTION_PER_SHIFT = 2000;
+
+  // Buscar produção agrupada por dia
+  const productionByDay = await db.select({
+    date: productionEntries.productionDate,
+    totalProduced: sql<number>`SUM(${productionEntries.quantityProduced})`,
+    totalLosses: sql<number>`SUM(COALESCE(${productionEntries.losses}, 0))`,
+    shiftsCount: sql<number>`COUNT(DISTINCT ${productionEntries.shift})`,
+  }).from(productionEntries)
+    .where(sql`${productionEntries.productionDate} >= ${startStr} AND ${productionEntries.productionDate} <= ${endStr}`)
+    .groupBy(productionEntries.productionDate)
+    .orderBy(productionEntries.productionDate);
+
+  // Buscar paradas agrupadas por dia
+  const downtimeByDay = await db.select({
+    date: sql<string>`DATE(${prodIssues.occurredAt}) as date_col`,
+    totalDowntime: sql<number>`SUM(COALESCE(${prodIssues.downtimeMinutes}, 0))`,
+  }).from(prodIssues)
+    .where(sql`DATE(${prodIssues.occurredAt}) >= ${startStr} AND DATE(${prodIssues.occurredAt}) <= ${endStr}`)
+    .groupBy(sql`date_col`);
+
+  // Criar mapa de downtime por data
+  const downtimeMap = new Map<string, number>();
+  downtimeByDay.forEach(d => {
+    downtimeMap.set(String(d.date), Number(d.totalDowntime) || 0);
+  });
+
+  // Calcular OEE por dia
+  return productionByDay.map(day => {
+    const dateStr = String(day.date);
+    const shiftsCount = Number(day.shiftsCount) || 1;
+    const totalPlannedTime = shiftsCount * PLANNED_TIME_PER_SHIFT;
+    const totalDowntime = downtimeMap.get(dateStr) || 0;
+    const totalProductiveTime = totalPlannedTime - totalDowntime;
+    const totalProduced = Number(day.totalProduced) || 0;
+    const totalLosses = Number(day.totalLosses) || 0;
+    const totalTheoreticalProduction = shiftsCount * THEORETICAL_PRODUCTION_PER_SHIFT;
+
+    const availability = totalPlannedTime > 0 ? (totalProductiveTime / totalPlannedTime) * 100 : 0;
+    const performance = totalTheoreticalProduction > 0 ? ((totalProduced + totalLosses) / totalTheoreticalProduction) * 100 : 0;
+    const quality = (totalProduced + totalLosses) > 0 ? (totalProduced / (totalProduced + totalLosses)) * 100 : 100;
+    const oee = (availability * performance * quality) / 10000;
+
+    return {
+      date: dateStr,
+      oee: Math.min(oee, 100),
+      availability: Math.min(availability, 100),
+      performance: Math.min(performance, 100),
+      quality: Math.min(quality, 100),
+    };
+  });
+}
+
+/**
+ * Retorna alertas dinâmicos do sistema para os dashboards
+ */
+export async function getDashboardAlerts(limit: number = 10) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const alerts: Array<{
+    id: number;
+    type: string;
+    severity: 'info' | 'warning' | 'critical';
+    title: string;
+    message: string;
+    timestamp: Date;
+    module: string;
+  }> = [];
+
+  // 1. Alertas de estoque baixo
+  const lowStockItems = await db.select({
+    id: warehouseItems.id,
+    name: warehouseItems.name,
+    currentStock: warehouseItems.currentStock,
+    minimumStock: warehouseItems.minimumStock,
+    unit: warehouseItems.unit,
+  }).from(warehouseItems)
+    .where(sql`${warehouseItems.currentStock} < ${warehouseItems.minimumStock} AND ${warehouseItems.status} = 'ativo'`)
+    .limit(5);
+
+  lowStockItems.forEach(item => {
+    const percentage = Number(item.minimumStock) > 0 
+      ? (Number(item.currentStock) / Number(item.minimumStock)) * 100 
+      : 0;
+    alerts.push({
+      id: item.id,
+      type: 'stock_low',
+      severity: percentage < 25 ? 'critical' : 'warning',
+      title: 'Estoque Baixo',
+      message: `${item.name} com ${Number(item.currentStock).toFixed(0)} ${item.unit} (mín: ${Number(item.minimumStock).toFixed(0)})`,
+      timestamp: new Date(),
+      module: 'almoxarifado',
+    });
+  });
+
+  // 2. Alertas de produtos próximos do vencimento
+  const expiringProducts = await db.select({
+    id: finishedGoodsInventory.id,
+    skuId: finishedGoodsInventory.skuId,
+    batchNumber: finishedGoodsInventory.batchNumber,
+    expirationDate: finishedGoodsInventory.expirationDate,
+    quantity: finishedGoodsInventory.quantity,
+  }).from(finishedGoodsInventory)
+    .where(and(
+      sql`${finishedGoodsInventory.expirationDate} <= DATE_ADD(CURRENT_DATE, INTERVAL 7 DAY)`,
+      sql`${finishedGoodsInventory.expirationDate} >= CURRENT_DATE`,
+      eq(finishedGoodsInventory.status, 'disponivel')
+    ))
+    .limit(3);
+
+  expiringProducts.forEach(product => {
+    const daysUntilExpiry = Math.ceil((new Date(product.expirationDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    alerts.push({
+      id: product.id,
+      type: 'expiring_product',
+      severity: daysUntilExpiry <= 3 ? 'critical' : 'warning',
+      title: 'Produto Próximo do Vencimento',
+      message: `Lote ${product.batchNumber} vence em ${daysUntilExpiry} dia(s)`,
+      timestamp: new Date(),
+      module: 'estoque',
+    });
+  });
+
+  // 3. Alertas de pagamentos atrasados
+  const overduePayments = await db.select({
+    id: producerPayables.id,
+    producerId: producerPayables.producerId,
+    totalValue: producerPayables.totalValue,
+    dueDate: producerPayables.dueDate,
+  }).from(producerPayables)
+    .where(and(
+      sql`${producerPayables.dueDate} < CURRENT_DATE`,
+      sql`${producerPayables.status} != 'pago'`
+    ))
+    .limit(3);
+
+  overduePayments.forEach(payment => {
+    const daysOverdue = Math.ceil((new Date().getTime() - new Date(payment.dueDate!).getTime()) / (1000 * 60 * 60 * 24));
+    alerts.push({
+      id: payment.id,
+      type: 'payment_overdue',
+      severity: daysOverdue > 7 ? 'critical' : 'warning',
+      title: 'Pagamento Atrasado',
+      message: `R$ ${Number(payment.totalValue).toFixed(2)} atrasado há ${daysOverdue} dia(s)`,
+      timestamp: new Date(),
+      module: 'financeiro',
+    });
+  });
+
+  // 4. Alertas de problemas de produção abertos
+  const openIssues = await db.select({
+    id: prodIssues.id,
+    description: prodIssues.description,
+    impact: prodIssues.impact,
+    occurredAt: prodIssues.occurredAt,
+    area: prodIssues.area,
+  }).from(prodIssues)
+    .where(eq(prodIssues.status, 'aberto'))
+    .orderBy(desc(prodIssues.occurredAt))
+    .limit(3);
+
+  openIssues.forEach(issue => {
+    alerts.push({
+      id: issue.id,
+      type: 'production_issue',
+      severity: issue.impact === 'parada_total' || issue.impact === 'alto' ? 'critical' : 'warning',
+      title: 'Problema de Produção',
+      message: issue.description.substring(0, 80) + (issue.description.length > 80 ? '...' : ''),
+      timestamp: issue.occurredAt,
+      module: 'producao',
+    });
+  });
+
+  // 5. Alertas de compras pendentes
+  const pendingPurchases = await db.select({
+    id: purchaseRequests.id,
+    requestNumber: purchaseRequests.requestNumber,
+    urgency: purchaseRequests.urgency,
+    requestDate: purchaseRequests.requestDate,
+  }).from(purchaseRequests)
+    .where(eq(purchaseRequests.status, 'solicitado'))
+    .orderBy(desc(purchaseRequests.requestDate))
+    .limit(2);
+
+  pendingPurchases.forEach(purchase => {
+    alerts.push({
+      id: purchase.id,
+      type: 'purchase_pending',
+      severity: purchase.urgency === 'critica' || purchase.urgency === 'alta' ? 'critical' : 'info',
+      title: 'Compra Pendente',
+      message: `Solicitação ${purchase.requestNumber} aguardando aprovação`,
+      timestamp: purchase.requestDate,
+      module: 'compras',
+    });
+  });
+
+  // Ordenar por timestamp (mais recentes primeiro) e limitar
+  return alerts
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    .slice(0, limit);
+}
+
+/**
+ * Retorna métricas de produção do turno atual para o Dashboard Operador
+ */
+export async function getCurrentShiftMetrics() {
+  const db = await getDb();
+  if (!db) return null;
+
+  const now = new Date();
+  const currentHour = now.getHours();
+  
+  // Determinar turno atual (Manhã: 6-14, Tarde: 14-22, Noite: 22-6)
+  let currentShift: 'manha' | 'tarde' | 'noite';
+  let shiftStart: Date;
+  let shiftEnd: Date;
+  
+  if (currentHour >= 6 && currentHour < 14) {
+    currentShift = 'manha';
+    shiftStart = new Date(now.setHours(6, 0, 0, 0));
+    shiftEnd = new Date(now.setHours(14, 0, 0, 0));
+  } else if (currentHour >= 14 && currentHour < 22) {
+    currentShift = 'tarde';
+    shiftStart = new Date(now.setHours(14, 0, 0, 0));
+    shiftEnd = new Date(now.setHours(22, 0, 0, 0));
+  } else {
+    currentShift = 'noite';
+    if (currentHour >= 22) {
+      shiftStart = new Date(now.setHours(22, 0, 0, 0));
+      shiftEnd = new Date(new Date(now).setDate(now.getDate() + 1));
+      shiftEnd.setHours(6, 0, 0, 0);
+    } else {
+      shiftStart = new Date(new Date(now).setDate(now.getDate() - 1));
+      shiftStart.setHours(22, 0, 0, 0);
+      shiftEnd = new Date(now.setHours(6, 0, 0, 0));
+    }
+  }
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // Buscar produção do turno atual
+  const shiftProduction = await db.select({
+    totalProduced: sql<number>`COALESCE(SUM(${productionEntries.quantityProduced}), 0)`,
+    totalLosses: sql<number>`COALESCE(SUM(${productionEntries.losses}), 0)`,
+    entriesCount: sql<number>`COUNT(*)`,
+  }).from(productionEntries)
+    .where(and(
+      sql`${productionEntries.productionDate} = ${todayStr}`,
+      eq(productionEntries.shift, currentShift)
+    ));
+
+  // Calcular progresso do turno
+  const nowTime = new Date();
+  const shiftDurationMs = shiftEnd.getTime() - shiftStart.getTime();
+  const elapsedMs = nowTime.getTime() - shiftStart.getTime();
+  const shiftProgress = Math.min(Math.max((elapsedMs / shiftDurationMs) * 100, 0), 100);
+  const remainingMinutes = Math.max(0, Math.floor((shiftEnd.getTime() - nowTime.getTime()) / (1000 * 60)));
+
+  return {
+    currentShift,
+    shiftStart,
+    shiftEnd,
+    shiftProgress,
+    remainingMinutes,
+    totalProduced: Number(shiftProduction[0]?.totalProduced || 0),
+    totalLosses: Number(shiftProduction[0]?.totalLosses || 0),
+    entriesCount: Number(shiftProduction[0]?.entriesCount || 0),
+  };
+}

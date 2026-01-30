@@ -98,6 +98,10 @@ export default function DashboardCEO() {
   const { data: paymentsByStatus } = trpc.dashboard.paymentsByStatus.useQuery();
   const { data: loadsEvolution } = trpc.dashboard.loadsEvolution.useQuery(dateRange);
   const { data: topProducers } = trpc.dashboard.topProducers.useQuery({ ...dateRange, limit: 5 });
+  
+  // OEE e Alertas - DADOS REAIS
+  const { data: oeeMetrics } = trpc.dashboard.oeeMetrics.useQuery(dateRange);
+  const { data: dashboardAlerts } = trpc.dashboard.alerts.useQuery({ limit: 5 });
 
   // Formatação de números
   const formatNumber = (num: number) => {
@@ -111,17 +115,20 @@ export default function DashboardCEO() {
     }).format(num);
   };
 
-  // Dados simulados para KPIs financeiros (em produção viriam do backend)
+  // KPIs financeiros com OEE real do backend
   const financialKPIs = useMemo(() => ({
     receita: stats?.production?.total ? stats.production.total * 12.5 : 529000,
     custoTotal: stats?.production?.total ? stats.production.total * 8.2 : 325000,
     producaoTotal: stats?.production?.total || 36120,
-    oeeGeral: 77.3,
+    oeeGeral: oeeMetrics?.oee ?? 77.3,
+    disponibilidade: oeeMetrics?.availability ?? 92,
+    performance: oeeMetrics?.performance ?? 87,
+    qualidade: oeeMetrics?.quality ?? 96,
     margemBruta: 34.4,
     margemLiquida: 18.7,
     ticketMedio: 2450,
     receitaMesAnterior: stats?.production?.total ? stats.production.total * 11.8 : 500000,
-  }), [stats]);
+  }), [stats, oeeMetrics]);
 
   // Dados para gráfico de evolução financeira (estilo sistema externo - área empilhada)
   const financialEvolution = useMemo(() => {
