@@ -5,6 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 import { useState, useEffect, useMemo } from "react";
+import { PDFExportButton } from "@/components/PDFExportButton";
+import { generateOperatorDashboardPDF, downloadPDF } from "@/lib/pdfExport";
 import { 
   Play, 
   Pause, 
@@ -185,12 +187,35 @@ export default function DashboardOperador() {
             Controle de produção do turno
           </p>
         </div>
-        <div className="text-right">
-          <div className="text-4xl font-mono font-bold text-primary">
-            {currentTime.toLocaleTimeString("pt-BR")}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            {currentTime.toLocaleDateString("pt-BR", { weekday: 'long', day: 'numeric', month: 'long' })}
+        <div className="flex flex-col items-end gap-2">
+          <PDFExportButton
+            label="Exportar PDF"
+            variant="outline"
+            size="sm"
+            onExport={async () => {
+              const doc = generateOperatorDashboardPDF({
+                currentShift: currentShift.name,
+                shiftProgress: getShiftProgress(),
+                tasksCompleted: completedChecklist,
+                totalTasks: checklistItems.length,
+                productionOrders: currentOPs.map(op => ({
+                  code: op.id,
+                  product: `${op.sku} - ${op.variation}`,
+                  quantity: op.target,
+                  status: op.status === 'em_producao' ? 'Em Produção' : op.status === 'finalizado' ? 'Finalizado' : 'Aguardando',
+                })),
+                dateRange: new Date().toLocaleDateString('pt-BR'),
+              });
+              downloadPDF(doc, `dashboard-operador-${new Date().toISOString().split('T')[0]}`);
+            }}
+          />
+          <div className="text-right">
+            <div className="text-4xl font-mono font-bold text-primary">
+              {currentTime.toLocaleTimeString("pt-BR")}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {currentTime.toLocaleDateString("pt-BR", { weekday: 'long', day: 'numeric', month: 'long' })}
+            </div>
           </div>
         </div>
       </div>

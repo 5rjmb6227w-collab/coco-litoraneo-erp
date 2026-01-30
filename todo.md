@@ -918,3 +918,58 @@
 - [x] Criar teste E2E: Formulários e Interações (6 testes)
 - [x] Criar teste E2E: Performance e Acessibilidade (8 testes)
 - [x] Total: 23 testes E2E passando
+
+
+## IMPLEMENTAÇÃO DOS NOVOS PASSOS (Janeiro 2026)
+
+### PASSO 1: Testes Unitários dos Novos Services
+- [ ] financial.service.test.ts (contas a pagar/receber, fluxo de caixa)
+- [ ] stock.service.test.ts (almoxarifado, movimentações, alertas)
+- [ ] quality.service.test.ts (análises, NCs, métricas)
+
+### PASSO 2: Notificações Push em Tempo Real
+- [ ] Criar tabela de notificações no schema
+- [ ] Criar NotificationService com interface
+- [ ] Implementar endpoint para listar notificações do usuário
+- [ ] Implementar endpoint para marcar como lida
+- [ ] Criar componente de sino de notificações no header
+- [ ] Integrar alertas automáticos (pagamentos atrasados, estoque baixo, NCs)
+
+### PASSO 3: Exportação de Relatórios em PDF
+- [ ] Instalar biblioteca de geração de PDF (jspdf ou pdfmake)
+- [ ] Criar serviço de geração de PDF
+- [ ] Adicionar botão de exportar PDF no Dashboard CEO
+- [ ] Adicionar botão de exportar PDF no Dashboard Gerente
+- [ ] Adicionar botão de exportar PDF na Central de Relatórios
+- [ ] Incluir gráficos e tabelas nos PDFs gerados
+
+
+## TAREFA: Próximos Passos - Janeiro 2026
+
+### 1. Testes Unitários para Services ✅
+- [x] FinancialService - 27 testes (contas a pagar/receber, fluxo de caixa, validações)
+- [x] StockService - 37 testes (itens, movimentações, produtos acabados, alertas)
+- [x] QualityService - 34 testes (análises, NCs, métricas, validações)
+- [x] Total: 98 novos testes para Services
+
+### 2. Push Notifications ✅
+- [x] Componente NotificationCenter com dropdown
+- [x] Integração com dashboard.alerts endpoint
+- [x] Badge com contador de notificações não lidas
+- [x] Indicador visual para alertas críticos (vermelho pulsante)
+- [x] Marcar como lida/remover notificações
+- [x] Atualização automática a cada 1 minuto
+- [x] Suporte a tipos: financeiro, estoque, qualidade, produção, sistema
+- [x] Níveis de severidade: baixa, média, alta, crítica
+- [x] Integração no DashboardLayout (desktop e mobile)
+
+### 3. Exportação de Relatórios em PDF ✅
+- [x] Biblioteca jsPDF + jspdf-autotable instaladas
+- [x] Utilitário pdfExport.ts com funções genéricas
+- [x] Formatação profissional com cabeçalho Coco Litorâneo
+- [x] Suporte a métricas, tabelas e notas
+- [x] Componente PDFExportButton reutilizável
+- [x] Dashboard CEO - Exportar PDF
+- [x] Dashboard Gerente - Exportar PDF
+- [x] Dashboard Operador - Exportar PDF
+- [x] Dashboard Qualidade - Exportar PDF

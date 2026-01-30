@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
+import { PDFExportButton } from "@/components/PDFExportButton";
+import { generateManagerDashboardPDF, downloadPDF } from "@/lib/pdfExport";
 import { 
   Factory, 
   Users, 
@@ -227,6 +229,32 @@ export default function DashboardGerente() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <PDFExportButton
+            label="Exportar PDF"
+            variant="outline"
+            size="sm"
+            onExport={async () => {
+              const doc = generateManagerDashboardPDF({
+                oee: oeeData.oee,
+                oeeHistory: oeeEvolution.map((item: any) => ({
+                  date: item.day,
+                  value: (item.disponibilidade * item.performance * item.qualidade) / 10000,
+                })),
+                productionLines: machineStatus.map(m => ({
+                  name: m.name,
+                  status: m.status === 'running' ? 'Ativo' : m.status === 'maintenance' ? 'Manutenção' : 'Parado',
+                  efficiency: m.efficiency,
+                })),
+                alerts: systemAlerts.map((a: any) => ({
+                  type: a.type === 'warning' ? 'Alerta' : a.type === 'info' ? 'Info' : 'Sucesso',
+                  message: a.message,
+                  priority: a.type === 'warning' ? 'Alta' : 'Normal',
+                })),
+                dateRange: `${dateRange.startDate} a ${dateRange.endDate}`,
+              });
+              downloadPDF(doc, `dashboard-gerente-${new Date().toISOString().split('T')[0]}`);
+            }}
+          />
           <Badge variant="outline" className="text-sm">
             <Activity className="h-3 w-3 mr-1" />
             Atualizado em tempo real

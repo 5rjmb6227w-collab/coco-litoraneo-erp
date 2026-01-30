@@ -4,6 +4,8 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PDFExportButton } from "@/components/PDFExportButton";
+import { generateQualityDashboardPDF, downloadPDF } from "@/lib/pdfExport";
 import { 
   CheckCircle, 
   AlertTriangle, 
@@ -81,17 +83,44 @@ export default function DashboardQualidade() {
               Métricas de qualidade, OEE e desempenho de produtores
             </p>
           </div>
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Período" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Últimos 7 dias</SelectItem>
-              <SelectItem value="30">Últimos 30 dias</SelectItem>
-              <SelectItem value="90">Últimos 90 dias</SelectItem>
-              <SelectItem value="365">Último ano</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <PDFExportButton
+              label="Exportar PDF"
+              variant="outline"
+              size="sm"
+              onExport={async () => {
+                const doc = generateQualityDashboardPDF({
+                  approvalRate: qualityMetrics.aprovacaoRate,
+                  totalAnalyses: (qualityAnalyses || []).length,
+                  openNCs: qualityMetrics.ncsAbertas,
+                  avgResolutionTime: 3.5,
+                  gradeDistribution: gradeDistribution.map(g => ({
+                    grade: g.grade,
+                    count: g.count,
+                    percentage: g.percentage,
+                  })),
+                  producerScores: topProducers.map(p => ({
+                    name: p.name,
+                    score: p.score,
+                    loads: p.loads,
+                  })),
+                  dateRange: `Últimos ${period} dias`,
+                });
+                downloadPDF(doc, `dashboard-qualidade-${new Date().toISOString().split('T')[0]}`);
+              }}
+            />
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Últimos 7 dias</SelectItem>
+                <SelectItem value="30">Últimos 30 dias</SelectItem>
+                <SelectItem value="90">Últimos 90 dias</SelectItem>
+                <SelectItem value="365">Último ano</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* OEE Overview */}

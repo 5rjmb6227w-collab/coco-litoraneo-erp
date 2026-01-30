@@ -72,6 +72,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { NotificationCenter } from './NotificationCenter';
 import { Button } from "./ui/button";
 import {
   Collapsible,
@@ -406,6 +407,20 @@ function DashboardLayoutContent({
           </SidebarContent>
 
           <SidebarFooter className="p-3 border-t border-sidebar-border">
+            {/* Barra de ações rápidas */}
+            <div className="flex items-center justify-between mb-2 group-data-[collapsible=icon]:justify-center">
+              <NotificationCenter />
+              {!isCollapsed && switchable && toggleTheme && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleTheme}
+                  className="h-8 w-8"
+                >
+                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+              )}
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -478,6 +493,7 @@ function DashboardLayoutContent({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <NotificationCenter />
               {switchable && toggleTheme && (
                 <Button
                   variant="ghost"

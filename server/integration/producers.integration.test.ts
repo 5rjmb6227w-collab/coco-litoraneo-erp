@@ -53,16 +53,12 @@ describe('Integração - Fluxo de Produtores', () => {
   describe('Criação de Produtor', () => {
     it('deve criar um novo produtor com dados válidos', async () => {
       const timestamp = Date.now();
-      // CPFs válidos para teste (gerados com dígitos verificadores corretos)
-      const validCpfs = [
-        '52998224725', '11144477735', '12345678909', '98765432100',
-        '45678912345', '78912345678', '32165498700', '65432198700'
-      ];
-      const randomCpf = validCpfs[Math.floor(Math.random() * validCpfs.length)];
+      // CPF válido confirmado (usado no teste unitário do ProducerService)
+      const validCpf = '52998224725';
       
       const newProducer = {
         name: `Produtor Teste Integração ${timestamp}`,
-        cpfCnpj: randomCpf,
+        cpfCnpj: validCpf,
         phone: '11999999999',
         defaultPricePerKg: '2.50'
       };

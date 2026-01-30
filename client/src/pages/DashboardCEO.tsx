@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
+import { PDFExportButton } from "@/components/PDFExportButton";
+import { generateCEODashboardPDF, downloadPDF } from "@/lib/pdfExport";
 
 import { 
   TrendingUp, 
@@ -203,6 +205,34 @@ export default function DashboardCEO() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <PDFExportButton
+            label="Exportar PDF"
+            variant="outline"
+            size="sm"
+            onExport={async () => {
+              const doc = generateCEODashboardPDF({
+                oee: financialKPIs.oeeGeral,
+                financialMetrics: {
+                  revenue: financialKPIs.receita,
+                  expenses: financialKPIs.custoTotal,
+                  profit: financialKPIs.receita - financialKPIs.custoTotal,
+                  margin: financialKPIs.margemBruta,
+                },
+                productionData: {
+                  totalProduction: financialKPIs.producaoTotal,
+                  loadsReceived: stats?.loads?.count || 0,
+                  avgQuality: 'A',
+                },
+                topProducers: (topProducers || []).map((p: any) => ({
+                  name: p.name,
+                  loads: p.totalLoads || 0,
+                  quality: p.avgQuality || 'A',
+                })),
+                dateRange: `${dateRange.startDate} a ${dateRange.endDate}`,
+              });
+              downloadPDF(doc, `dashboard-ceo-${new Date().toISOString().split('T')[0]}`);
+            }}
+          />
           <Badge variant="outline" className="text-sm">
             <Activity className="h-3 w-3 mr-1" />
             Atualizado em tempo real
