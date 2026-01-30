@@ -823,3 +823,75 @@
 - [x] Comparação de preços entre produtores
 - [x] Filtro por produtor e período
 - [ ] Testes unitários
+
+
+## REFATORAÇÃO ARQUITETURA SOLID (Janeiro 2026)
+
+### FASE 1: Estrutura e Classes de Erro ✅
+- [x] Criar pasta server/errors/ com classes de erro customizadas
+- [x] AppError.ts (classe base)
+- [x] NotFoundError.ts
+- [x] UnauthorizedError.ts
+- [x] ValidationError.ts
+- [x] ForbiddenError.ts
+- [x] BusinessError.ts### FASE 2: Repositories com Interfaces ✅
+- [x] Criar pasta server/repositories/interfaces/
+- [x] IProducerRepository.ts + producer.repository.ts
+- [x] ILoadRepository.ts + load.repository.ts
+- [x] IProductionRepository.ts (interface criada)
+- [x] IStockRepository.ts (interface criada)
+- [x] IFinancialRepository.ts (interface criada)
+- [x] IBatchRepository.ts (interface criada)
+- [x] IQualityRepository.ts (interface criada)
+- [x] IPurchaseRepository.ts (interface criada)
+- [x] IAuditRepository.ts (interface criada) ] IPurchaseRepository.ts + purchase.repository.ts
+
+### FASE 3: Services com Interfaces ✅
+- [x] Criar pasta server/services/interfaces/
+- [x] IProducerService.ts + producer.service.ts
+- [x] ILoadService.ts + load.service.ts
+- [ ] IProductionService.ts + production.service.ts (parcial - usando productionService existente)
+- [ ] IStockService.ts + stock.service.ts
+- [ ] IFinancialService.ts + financial.service.ts
+- [ ] ITraceabilityService.ts + traceability.service.ts
+- [ ] IBatchService.ts + batch.service.ts (usando batchesService existente)
+- [ ] IAlertService.ts + alert.service.ts (usando alertsService existente)
+- [ ] IAuditService.ts + audit.service.ts
+- [ ] IQualityService.ts + quality.service.ts
+- [ ] IPurchaseService.ts + purchase.service.ts
+- [ ] IDashboardService.ts + dashboard.service.ts
+
+### FASE 4: Refatorar Routers para usar Services
+- [ ] Refatorar producers router
+- [ ] Refatorar coconutLoads router
+- [ ] Refatorar production router
+- [ ] Refatorar stock router
+- [ ] Refatorar financial router
+- [ ] Refatorar quality router
+- [ ] Refatorar purchases router
+- [ ] Refatorar dashboard router
+
+### FASE 5: Testes Unitários dos Services ✅
+- [x] producer.service.test.ts (26 testes - CRUD + validação CPF/CNPJ + regras de negócio)
+- [x] load.service.test.ts (26 testes - CRUD + cálculos + transições de status)
+- [ ] production.service.test.ts (apontamentos + OEE)
+- [ ] stock.service.test.ts (movimentações + alertas)
+- [ ] financial.service.test.ts (pagamentos + fluxo caixa)
+- [ ] traceability.service.test.ts (rastreio completo)
+- [ ] batch.service.test.ts (lotes + quarentena)
+- [ ] alert.service.test.ts (geração + resolução)
+- [ ] audit.service.test.ts (logs + histórico)
+- [ ] quality.service.test.ts (análises + NCs)
+- [ ] purchase.service.test.ts (solicitações + cotações)
+- [ ] dashboard.service.test.ts (KPIs + gráficos)
+
+### FASE 6: Testes de Integração ✅
+- [ ] auth.integration.test.ts (login + logout + sessões)
+- [x] producers.integration.test.ts (CRUD completo - 8 testes)
+- [x] loads.integration.test.ts (recebimento → conferido → fechado - 7 testes)
+- [x] production.integration.test.ts (OPs + apontamentos + OEE - 10 testes)
+- [ ] stock.integration.test.ts (entrada → saída → alertas)
+- [x] financial.integration.test.ts (contas + pagamentos - 6 testes)
+- [ ] traceability.integration.test.ts (lote → origem completa)
+- [ ] quality.integration.test.ts (análise → NC → resolução)
+- [ ] purchase.integration.test.ts (solicitação → cotação → aprovação)

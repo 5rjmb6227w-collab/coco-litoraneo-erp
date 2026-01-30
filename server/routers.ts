@@ -116,6 +116,59 @@ export const appRouter = router({
         
         return { success: true };
       }),
+
+    topByVolume: protectedProcedure
+      .input(z.object({ limit: z.number().optional() }).optional())
+      .query(async ({ input }) => {
+        return db.getTopProducersByVolume(undefined, undefined, input?.limit || 10);
+      }),
+
+    deactivate: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await db.updateProducer(input.id, { status: 'inativo', updatedBy: ctx.user?.id });
+        await db.createAuditLog({
+          userId: ctx.user?.id,
+          userName: ctx.user?.name || undefined,
+          action: "RECORD_EDIT",
+          module: "producers",
+          entityType: "producer",
+          entityId: input.id,
+          details: JSON.stringify({ action: 'deactivate' }),
+        });
+        return { success: true };
+      }),
+
+    reactivate: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await db.updateProducer(input.id, { status: 'ativo', updatedBy: ctx.user?.id });
+        await db.createAuditLog({
+          userId: ctx.user?.id,
+          userName: ctx.user?.name || undefined,
+          action: "RECORD_EDIT",
+          module: "producers",
+          entityType: "producer",
+          entityId: input.id,
+          details: JSON.stringify({ action: 'reactivate' }),
+        });
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await db.deleteProducer(input.id);
+        await db.createAuditLog({
+          userId: ctx.user?.id,
+          userName: ctx.user?.name || undefined,
+          action: "RECORD_DELETE",
+          module: "producers",
+          entityType: "producer",
+          entityId: input.id,
+        });
+        return { success: true };
+      }),
   }),
 
   // ============================================================================

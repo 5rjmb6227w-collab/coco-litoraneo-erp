@@ -165,6 +165,13 @@ export async function updateProducer(id: number, data: Partial<InsertProducer>) 
   await db.update(producers).set(data).where(eq(producers.id, id));
 }
 
+export async function deleteProducer(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(producers).where(eq(producers.id, id));
+}
+
 // ============================================================================
 // COCONUT LOAD QUERIES
 // ============================================================================
