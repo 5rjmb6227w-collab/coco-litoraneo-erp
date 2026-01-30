@@ -150,6 +150,17 @@ export async function getProducerById(id: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function getProducerByCpfCnpj(cpfCnpj: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  // Limpar CPF/CNPJ para busca (remover caracteres especiais)
+  const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
+  
+  const result = await db.select().from(producers).where(eq(producers.cpfCnpj, cleanCpfCnpj)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
 export async function createProducer(data: InsertProducer) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

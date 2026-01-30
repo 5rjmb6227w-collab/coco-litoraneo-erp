@@ -62,8 +62,25 @@ export const appRouter = router({
         externalCode: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
+        // Validar CPF/CNPJ usando ProducerService
+        const { ProducerService } = await import('./services/producer.service');
+        const producerService = new ProducerService();
+        
+        // Limpar e validar CPF/CNPJ
+        const cleanCpfCnpj = input.cpfCnpj.replace(/\D/g, '');
+        if (!producerService.validateCpfCnpj(cleanCpfCnpj)) {
+          throw new Error('CPF/CNPJ inválido. Verifique os dígitos informados.');
+        }
+        
+        // Verificar se já existe produtor com este CPF/CNPJ
+        const existing = await db.getProducerByCpfCnpj(cleanCpfCnpj);
+        if (existing) {
+          throw new Error('Já existe um produtor cadastrado com este CPF/CNPJ.');
+        }
+        
         const id = await db.createProducer({
           ...input,
+          cpfCnpj: cleanCpfCnpj, // Salvar CPF/CNPJ limpo
           createdBy: ctx.user?.id,
           updatedBy: ctx.user?.id,
         });
@@ -100,6 +117,26 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
+        
+        // Se estiver atualizando CPF/CNPJ, validar
+        if (data.cpfCnpj) {
+          const { ProducerService } = await import('./services/producer.service');
+          const producerService = new ProducerService();
+          
+          const cleanCpfCnpj = data.cpfCnpj.replace(/\D/g, '');
+          if (!producerService.validateCpfCnpj(cleanCpfCnpj)) {
+            throw new Error('CPF/CNPJ inválido. Verifique os dígitos informados.');
+          }
+          
+          // Verificar se já existe outro produtor com este CPF/CNPJ
+          const existing = await db.getProducerByCpfCnpj(cleanCpfCnpj);
+          if (existing && existing.id !== id) {
+            throw new Error('Já existe outro produtor cadastrado com este CPF/CNPJ.');
+          }
+          
+          data.cpfCnpj = cleanCpfCnpj; // Salvar CPF/CNPJ limpo
+        }
+        
         await db.updateProducer(id, {
           ...data,
           updatedBy: ctx.user?.id,

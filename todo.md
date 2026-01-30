@@ -895,3 +895,26 @@
 - [ ] traceability.integration.test.ts (lote → origem completa)
 - [ ] quality.integration.test.ts (análise → NC → resolução)
 - [ ] purchase.integration.test.ts (solicitação → cotação → aprovação)
+
+
+## IMPLEMENTAÇÃO DOS PASSOS SUGERIDOS (Janeiro 2026)
+
+### PASSO 1: Validação CPF/CNPJ no Router ✅
+- [x] Integrar ProducerService ao router de produtores
+- [x] Validar CPF/CNPJ antes de criar produtor
+- [x] Validar CPF/CNPJ antes de atualizar produtor
+- [x] Retornar erro amigável se CPF/CNPJ inválido
+
+### PASSO 2: Services Restantes ✅
+- [x] IFinancialService.ts + financial.service.ts
+- [x] IStockService.ts + stock.service.ts
+- [x] IQualityService.ts + quality.service.ts
+- [ ] Testes unitários para cada service
+
+### PASSO 3: Testes E2E com Playwright ✅
+- [x] Instalar e configurar Playwright
+- [x] Criar teste E2E: Autenticação (4 testes)
+- [x] Criar teste E2E: Navegação (5 testes)
+- [x] Criar teste E2E: Formulários e Interações (6 testes)
+- [x] Criar teste E2E: Performance e Acessibilidade (8 testes)
+- [x] Total: 23 testes E2E passando
