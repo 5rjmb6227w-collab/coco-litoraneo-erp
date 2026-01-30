@@ -244,6 +244,15 @@
 - [x] Alerta automático quando confiança de extração de anexo < 90% (createLowConfidenceAlert)
 - [ ] Aguardando próximos pedidos do usuário
 
+## GRÁFICOS DO DASHBOARD EXTERNO
+- [x] Gauge/Velocímetro OEE - Dashboard CEO e Gerente
+- [x] Gráfico de Linha OEE (D/P/Q por dia) - Dashboard Gerente
+- [x] Barras de Progresso para Margem/Custos - Dashboard CEO
+- [x] Barra de Progresso do Turno - Dashboard Operador
+- [x] Barras Horizontais de Produção - Dashboard CEO
+- [x] Alertas com Timestamps - Dashboard Gerente
+- [x] Timeline de Produção - Dashboard Operador
+
 
 ## BLOCO 5/9: ML PARA PREVISÕES AVANÇADAS ✅
 - [x] Schema Drizzle - Tabela ai_predictions com 16 campos de validação e otimização
