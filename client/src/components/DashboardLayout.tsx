@@ -62,6 +62,10 @@ import {
   TrendingUp,
   CheckCircle,
   BarChart3,
+  Box,
+  QrCode,
+  Layers,
+  Award,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -106,6 +110,7 @@ const menuGroups: Array<{
       { icon: AlertTriangle, label: "Problemas do Dia", path: "/producao/problemas" },
       { icon: Target, label: "OP & Metas", path: "/producao/expandida" },
       { icon: CalendarIcon, label: "Calendário", path: "/producao/calendario" },
+      { icon: Layers, label: "BOM / Receitas", path: "/bom-receitas" },
     ],
   },
   {
@@ -119,6 +124,8 @@ const menuGroups: Array<{
     label: "Estoque",
     items: [
       { icon: Archive, label: "Produto Acabado", path: "/estoque" },
+      { icon: Box, label: "Gestão de Lotes", path: "/lotes" },
+      { icon: QrCode, label: "Rastreabilidade", path: "/rastreabilidade" },
     ],
   },
   {
@@ -147,6 +154,7 @@ const menuGroups: Array<{
   {
     label: "Qualidade",
     items: [
+      { icon: Award, label: "Dashboard Qualidade", path: "/qualidade/dashboard" },
       { icon: FlaskConical, label: "Análises", path: "/qualidade/analises" },
       { icon: ClipboardList, label: "Não Conformidades", path: "/qualidade/ncs" },
     ],
@@ -165,7 +173,7 @@ const menuGroups: Array<{
       { icon: Users, label: "Usuários", path: "/admin/usuarios" },
       { icon: Activity, label: "Usuários Online", path: "/admin/online" },
       { icon: FileText, label: "Logs de Auditoria", path: "/admin/logs" },
-      { icon: Bell, label: "Alertas", path: "/admin/alertas" },
+      { icon: Bell, label: "Central de Alertas", path: "/alertas" },
       { icon: Settings, label: "Configurações", path: "/admin/configuracoes" },
       { icon: Lock, label: "Segurança", path: "/admin/seguranca" },
     ],

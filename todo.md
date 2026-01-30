@@ -725,3 +725,101 @@
 - [ ] Atualizar Dashboard CEO com OEE real
 - [ ] Atualizar Dashboard Gerente com OEE real e alertas
 - [ ] Atualizar Dashboard Operador com alertas do turno
+
+
+## IMPLEMENTAÇÃO DAS 8 FUNCIONALIDADES FALTANTES (30/01/2026)
+
+### 1. MÓDULO DE ORDENS DE PRODUÇÃO
+- [ ] Schema: tabela production_orders (id, numero, sku_id, quantidade_planejada, quantidade_produzida, status, data_inicio_planejada, data_fim_planejada, data_inicio_real, data_fim_real, turno, linha_producao, observacoes, created_by, created_at)
+- [ ] Schema: tabela production_order_items (id, order_id, sku_id, quantidade, lote_gerado)
+- [ ] Queries: CRUD de ordens de produção
+- [ ] Router: productionOrders.* (list, create, update, delete, start, pause, complete, cancel)
+- [ ] Página: /producao/ordens com listagem e filtros
+- [ ] Cards clicáveis com barra de progresso visual
+- [ ] Modal de criação/edição de OP
+- [ ] Botões de ação rápida (Iniciar, Pausar, Concluir, Cancelar)
+- [ ] Link para lote gerado pela OP
+- [ ] Testes unitários
+
+### 2. GESTÃO DE LOTES SEPARADA
+- [x] Schema: tabela batches (id, codigo, sku_id, quantidade, data_producao, data_validade, status, localizacao, ordem_producao_id, created_by, created_at)
+- [x] Queries: CRUD de lotes
+- [x] Router: batches.* (list, create, update, delete, quarantine, release, expire)
+- [x] Página: /lotes com listagem e filtros
+- [x] Cards de resumo: Total, Disponíveis, Em Quarentena, Vencendo
+- [x] Timeline visual do ciclo de vida do lote
+- [x] QR Code para rastreabilidade
+- [x] Status com cores (Verde=OK, Amarelo=Quarentena, Vermelho=Vencido)
+- [ ] Testes unitários
+
+### 3. CALENDÁRIO DE PRODUÇÃO
+- [x] Página: /producao/calendario
+- [x] Visualização mensal completa
+- [x] Navegação entre meses (anterior/próximo)
+- [x] OPs coloridas por status (Produção=verde, Manutenção=laranja, Treinamento=azul, Reunião=roxo)
+- [x] Clicar no dia → lista de eventos daquele dia
+- [x] Painel lateral: Cards de resumo do mês
+- [x] Legenda de cores
+- [x] Testes unitários (já existente)
+
+### 4. RASTREABILIDADE VISUAL
+- [x] Página: /rastreabilidade
+- [x] Campo de busca por código de lote
+- [x] Visualização em árvore/fluxo interativo
+- [x] Cadeia: Matéria-prima → Produção → Produto Final
+- [x] Clicar em cada nó → expande detalhes
+- [x] Hover mostra preview das informações
+- [x] Rastreabilidade bidirecional (Forward e Backward)
+- [x] Botão "Exportar Cadeia" para PDF
+- [ ] Testes unitários
+
+### 5. BOM/RECEITA (Bill of Materials)
+- [x] Schema: tabela bom_items (id, sku_id, item_id, item_type, quantidade_por_unidade, unidade_medida)
+- [x] Queries: CRUD de BOM
+- [x] Router: bom.* (list, create, update, delete, calculateCost)
+- [x] Página: /bom-receitas com lista de SKUs e ingredientes
+- [x] Visualização em árvore dos componentes
+- [x] Cálculo automático de custo
+- [x] Alerta se matéria-prima em falta
+- [ ] Testes unitários
+
+### 6. CENTRAL DE ALERTAS
+- [x] Página: /alertas
+- [x] Cards de resumo: Total, Não Lidos, Críticos, Resolvidos
+- [x] Categorias: Estoque Crítico, Ordens Atrasadas, Lotes Vencendo, Pagamentos, Qualidade
+- [x] Filtro de pendentes/todos
+- [x] Clicar no alerta → navega para o item relacionado
+- [x] Botão marcar como lido
+- [x] Botão resolver/arquivar
+- [x] Badge de contagem no menu lateral
+- [ ] Testes unitários
+
+### 7. DASHBOARD DE QUALIDADE
+- [x] Página: /qualidade/dashboard
+- [x] Cards de resumo: OEE Geral, Disponibilidade, Performance, Qualidade
+- [x] Gráfico: OEE por produto (barras horizontais)
+- [x] Gráfico: Distribuição de graus A/B/C (barras de progresso)
+- [x] Tabela: Score de qualidade por produtor (ranking com estrelas)
+- [x] Clicar no produtor → abre histórico detalhado
+- [x] Comparativo visual entre produtores
+- [ ] Testes unitários
+
+### 8. CENTRAL DE RELATÓRIOS
+- [x] Página: /relatorios
+- [x] 6 tipos de relatórios: Produção, Recebimento, Financeiro, Estoque, Produtores, Custos
+- [x] Filtros de período (data início/fim)
+- [x] Atalhos de período (Última Semana, Último Mês, Último Trimestre)
+- [x] Exportação em PDF e Excel
+- [x] Histórico de relatórios gerados (aba separada)
+- [x] Download rápido do histórico
+- [ ] Testes unitários
+
+### 9. HISTÓRICO DE PREÇOS (Compras)
+- [x] Schema: tabela price_history (id, supplier_id, item_id, item_type, preco, data, cotacao_id)
+- [x] Queries: histórico de preços
+- [x] Página: /historico-precos
+- [x] Cards de resumo: Preço Médio, Mínimo, Máximo, Tendência
+- [x] Gráfico de evolução de preços por item
+- [x] Comparação de preços entre produtores
+- [x] Filtro por produtor e período
+- [ ] Testes unitários

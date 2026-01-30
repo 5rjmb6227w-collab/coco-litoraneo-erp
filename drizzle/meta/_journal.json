@@ -85,6 +85,13 @@
       "when": 1769725865543,
       "tag": "0011_perpetual_lyja",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1769777338885,
+      "tag": "0012_useful_lake",
+      "breakpoints": true
     }
   ]
 }

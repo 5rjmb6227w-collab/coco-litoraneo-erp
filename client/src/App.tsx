@@ -63,6 +63,11 @@ import OrcamentoCAPEX from "./pages/OrcamentoCAPEX";
 import OrcamentoForecast from "./pages/OrcamentoForecast";
 import OrcamentoAprovacao from "./pages/OrcamentoAprovacao";
 import OrcamentoRelatorios from "./pages/OrcamentoRelatorios";
+import Lotes from "./pages/Lotes";
+import Alertas from "./pages/Alertas";
+import Rastreabilidade from "./pages/Rastreabilidade";
+import BOMReceitas from "./pages/BOMReceitas";
+import DashboardQualidade from "./pages/DashboardQualidade";
 
 function Router() {
   return (
@@ -135,6 +140,21 @@ function Router() {
         <Route path="/orcamento/forecast" component={OrcamentoForecast} />
         <Route path="/orcamento/aprovacao" component={OrcamentoAprovacao} />
         <Route path="/orcamento/relatorios" component={OrcamentoRelatorios} />
+        
+        {/* Gestão de Lotes */}
+        <Route path="/lotes" component={Lotes} />
+        
+        {/* Central de Alertas */}
+        <Route path="/alertas" component={Alertas} />
+        
+        {/* Rastreabilidade */}
+        <Route path="/rastreabilidade" component={Rastreabilidade} />
+        
+        {/* BOM / Receitas */}
+        <Route path="/bom-receitas" component={BOMReceitas} />
+        
+        {/* Dashboard de Qualidade */}
+        <Route path="/qualidade/dashboard" component={DashboardQualidade} />
         
         {/* Segurança e Autenticação */}
         <Route path="/seguranca/2fa" component={Setup2FA} />

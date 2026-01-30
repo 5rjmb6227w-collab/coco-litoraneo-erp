@@ -1,0 +1,120 @@
+CREATE TABLE `batch_movements` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`batchId` int NOT NULL,
+	`movementType` enum('producao','quarentena','liberacao','reserva','expedicao','ajuste','descarte') NOT NULL,
+	`quantity` decimal(10,2) NOT NULL,
+	`previousQuantity` decimal(10,2) NOT NULL,
+	`newQuantity` decimal(10,2) NOT NULL,
+	`previousStatus` varchar(50),
+	`newStatus` varchar(50),
+	`referenceType` varchar(50),
+	`referenceId` int,
+	`reason` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`createdBy` int,
+	CONSTRAINT `batch_movements_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `batches` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`code` varchar(50) NOT NULL,
+	`skuId` int NOT NULL,
+	`productionOrderId` int,
+	`quantity` decimal(10,2) NOT NULL,
+	`availableQuantity` decimal(10,2) NOT NULL,
+	`productionDate` date NOT NULL,
+	`expirationDate` date NOT NULL,
+	`status` enum('em_producao','quarentena','disponivel','reservado','expedido','vencido','descartado') NOT NULL DEFAULT 'em_producao',
+	`qualityGrade` enum('A','B','C'),
+	`qualityScore` decimal(5,2),
+	`location` varchar(100),
+	`quarantineReason` text,
+	`quarantineStartedAt` timestamp,
+	`quarantineEndedAt` timestamp,
+	`releasedBy` int,
+	`releasedAt` timestamp,
+	`observations` text,
+	`qrCodeUrl` varchar(500),
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`createdBy` int,
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	`updatedBy` int,
+	CONSTRAINT `batches_id` PRIMARY KEY(`id`),
+	CONSTRAINT `batches_code_unique` UNIQUE(`code`)
+);
+--> statement-breakpoint
+CREATE TABLE `bom_items` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`skuId` int NOT NULL,
+	`itemId` int NOT NULL,
+	`itemType` enum('materia_prima','embalagem','insumo') NOT NULL,
+	`itemName` varchar(255) NOT NULL,
+	`quantityPerUnit` decimal(10,4) NOT NULL,
+	`unit` varchar(20) NOT NULL,
+	`wastagePercent` decimal(5,2) DEFAULT '0',
+	`isOptional` boolean DEFAULT false,
+	`observations` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`createdBy` int,
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	`updatedBy` int,
+	CONSTRAINT `bom_items_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `report_history` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`reportType` enum('producao','financeiro','estoque','rastreabilidade','qualidade','produtores','cargas') NOT NULL,
+	`reportName` varchar(255) NOT NULL,
+	`format` enum('pdf','excel') NOT NULL,
+	`periodStart` date,
+	`periodEnd` date,
+	`filters` json,
+	`fileUrl` varchar(500),
+	`fileSize` int,
+	`generatedAt` timestamp NOT NULL DEFAULT (now()),
+	`generatedBy` int,
+	`generatedByName` varchar(255),
+	`downloadCount` int DEFAULT 0,
+	`lastDownloadAt` timestamp,
+	CONSTRAINT `report_history_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `system_alerts` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`category` enum('estoque','producao','qualidade','financeiro','vencimento','compras','manutencao','sistema') NOT NULL,
+	`type` varchar(100) NOT NULL,
+	`priority` enum('baixa','media','alta','critica') NOT NULL DEFAULT 'media',
+	`title` varchar(255) NOT NULL,
+	`description` text NOT NULL,
+	`entityType` varchar(50),
+	`entityId` int,
+	`entityName` varchar(255),
+	`value` decimal(14,2),
+	`threshold` decimal(14,2),
+	`actionUrl` varchar(255),
+	`status` enum('novo','visualizado','em_tratamento','resolvido','ignorado') NOT NULL DEFAULT 'novo',
+	`readAt` timestamp,
+	`readBy` int,
+	`resolvedAt` timestamp,
+	`resolvedBy` int,
+	`resolution` text,
+	`expiresAt` timestamp,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `system_alerts_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `traceability_chain` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`batchId` int NOT NULL,
+	`nodeType` enum('materia_prima','carga','producao','lote','expedicao') NOT NULL,
+	`nodeId` int NOT NULL,
+	`nodeName` varchar(255) NOT NULL,
+	`parentNodeId` int,
+	`sequence` int NOT NULL,
+	`quantity` decimal(10,2),
+	`unit` varchar(20),
+	`eventDate` timestamp NOT NULL,
+	`metadata` json,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `traceability_chain_id` PRIMARY KEY(`id`)
+);

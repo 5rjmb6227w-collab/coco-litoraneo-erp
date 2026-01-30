@@ -2230,3 +2230,156 @@ export const budgetAiInsights = mysqlTable("budget_ai_insights", {
 
 export type BudgetAiInsight = typeof budgetAiInsights.$inferSelect;
 export type InsertBudgetAiInsight = typeof budgetAiInsights.$inferInsert;
+
+
+// ============================================================================
+// GESTÃO DE LOTES (Separada do Estoque)
+// ============================================================================
+export const batches = mysqlTable("batches", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  skuId: int("skuId").notNull(),
+  productionOrderId: int("productionOrderId"),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  availableQuantity: decimal("availableQuantity", { precision: 10, scale: 2 }).notNull(),
+  productionDate: date("productionDate").notNull(),
+  expirationDate: date("expirationDate").notNull(),
+  status: mysqlEnum("status", ["em_producao", "quarentena", "disponivel", "reservado", "expedido", "vencido", "descartado"]).default("em_producao").notNull(),
+  qualityGrade: mysqlEnum("qualityGrade", ["A", "B", "C"]),
+  qualityScore: decimal("qualityScore", { precision: 5, scale: 2 }),
+  location: varchar("location", { length: 100 }),
+  quarantineReason: text("quarantineReason"),
+  quarantineStartedAt: timestamp("quarantineStartedAt"),
+  quarantineEndedAt: timestamp("quarantineEndedAt"),
+  releasedBy: int("releasedBy"),
+  releasedAt: timestamp("releasedAt"),
+  observations: text("observations"),
+  qrCodeUrl: varchar("qrCodeUrl", { length: 500 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type Batch = typeof batches.$inferSelect;
+export type InsertBatch = typeof batches.$inferInsert;
+
+// ============================================================================
+// MOVIMENTAÇÕES DE LOTES
+// ============================================================================
+export const batchMovements = mysqlTable("batch_movements", {
+  id: int("id").autoincrement().primaryKey(),
+  batchId: int("batchId").notNull(),
+  movementType: mysqlEnum("movementType", ["producao", "quarentena", "liberacao", "reserva", "expedicao", "ajuste", "descarte"]).notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  previousQuantity: decimal("previousQuantity", { precision: 10, scale: 2 }).notNull(),
+  newQuantity: decimal("newQuantity", { precision: 10, scale: 2 }).notNull(),
+  previousStatus: varchar("previousStatus", { length: 50 }),
+  newStatus: varchar("newStatus", { length: 50 }),
+  referenceType: varchar("referenceType", { length: 50 }),
+  referenceId: int("referenceId"),
+  reason: text("reason"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type BatchMovement = typeof batchMovements.$inferSelect;
+export type InsertBatchMovement = typeof batchMovements.$inferInsert;
+
+// ============================================================================
+// BOM - BILL OF MATERIALS (Receitas)
+// ============================================================================
+export const bomItems = mysqlTable("bom_items", {
+  id: int("id").autoincrement().primaryKey(),
+  skuId: int("skuId").notNull(),
+  itemId: int("itemId").notNull(),
+  itemType: mysqlEnum("itemType", ["materia_prima", "embalagem", "insumo"]).notNull(),
+  itemName: varchar("itemName", { length: 255 }).notNull(),
+  quantityPerUnit: decimal("quantityPerUnit", { precision: 10, scale: 4 }).notNull(),
+  unit: varchar("unit", { length: 20 }).notNull(),
+  wastagePercent: decimal("wastagePercent", { precision: 5, scale: 2 }).default("0"),
+  isOptional: boolean("isOptional").default(false),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type BomItem = typeof bomItems.$inferSelect;
+export type InsertBomItem = typeof bomItems.$inferInsert;
+
+// ============================================================================
+// CENTRAL DE ALERTAS UNIFICADA
+// ============================================================================
+export const systemAlerts = mysqlTable("system_alerts", {
+  id: int("id").autoincrement().primaryKey(),
+  category: mysqlEnum("category", ["estoque", "producao", "qualidade", "financeiro", "vencimento", "compras", "manutencao", "sistema"]).notNull(),
+  type: varchar("type", { length: 100 }).notNull(),
+  priority: mysqlEnum("priority", ["baixa", "media", "alta", "critica"]).default("media").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  entityType: varchar("entityType", { length: 50 }),
+  entityId: int("entityId"),
+  entityName: varchar("entityName", { length: 255 }),
+  value: decimal("value", { precision: 14, scale: 2 }),
+  threshold: decimal("threshold", { precision: 14, scale: 2 }),
+  actionUrl: varchar("actionUrl", { length: 255 }),
+  status: mysqlEnum("status", ["novo", "visualizado", "em_tratamento", "resolvido", "ignorado"]).default("novo").notNull(),
+  readAt: timestamp("readAt"),
+  readBy: int("readBy"),
+  resolvedAt: timestamp("resolvedAt"),
+  resolvedBy: int("resolvedBy"),
+  resolution: text("resolution"),
+  expiresAt: timestamp("expiresAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SystemAlert = typeof systemAlerts.$inferSelect;
+export type InsertSystemAlert = typeof systemAlerts.$inferInsert;
+
+// NOTA: priceHistory já existe acima na linha 1833
+
+// ============================================================================
+// HISTÓRICO DE RELATÓRIOS GERADOS
+// ============================================================================
+export const reportHistory = mysqlTable("report_history", {
+  id: int("id").autoincrement().primaryKey(),
+  reportType: mysqlEnum("reportType", ["producao", "financeiro", "estoque", "rastreabilidade", "qualidade", "produtores", "cargas"]).notNull(),
+  reportName: varchar("reportName", { length: 255 }).notNull(),
+  format: mysqlEnum("format", ["pdf", "excel"]).notNull(),
+  periodStart: date("periodStart"),
+  periodEnd: date("periodEnd"),
+  filters: json("filters"),
+  fileUrl: varchar("fileUrl", { length: 500 }),
+  fileSize: int("fileSize"),
+  generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+  generatedBy: int("generatedBy"),
+  generatedByName: varchar("generatedByName", { length: 255 }),
+  downloadCount: int("downloadCount").default(0),
+  lastDownloadAt: timestamp("lastDownloadAt"),
+});
+
+export type ReportHistory = typeof reportHistory.$inferSelect;
+export type InsertReportHistory = typeof reportHistory.$inferInsert;
+
+// ============================================================================
+// RASTREABILIDADE - CADEIA DE PRODUÇÃO
+// ============================================================================
+export const traceabilityChain = mysqlTable("traceability_chain", {
+  id: int("id").autoincrement().primaryKey(),
+  batchId: int("batchId").notNull(),
+  nodeType: mysqlEnum("nodeType", ["materia_prima", "carga", "producao", "lote", "expedicao"]).notNull(),
+  nodeId: int("nodeId").notNull(),
+  nodeName: varchar("nodeName", { length: 255 }).notNull(),
+  parentNodeId: int("parentNodeId"),
+  sequence: int("sequence").notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }),
+  unit: varchar("unit", { length: 20 }),
+  eventDate: timestamp("eventDate").notNull(),
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TraceabilityChain = typeof traceabilityChain.$inferSelect;
+export type InsertTraceabilityChain = typeof traceabilityChain.$inferInsert;

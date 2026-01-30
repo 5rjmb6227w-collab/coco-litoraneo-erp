@@ -11,6 +11,8 @@ import { reportRouter } from "./reports/reportRouter";
 import { costsRouter } from "./costs/costsRouter";
 import { budgetRouter } from "./budget/budgetRouter";
 import { emitEvent, EVENT_TYPES } from "./ai/eventEmitter";
+import { batchesRouter } from "./batches/batchesRouter";
+import { alertsRouter } from "./alerts/alertsRouter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -2518,6 +2520,8 @@ export const appRouter = router({
   // ORÇAMENTO
   // ============================================================================
   budget: budgetRouter,
+  batches: batchesRouter,
+  alerts: alertsRouter,
 });
 
 export type AppRouter = typeof appRouter;
