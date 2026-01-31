@@ -973,3 +973,7 @@
 - [x] Dashboard Gerente - Exportar PDF
 - [x] Dashboard Operador - Exportar PDF
 - [x] Dashboard Qualidade - Exportar PDF
+
+
+## BUG FIX - Janeiro 2026
+- [x] Corrigir erro na aba de pagamentos (RangeError: Invalid time value - data inválida no format)

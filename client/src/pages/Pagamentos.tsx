@@ -171,7 +171,7 @@ export default function Pagamentos() {
       p.dueDate || "",
       p.status,
       p.paymentMethod || "",
-      format(new Date(p.createdAt), "yyyy-MM-dd'T'HH:mm:ss"),
+      p.createdAt ? format(new Date(p.createdAt), "yyyy-MM-dd'T'HH:mm:ss") : "",
     ]);
 
     const csvContent = [headers.join(","), ...rows.map(row => row.map(cell => `"${cell}"`).join(","))].join("\n");
@@ -323,7 +323,9 @@ export default function Pagamentos() {
                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(payable.totalValue))}
                       </TableCell>
                       <TableCell>
-                        {payable.dueDate ? format(new Date(payable.dueDate + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR }) : "-"}
+                        {payable.dueDate && !isNaN(new Date(payable.dueDate + 'T00:00:00').getTime()) 
+                          ? format(new Date(payable.dueDate + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR }) 
+                          : "-"}
                       </TableCell>
                       <TableCell>{getStatusBadge(payable.status)}</TableCell>
                       <TableCell className="text-right">
@@ -480,14 +482,16 @@ export default function Pagamentos() {
 
               {/* Histórico de status */}
               <div className="text-xs text-muted-foreground border-t pt-4 space-y-1">
-                <p>Criado em: {format(new Date(selectedPayable.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
-                {selectedPayable.approvedAt && (
+                <p>Criado em: {selectedPayable.createdAt && !isNaN(new Date(selectedPayable.createdAt).getTime()) 
+                  ? format(new Date(selectedPayable.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR }) 
+                  : "-"}</p>
+                {selectedPayable.approvedAt && !isNaN(new Date(selectedPayable.approvedAt).getTime()) && (
                   <p>Aprovado em: {format(new Date(selectedPayable.approvedAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
                 )}
-                {selectedPayable.scheduledAt && (
+                {selectedPayable.scheduledAt && !isNaN(new Date(selectedPayable.scheduledAt).getTime()) && (
                   <p>Programado em: {format(new Date(selectedPayable.scheduledAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
                 )}
-                {selectedPayable.paidAt && (
+                {selectedPayable.paidAt && !isNaN(new Date(selectedPayable.paidAt).getTime()) && (
                   <p>Pago em: {format(new Date(selectedPayable.paidAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
                 )}
               </div>
