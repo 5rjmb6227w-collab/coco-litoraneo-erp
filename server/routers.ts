@@ -322,9 +322,9 @@ export const appRouter = router({
             const payableWeight = netWeight - discountKg;
             const totalValue = payableWeight * pricePerKg;
             
-            // Set due date to 7 days from now
+            // Set due date to 30 days from now (padrão do mercado)
             const dueDate = new Date();
-            dueDate.setDate(dueDate.getDate() + 7);
+            dueDate.setDate(dueDate.getDate() + 30);
             
             await db.createProducerPayable({
               coconutLoadId: id,

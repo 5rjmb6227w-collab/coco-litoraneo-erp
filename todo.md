@@ -977,3 +977,9 @@
 
 ## BUG FIX - Janeiro 2026
 - [x] Corrigir erro na aba de pagamentos (RangeError: Invalid time value - data inválida no format)
+
+
+## MELHORIAS UX - Pagamentos - Janeiro 2026
+- [x] Data de vencimento padrão ao criar pagamentos (30 dias após criação)
+- [x] Filtro por período de datas (data inicial e final)
+- [x] Paginação na tabela de pagamentos (10 itens por página)

@@ -29,7 +29,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Download, Wallet, Eye, Check, Calendar, CreditCard } from "lucide-react";
+import { Search, Download, Wallet, Eye, Check, Calendar, CreditCard, ChevronLeft, ChevronRight, Filter, X } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -39,6 +39,10 @@ export default function Pagamentos() {
   const [selectedPayable, setSelectedPayable] = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [producerFilter, setProducerFilter] = useState<string>("all");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -53,7 +57,29 @@ export default function Pagamentos() {
   const { data: payables, refetch } = trpc.producerPayables.list.useQuery({
     status: statusFilter !== "all" ? statusFilter : undefined,
     producerId: producerFilter !== "all" ? parseInt(producerFilter) : undefined,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
   });
+
+  // Paginação
+  const filteredPayables = payables || [];
+  const totalPages = Math.ceil(filteredPayables.length / itemsPerPage);
+  const paginatedPayables = filteredPayables.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset para página 1 quando filtros mudam
+  const handleFilterChange = () => {
+    setCurrentPage(1);
+  };
+
+  // Limpar filtros de data
+  const clearDateFilters = () => {
+    setStartDate("");
+    setEndDate("");
+    setCurrentPage(1);
+  };
   const { data: producers } = trpc.producers.list.useQuery({});
 
   // Mutations
@@ -249,37 +275,81 @@ export default function Pagamentos() {
       {/* Filtros */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Select value={producerFilter} onValueChange={setProducerFilter}>
-              <SelectTrigger className="w-full sm:w-[250px]">
-                <SelectValue placeholder="Produtor" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os produtores</SelectItem>
-                {producers?.map((producer) => (
-                  <SelectItem key={producer.id} value={producer.id.toString()}>
-                    {producer.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="aprovado">Aprovado</SelectItem>
-                <SelectItem value="programado">Programado</SelectItem>
-                <SelectItem value="pago">Pago</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex-1" />
-            <Button variant="outline" onClick={exportCSV}>
-              <Download className="h-4 w-4 mr-2" />
-              Exportar CSV
-            </Button>
+          <div className="flex flex-col gap-4">
+            {/* Linha 1: Filtros principais */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Select value={producerFilter} onValueChange={(v) => { setProducerFilter(v); handleFilterChange(); }}>
+                <SelectTrigger className="w-full sm:w-[250px]">
+                  <SelectValue placeholder="Produtor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os produtores</SelectItem>
+                  {producers?.map((producer) => (
+                    <SelectItem key={producer.id} value={producer.id.toString()}>
+                      {producer.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); handleFilterChange(); }}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="aprovado">Aprovado</SelectItem>
+                  <SelectItem value="programado">Programado</SelectItem>
+                  <SelectItem value="pago">Pago</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex-1" />
+              <Button variant="outline" onClick={exportCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar CSV
+              </Button>
+            </div>
+            
+            {/* Linha 2: Filtro por período */}
+            <div className="flex flex-col sm:flex-row items-end gap-4 p-4 bg-muted/30 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Filter className="h-4 w-4" />
+                <span className="font-medium">Período de Vencimento:</span>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="space-y-1">
+                  <Label htmlFor="startDate" className="text-xs text-muted-foreground">Data Inicial</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => { setStartDate(e.target.value); handleFilterChange(); }}
+                    className="w-full sm:w-[160px]"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="endDate" className="text-xs text-muted-foreground">Data Final</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => { setEndDate(e.target.value); handleFilterChange(); }}
+                    className="w-full sm:w-[160px]"
+                  />
+                </div>
+              </div>
+              {(startDate || endDate) && (
+                <Button variant="ghost" size="sm" onClick={clearDateFilters} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4 mr-1" />
+                  Limpar
+                </Button>
+              )}
+              {(startDate || endDate) && (
+                <Badge variant="secondary" className="ml-auto">
+                  {filteredPayables.length} resultado{filteredPayables.length !== 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -308,8 +378,8 @@ export default function Pagamentos() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {payables && payables.length > 0 ? (
-                  payables.map((payable) => (
+                {paginatedPayables && paginatedPayables.length > 0 ? (
+                  paginatedPayables.map((payable) => (
                     <TableRow key={payable.id}>
                       <TableCell className="font-mono">#{payable.coconutLoadId}</TableCell>
                       <TableCell className="font-medium">{getProducerName(payable.producerId)}</TableCell>
@@ -349,6 +419,60 @@ export default function Pagamentos() {
               </TableBody>
             </Table>
           </div>
+          
+          {/* Paginação */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filteredPayables.length)} de {filteredPayables.length} pagamentos
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Anterior
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        className="w-8 h-8 p-0"
+                        onClick={() => setCurrentPage(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Próximo
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
