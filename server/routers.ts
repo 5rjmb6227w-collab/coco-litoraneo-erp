@@ -2612,6 +2612,62 @@ export const appRouter = router({
   budget: budgetRouter,
   batches: batchesRouter,
   alerts: alertsRouter,
+
+  // ============================================================================
+  // BOM (BILL OF MATERIALS)
+  // ============================================================================
+  bom: router({
+    listBySkuId: protectedProcedure
+      .input(z.object({ skuId: z.number() }))
+      .query(async ({ input }) => {
+        return db.getBomItemsBySkuId(input.skuId);
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        skuId: z.number(),
+        itemId: z.number(),
+        itemType: z.enum(["materia_prima", "embalagem", "insumo"]),
+        itemName: z.string().min(1),
+        quantityPerUnit: z.string(),
+        unit: z.string().min(1),
+        wastagePercent: z.string().optional(),
+        isOptional: z.boolean().optional(),
+        observations: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return db.createBomItem({
+          ...input,
+          createdBy: ctx.user?.id,
+        });
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        itemId: z.number().optional(),
+        itemType: z.enum(["materia_prima", "embalagem", "insumo"]).optional(),
+        itemName: z.string().min(1).optional(),
+        quantityPerUnit: z.string().optional(),
+        unit: z.string().optional(),
+        wastagePercent: z.string().optional(),
+        isOptional: z.boolean().optional(),
+        observations: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { id, ...data } = input;
+        return db.updateBomItem(id, {
+          ...data,
+          updatedBy: ctx.user?.id,
+        });
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return db.deleteBomItem(input.id);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

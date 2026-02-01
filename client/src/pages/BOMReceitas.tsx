@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { 
   Search, 
   Plus, 
@@ -21,47 +22,170 @@ import {
   Edit,
   Trash2,
   Calculator,
-  FileText
+  FileText,
+  Check
 } from "lucide-react";
 
 export default function BOMReceitas() {
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [selectedSku, setSelectedSku] = useState<any>(null);
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
+  const [isEditItemOpen, setIsEditItemOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
   
+  // Form state
+  const [formData, setFormData] = useState({
+    itemId: "",
+    itemType: "materia_prima" as "materia_prima" | "embalagem" | "insumo",
+    quantityPerUnit: "",
+    unit: "kg",
+    wastagePercent: "0",
+    isOptional: false,
+    observations: "",
+  });
+  
+  // Queries
   const { data: skus, isLoading: loadingSkus } = trpc.skus.list.useQuery({});
   const { data: warehouseItems } = trpc.warehouseItems.list.useQuery({ warehouseType: "producao" });
+  const { data: bomItems, refetch: refetchBom } = trpc.bom.listBySkuId.useQuery(
+    { skuId: selectedSku?.id || 0 },
+    { enabled: !!selectedSku }
+  );
   
-  // Filtrar SKUs que possuem BOM
+  // Mutations
+  const createMutation = trpc.bom.create.useMutation({
+    onSuccess: () => {
+      toast.success("Ingrediente adicionado com sucesso!");
+      setIsAddItemOpen(false);
+      resetForm();
+      refetchBom();
+    },
+    onError: (error) => {
+      toast.error("Erro ao adicionar ingrediente: " + error.message);
+    },
+  });
+  
+  const updateMutation = trpc.bom.update.useMutation({
+    onSuccess: () => {
+      toast.success("Ingrediente atualizado com sucesso!");
+      setIsEditItemOpen(false);
+      setEditingItem(null);
+      resetForm();
+      refetchBom();
+    },
+    onError: (error) => {
+      toast.error("Erro ao atualizar ingrediente: " + error.message);
+    },
+  });
+  
+  const deleteMutation = trpc.bom.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Ingrediente removido com sucesso!");
+      refetchBom();
+    },
+    onError: (error) => {
+      toast.error("Erro ao remover ingrediente: " + error.message);
+    },
+  });
+  
+  // Verifica se usuário pode editar (admin, gerente ou ceo)
+  const canEdit = user?.role === "admin" || user?.role === "gerente" || user?.role === "ceo";
+  
+  // Filtrar SKUs
   const filteredSkus = skus?.filter((sku: any) => 
     !search || 
     sku.code.toLowerCase().includes(search.toLowerCase()) ||
     sku.description.toLowerCase().includes(search.toLowerCase())
   );
-
-  // Mock BOM data (será substituído por dados reais do backend)
-  const mockBOM: Record<number, any[]> = {
-    1: [
-      { id: 1, itemName: "Coco Verde", quantity: "10", unit: "un", cost: "2.50", available: true },
-      { id: 2, itemName: "Água Mineral", quantity: "0.5", unit: "L", cost: "1.20", available: true },
-      { id: 3, itemName: "Conservante Natural", quantity: "0.01", unit: "kg", cost: "15.00", available: false },
-    ],
-    2: [
-      { id: 4, itemName: "Polpa de Coco", quantity: "0.5", unit: "kg", cost: "8.00", available: true },
-      { id: 5, itemName: "Açúcar", quantity: "0.1", unit: "kg", cost: "3.50", available: true },
-    ],
+  
+  const resetForm = () => {
+    setFormData({
+      itemId: "",
+      itemType: "materia_prima",
+      quantityPerUnit: "",
+      unit: "kg",
+      wastagePercent: "0",
+      isOptional: false,
+      observations: "",
+    });
   };
   
   const calculateTotalCost = (items: any[]) => {
+    if (!items || !warehouseItems) return 0;
     return items.reduce((total, item) => {
-      return total + (parseFloat(item.quantity) * parseFloat(item.cost));
+      // Custo unitário padrão (pode ser configurado por item no futuro)
+      const unitCost = 1.00; // R$ 1,00 por unidade como placeholder
+      const quantity = parseFloat(item.quantityPerUnit) || 0;
+      return total + (quantity * unitCost);
     }, 0);
   };
   
-  const handleAddItem = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    toast.success("Item adicionado à receita!");
-    setIsAddItemOpen(false);
+  const getItemAvailability = (itemId: number) => {
+    const warehouseItem = warehouseItems?.find((wi: any) => wi.id === itemId);
+    if (!warehouseItem) return { available: false, stock: 0 };
+    return {
+      available: parseFloat(warehouseItem.currentStock) > 0,
+      stock: parseFloat(warehouseItem.currentStock),
+    };
+  };
+  
+  const handleAddItem = () => {
+    if (!selectedSku || !formData.itemId) {
+      toast.error("Selecione um item do almoxarifado");
+      return;
+    }
+    
+    const warehouseItem = warehouseItems?.find((wi: any) => wi.id === parseInt(formData.itemId));
+    if (!warehouseItem) {
+      toast.error("Item não encontrado");
+      return;
+    }
+    
+    createMutation.mutate({
+      skuId: selectedSku.id,
+      itemId: parseInt(formData.itemId),
+      itemType: formData.itemType,
+      itemName: warehouseItem.name,
+      quantityPerUnit: formData.quantityPerUnit,
+      unit: formData.unit,
+      wastagePercent: formData.wastagePercent,
+      isOptional: formData.isOptional,
+      observations: formData.observations,
+    });
+  };
+  
+  const handleUpdateItem = () => {
+    if (!editingItem) return;
+    
+    updateMutation.mutate({
+      id: editingItem.id,
+      quantityPerUnit: formData.quantityPerUnit,
+      unit: formData.unit,
+      wastagePercent: formData.wastagePercent,
+      isOptional: formData.isOptional,
+      observations: formData.observations,
+    });
+  };
+  
+  const handleDeleteItem = (itemId: number) => {
+    if (confirm("Tem certeza que deseja remover este ingrediente?")) {
+      deleteMutation.mutate({ id: itemId });
+    }
+  };
+  
+  const openEditModal = (item: any) => {
+    setEditingItem(item);
+    setFormData({
+      itemId: String(item.itemId),
+      itemType: item.itemType,
+      quantityPerUnit: item.quantityPerUnit,
+      unit: item.unit,
+      wastagePercent: item.wastagePercent || "0",
+      isOptional: item.isOptional || false,
+      observations: item.observations || "",
+    });
+    setIsEditItemOpen(true);
   };
 
   return (
@@ -111,15 +235,16 @@ export default function BOMReceitas() {
             ) : filteredSkus && filteredSkus.length > 0 ? (
               <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                 {filteredSkus.map((sku: any) => {
-                  const bomItems = mockBOM[sku.id] || [];
-                  const totalCost = calculateTotalCost(bomItems);
-                  const hasUnavailable = bomItems.some((item: any) => !item.available);
+                  const isSelected = selectedSku?.id === sku.id;
+                  const skuBomItems = isSelected ? bomItems : [];
+                  const totalCost = calculateTotalCost(skuBomItems || []);
+                  const hasUnavailable = (skuBomItems || []).some((item: any) => !getItemAvailability(item.itemId).available);
                   
                   return (
                     <Card 
                       key={sku.id}
                       className={`cursor-pointer transition-all hover:shadow-lg ${
-                        selectedSku?.id === sku.id 
+                        isSelected 
                           ? 'border-cyan-500 bg-cyan-900/10' 
                           : 'border-slate-700 hover:border-slate-600'
                       }`}
@@ -130,7 +255,7 @@ export default function BOMReceitas() {
                           <div>
                             <div className="flex items-center gap-2">
                               <h3 className="font-semibold">{sku.code}</h3>
-                              {hasUnavailable && (
+                              {isSelected && hasUnavailable && (
                                 <AlertTriangle className="h-4 w-4 text-orange-400" />
                               )}
                             </div>
@@ -139,14 +264,14 @@ export default function BOMReceitas() {
                           <div className="text-right">
                             <p className="text-sm text-muted-foreground">Custo</p>
                             <p className="font-semibold text-green-400">
-                              R$ {totalCost.toFixed(2)}
+                              R$ {isSelected ? totalCost.toFixed(2) : "0.00"}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-700">
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Layers className="h-4 w-4" />
-                            {bomItems.length} ingredientes
+                            {isSelected ? (skuBomItems?.length || 0) : "?"} ingredientes
                           </div>
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         </div>
@@ -180,119 +305,214 @@ export default function BOMReceitas() {
                       <CardTitle>{selectedSku.code}</CardTitle>
                       <CardDescription>{selectedSku.description}</CardDescription>
                     </div>
-                    <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
-                      <DialogTrigger asChild>
-                        <Button size="sm" className="bg-gradient-to-r from-cyan-500 to-teal-500">
-                          <Plus className="mr-2 h-4 w-4" />
-                          Adicionar Item
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Adicionar Ingrediente</DialogTitle>
-                        </DialogHeader>
-                        <form onSubmit={handleAddItem} className="space-y-4">
-                          <div className="space-y-2">
-                            <Label>Item do Almoxarifado</Label>
-                            <Select name="itemId" required>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione o item" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {warehouseItems?.map((item: any) => (
-                                  <SelectItem key={item.id} value={String(item.id)}>
-                                    {item.name} ({item.currentStock} {item.unit})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
+                    {canEdit && (
+                      <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" className="bg-gradient-to-r from-cyan-500 to-teal-500">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Adicionar Item
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Adicionar Ingrediente</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
                             <div className="space-y-2">
-                              <Label>Quantidade</Label>
-                              <Input name="quantity" type="number" step="0.001" required />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Unidade</Label>
-                              <Select name="unit" required>
+                              <Label>Item do Almoxarifado *</Label>
+                              <Select 
+                                value={formData.itemId} 
+                                onValueChange={(value) => setFormData({ ...formData, itemId: value })}
+                              >
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Unidade" />
+                                  <SelectValue placeholder="Selecione o item" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="kg">kg</SelectItem>
-                                  <SelectItem value="g">g</SelectItem>
-                                  <SelectItem value="L">L</SelectItem>
-                                  <SelectItem value="mL">mL</SelectItem>
-                                  <SelectItem value="un">un</SelectItem>
+                                  {warehouseItems?.map((item: any) => (
+                                    <SelectItem key={item.id} value={String(item.id)}>
+                                      {item.name} ({item.currentStock} {item.unit})
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
+                            <div className="space-y-2">
+                              <Label>Tipo de Item *</Label>
+                              <Select 
+                                value={formData.itemType} 
+                                onValueChange={(value: "materia_prima" | "embalagem" | "insumo") => setFormData({ ...formData, itemType: value })}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="materia_prima">Matéria-prima</SelectItem>
+                                  <SelectItem value="embalagem">Embalagem</SelectItem>
+                                  <SelectItem value="insumo">Insumo</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Quantidade por Unidade *</Label>
+                                <Input 
+                                  type="number" 
+                                  step="0.0001" 
+                                  value={formData.quantityPerUnit}
+                                  onChange={(e) => setFormData({ ...formData, quantityPerUnit: e.target.value })}
+                                  placeholder="Ex: 0.5"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Unidade *</Label>
+                                <Select 
+                                  value={formData.unit} 
+                                  onValueChange={(value) => setFormData({ ...formData, unit: value })}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="kg">kg</SelectItem>
+                                    <SelectItem value="g">g</SelectItem>
+                                    <SelectItem value="L">L</SelectItem>
+                                    <SelectItem value="mL">mL</SelectItem>
+                                    <SelectItem value="un">un</SelectItem>
+                                    <SelectItem value="m">m</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Perda/Desperdício (%)</Label>
+                                <Input 
+                                  type="number" 
+                                  step="0.01" 
+                                  value={formData.wastagePercent}
+                                  onChange={(e) => setFormData({ ...formData, wastagePercent: e.target.value })}
+                                  placeholder="Ex: 5"
+                                />
+                              </div>
+                              <div className="space-y-2 flex items-end">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={formData.isOptional}
+                                    onChange={(e) => setFormData({ ...formData, isOptional: e.target.checked })}
+                                    className="rounded"
+                                  />
+                                  <span className="text-sm">Item opcional</span>
+                                </label>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Observações</Label>
+                              <Input 
+                                value={formData.observations}
+                                onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
+                                placeholder="Observações sobre o ingrediente..."
+                              />
+                            </div>
                           </div>
                           <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setIsAddItemOpen(false)}>
+                            <Button type="button" variant="outline" onClick={() => { setIsAddItemOpen(false); resetForm(); }}>
                               Cancelar
                             </Button>
-                            <Button type="submit">Adicionar</Button>
+                            <Button onClick={handleAddItem} disabled={createMutation.isPending}>
+                              {createMutation.isPending ? "Adicionando..." : "Adicionar"}
+                            </Button>
                           </DialogFooter>
-                        </form>
-                      </DialogContent>
-                    </Dialog>
+                        </DialogContent>
+                      </Dialog>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* BOM Items */}
-                  {(mockBOM[selectedSku.id] || []).length > 0 ? (
+                  {bomItems && bomItems.length > 0 ? (
                     <div className="space-y-3">
-                      {(mockBOM[selectedSku.id] || []).map((item: any) => (
-                        <div 
-                          key={item.id}
-                          className={`flex items-center justify-between p-3 rounded-lg ${
-                            item.available 
-                              ? 'bg-slate-800/50' 
-                              : 'bg-red-900/20 border border-red-500/30'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-full ${
-                              item.available ? 'bg-green-500/20' : 'bg-red-500/20'
-                            }`}>
-                              <Package className={`h-4 w-4 ${
-                                item.available ? 'text-green-400' : 'text-red-400'
-                              }`} />
+                      {bomItems.map((item: any) => {
+                        const availability = getItemAvailability(item.itemId);
+                        // Custo unitário padrão (pode ser configurado por item no futuro)
+                        const unitCost = 1.00; // R$ 1,00 por unidade como placeholder
+                        const quantity = parseFloat(item.quantityPerUnit) || 0;
+                        const itemCost = quantity * unitCost;
+                        
+                        return (
+                          <div 
+                            key={item.id}
+                            className={`flex items-center justify-between p-3 rounded-lg ${
+                              availability.available 
+                                ? 'bg-slate-800/50' 
+                                : 'bg-red-900/20 border border-red-500/30'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-full ${
+                                availability.available ? 'bg-green-500/20' : 'bg-red-500/20'
+                              }`}>
+                                <Package className={`h-4 w-4 ${
+                                  availability.available ? 'text-green-400' : 'text-red-400'
+                                }`} />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium">{item.itemName}</p>
+                                  {item.isOptional && (
+                                    <Badge variant="outline" className="text-xs">Opcional</Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  {item.quantityPerUnit} {item.unit} × R$ {unitCost.toFixed(2)}
+                                </p>
+                                {!availability.available && (
+                                  <p className="text-xs text-red-400">Estoque: {availability.stock} {item.unit}</p>
+                                )}
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium">{item.itemName}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {item.quantity} {item.unit} × R$ {item.cost}
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold">
+                                R$ {itemCost.toFixed(2)}
                               </p>
+                              {canEdit && (
+                                <>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8"
+                                    onClick={() => openEditModal(item)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-red-400"
+                                    onClick={() => handleDeleteItem(item.id)}
+                                    disabled={deleteMutation.isPending}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold">
-                              R$ {(parseFloat(item.quantity) * parseFloat(item.cost)).toFixed(2)}
-                            </p>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-center py-8">
                       <Layers className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                       <p className="text-muted-foreground">Nenhum ingrediente cadastrado</p>
                       <p className="text-sm text-muted-foreground">
-                        Clique em "Adicionar Item" para começar
+                        {canEdit ? 'Clique em "Adicionar Item" para começar' : 'Sem ingredientes cadastrados para este produto'}
                       </p>
                     </div>
                   )}
 
                   {/* Summary */}
-                  {(mockBOM[selectedSku.id] || []).length > 0 && (
+                  {bomItems && bomItems.length > 0 && (
                     <div className="pt-4 border-t border-slate-700">
                       <div className="grid grid-cols-2 gap-4">
                         <Card className="bg-slate-800/30">
@@ -302,7 +522,7 @@ export default function BOMReceitas() {
                               <span className="text-sm">Custo Total</span>
                             </div>
                             <p className="text-2xl font-bold text-green-400">
-                              R$ {calculateTotalCost(mockBOM[selectedSku.id] || []).toFixed(2)}
+                              R$ {calculateTotalCost(bomItems).toFixed(2)}
                             </p>
                           </CardContent>
                         </Card>
@@ -319,7 +539,7 @@ export default function BOMReceitas() {
                         </Card>
                       </div>
                       
-                      {(mockBOM[selectedSku.id] || []).some((item: any) => !item.available) && (
+                      {bomItems.some((item: any) => !getItemAvailability(item.itemId).available) && (
                         <div className="mt-4 p-3 rounded-lg bg-orange-900/20 border border-orange-500/30 flex items-start gap-3">
                           <AlertTriangle className="h-5 w-5 text-orange-400 mt-0.5" />
                           <div>
@@ -350,6 +570,91 @@ export default function BOMReceitas() {
           </div>
         </div>
       </div>
+      
+      {/* Edit Item Dialog */}
+      <Dialog open={isEditItemOpen} onOpenChange={setIsEditItemOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Ingrediente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-3 bg-slate-800/50 rounded-lg">
+              <p className="font-medium">{editingItem?.itemName}</p>
+              <p className="text-sm text-muted-foreground">
+                {editingItem?.itemType === "materia_prima" ? "Matéria-prima" : 
+                 editingItem?.itemType === "embalagem" ? "Embalagem" : "Insumo"}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Quantidade por Unidade *</Label>
+                <Input 
+                  type="number" 
+                  step="0.0001" 
+                  value={formData.quantityPerUnit}
+                  onChange={(e) => setFormData({ ...formData, quantityPerUnit: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Unidade *</Label>
+                <Select 
+                  value={formData.unit} 
+                  onValueChange={(value) => setFormData({ ...formData, unit: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="kg">kg</SelectItem>
+                    <SelectItem value="g">g</SelectItem>
+                    <SelectItem value="L">L</SelectItem>
+                    <SelectItem value="mL">mL</SelectItem>
+                    <SelectItem value="un">un</SelectItem>
+                    <SelectItem value="m">m</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Perda/Desperdício (%)</Label>
+                <Input 
+                  type="number" 
+                  step="0.01" 
+                  value={formData.wastagePercent}
+                  onChange={(e) => setFormData({ ...formData, wastagePercent: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2 flex items-end">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={formData.isOptional}
+                    onChange={(e) => setFormData({ ...formData, isOptional: e.target.checked })}
+                    className="rounded"
+                  />
+                  <span className="text-sm">Item opcional</span>
+                </label>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Observações</Label>
+              <Input 
+                value={formData.observations}
+                onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => { setIsEditItemOpen(false); setEditingItem(null); resetForm(); }}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdateItem} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

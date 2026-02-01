@@ -1026,3 +1026,12 @@
 - [x] Corrigir layout dos Dashboards (gráficos donut com legenda abaixo, margens ajustadas)
 - [x] Edição de itens no Almoxarifado (já implementado - botão Editar azul nas tabelas)
 - [x] Gráfico de custos no Dashboard CEO (donut com margens e legenda ajustadas)
+
+
+## BUG REPORTADO - Fevereiro 2026
+- [ ] Adições na BOM dos SKUs não estão sendo registradas/salvas
+
+
+## BUG FIX - BOM Fevereiro 2026
+- [x] Adições na BOM dos SKUs não estão sendo registradas/salvas (implementado router backend completo com CRUD)
+- [x] Testes unitários para BOM (14 testes)

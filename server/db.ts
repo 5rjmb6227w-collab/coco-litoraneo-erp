@@ -28,6 +28,9 @@ import {
   InsertFinishedGoodsMovement,
   auditLogs,
   InsertAuditLog,
+  bomItems,
+  InsertBomItem,
+  BomItem,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -2544,4 +2547,77 @@ export async function getCurrentShiftMetrics() {
     totalLosses: Number(shiftProduction[0]?.totalLosses || 0),
     entriesCount: Number(shiftProduction[0]?.entriesCount || 0),
   };
+}
+
+
+// ============================================================================
+// BOM (BILL OF MATERIALS) QUERIES
+// ============================================================================
+
+export async function getBomItemsBySkuId(skuId: number) {
+  const database = await getDb();
+  if (!database) return [];
+  
+  const items = await database
+    .select()
+    .from(bomItems)
+    .where(eq(bomItems.skuId, skuId))
+    .orderBy(asc(bomItems.id));
+  
+  return items;
+}
+
+export async function createBomItem(data: InsertBomItem) {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  
+  const result = await database.insert(bomItems).values(data);
+  const insertId = result[0].insertId;
+  
+  const [newItem] = await database
+    .select()
+    .from(bomItems)
+    .where(eq(bomItems.id, insertId));
+  
+  return newItem;
+}
+
+export async function updateBomItem(id: number, data: Partial<InsertBomItem>) {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  
+  await database
+    .update(bomItems)
+    .set(data)
+    .where(eq(bomItems.id, id));
+  
+  const [updated] = await database
+    .select()
+    .from(bomItems)
+    .where(eq(bomItems.id, id));
+  
+  return updated;
+}
+
+export async function deleteBomItem(id: number) {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  
+  await database
+    .delete(bomItems)
+    .where(eq(bomItems.id, id));
+  
+  return { success: true };
+}
+
+export async function getBomItemById(id: number) {
+  const database = await getDb();
+  if (!database) return null;
+  
+  const [item] = await database
+    .select()
+    .from(bomItems)
+    .where(eq(bomItems.id, id));
+  
+  return item || null;
 }
