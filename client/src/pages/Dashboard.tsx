@@ -449,18 +449,18 @@ export default function Dashboard() {
               <CardDescription>Distribuição dos pagamentos a produtores</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[280px] flex items-center justify-center">
+              <div className="h-[320px] flex flex-col items-center justify-center">
                 {paymentStatusData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                    <PieChart margin={{ top: 5, right: 5, bottom: 60, left: 5 }}>
                       <Pie
                         data={paymentStatusData}
                         cx="50%"
-                        cy="50%"
-                        labelLine={true}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        innerRadius={40}
+                        cy="40%"
+                        labelLine={false}
+                        label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                        outerRadius={70}
+                        innerRadius={35}
                         fill="#8884d8"
                         dataKey="value"
                         paddingAngle={2}
@@ -470,7 +470,12 @@ export default function Dashboard() {
                         ))}
                       </Pie>
                       <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                      <Legend verticalAlign="bottom" height={36} />
+                      <Legend 
+                        verticalAlign="bottom" 
+                        align="center"
+                        layout="horizontal"
+                        wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (

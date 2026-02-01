@@ -408,7 +408,7 @@ export default function DashboardCEO() {
 
         {/* Distribuição de Custos - Gráfico Donut (estilo sistema externo) */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <PieChart className="h-5 w-5" />
               Distribuição de Custos
@@ -416,18 +416,18 @@ export default function DashboardCEO() {
             <CardDescription>Composição dos custos operacionais</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[320px]">
+            <div className="h-[350px] flex flex-col">
               <ResponsiveContainer width="100%" height="100%">
-                <RechartsPie>
+                <RechartsPie margin={{ top: 5, right: 5, bottom: 70, left: 5 }}>
                   <Pie
                     data={costDistribution}
                     cx="50%"
-                    cy="40%"
-                    innerRadius={50}
-                    outerRadius={85}
+                    cy="35%"
+                    innerRadius={45}
+                    outerRadius={75}
                     paddingAngle={2}
                     dataKey="value"
-                    label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                     labelLine={false}
                   >
                     {costDistribution.map((entry, index) => (
@@ -442,8 +442,7 @@ export default function DashboardCEO() {
                     layout="horizontal" 
                     align="center" 
                     verticalAlign="bottom"
-                    wrapperStyle={{ paddingTop: '10px' }}
-                    formatter={(value) => <span className="text-xs">{value}</span>}
+                    wrapperStyle={{ paddingTop: '15px', fontSize: '11px' }}
                   />
                 </RechartsPie>
               </ResponsiveContainer>

@@ -1020,3 +1020,9 @@
 - [x] Almoxarifado - edição de itens (botão Editar com permissão gerente em Produção e Geral)
 
 - [x] CORRIGIDO: Bug Orçamento Nova Linha - SelectItem com value="" substituído por div separadores
+
+
+## MELHORIAS UX - Fevereiro 2026 (Lote 2)
+- [x] Corrigir layout dos Dashboards (gráficos donut com legenda abaixo, margens ajustadas)
+- [x] Edição de itens no Almoxarifado (já implementado - botão Editar azul nas tabelas)
+- [x] Gráfico de custos no Dashboard CEO (donut com margens e legenda ajustadas)
