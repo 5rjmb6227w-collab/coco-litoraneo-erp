@@ -23,7 +23,8 @@ import {
   Trash2,
   Calculator,
   FileText,
-  Check
+  Check,
+  Copy
 } from "lucide-react";
 
 export default function BOMReceitas() {
@@ -32,6 +33,8 @@ export default function BOMReceitas() {
   const [selectedSku, setSelectedSku] = useState<any>(null);
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isEditItemOpen, setIsEditItemOpen] = useState(false);
+  const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
+  const [targetSkuId, setTargetSkuId] = useState<string>("");
   const [editingItem, setEditingItem] = useState<any>(null);
   
   // Form state
@@ -86,6 +89,17 @@ export default function BOMReceitas() {
     },
     onError: (error) => {
       toast.error("Erro ao remover ingrediente: " + error.message);
+    },
+  });
+  
+  const copyMutation = trpc.bom.copyToSku.useMutation({
+    onSuccess: (data) => {
+      toast.success(`BOM copiada com sucesso! ${data.copiedItems} itens copiados.`);
+      setIsCopyModalOpen(false);
+      setTargetSkuId("");
+    },
+    onError: (error) => {
+      toast.error("Erro ao copiar BOM: " + error.message);
     },
   });
   
@@ -306,13 +320,24 @@ export default function BOMReceitas() {
                       <CardDescription>{selectedSku.description}</CardDescription>
                     </div>
                     {canEdit && (
-                      <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
-                        <DialogTrigger asChild>
-                          <Button size="sm" className="bg-gradient-to-r from-cyan-500 to-teal-500">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Adicionar Item
+                      <div className="flex gap-2">
+                        {bomItems && bomItems.length > 0 && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setIsCopyModalOpen(true)}
+                          >
+                            <Copy className="mr-2 h-4 w-4" />
+                            Copiar BOM
                           </Button>
-                        </DialogTrigger>
+                        )}
+                        <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
+                          <DialogTrigger asChild>
+                            <Button size="sm" className="bg-gradient-to-r from-cyan-500 to-teal-500">
+                              <Plus className="mr-2 h-4 w-4" />
+                              Adicionar Item
+                            </Button>
+                          </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
                             <DialogTitle>Adicionar Ingrediente</DialogTitle>
@@ -424,7 +449,8 @@ export default function BOMReceitas() {
                             </Button>
                           </DialogFooter>
                         </DialogContent>
-                      </Dialog>
+                        </Dialog>
+                      </div>
                     )}
                   </div>
                 </CardHeader>
@@ -651,6 +677,63 @@ export default function BOMReceitas() {
             </Button>
             <Button onClick={handleUpdateItem} disabled={updateMutation.isPending}>
               {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Copiar BOM */}
+      <Dialog open={isCopyModalOpen} onOpenChange={setIsCopyModalOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Copiar BOM para outro SKU</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <Label className="text-muted-foreground">SKU de Origem</Label>
+              <p className="font-mono font-medium">{selectedSku?.code} - {selectedSku?.description}</p>
+              <p className="text-sm text-muted-foreground mt-1">{bomItems?.length || 0} ingredientes</p>
+            </div>
+            <div className="space-y-2">
+              <Label>SKU de Destino *</Label>
+              <Select value={targetSkuId} onValueChange={setTargetSkuId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o SKU de destino" />
+                </SelectTrigger>
+                <SelectContent>
+                  {skus?.filter((s: any) => s.id !== selectedSku?.id).map((sku: any) => (
+                    <SelectItem key={sku.id} value={String(sku.id)}>
+                      {sku.code} - {sku.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-800">
+                <AlertTriangle className="h-4 w-4 inline mr-1" />
+                Atenção: Esta ação irá substituir todos os ingredientes existentes no SKU de destino.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsCopyModalOpen(false); setTargetSkuId(""); }}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => {
+                if (!selectedSku || !targetSkuId) {
+                  toast.error("Selecione um SKU de destino");
+                  return;
+                }
+                copyMutation.mutate({
+                  sourceSkuId: selectedSku.id,
+                  targetSkuId: parseInt(targetSkuId),
+                });
+              }}
+              disabled={copyMutation.isPending || !targetSkuId}
+            >
+              {copyMutation.isPending ? "Copiando..." : "Copiar BOM"}
             </Button>
           </DialogFooter>
         </DialogContent>

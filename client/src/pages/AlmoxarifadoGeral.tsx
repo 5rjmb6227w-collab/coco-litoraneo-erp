@@ -70,6 +70,7 @@ export default function AlmoxarifadoGeral() {
     defaultSupplier: "",
     location: "",
     externalCode: "",
+    unitCost: "",
   });
 
   // Movement form state
@@ -135,6 +136,7 @@ export default function AlmoxarifadoGeral() {
     defaultSupplier: "",
     location: "",
     externalCode: "",
+    unitCost: "",
   });
 
   const resetForm = () => {
@@ -148,6 +150,7 @@ export default function AlmoxarifadoGeral() {
       defaultSupplier: "",
       location: "",
       externalCode: "",
+      unitCost: "",
     });
   };
 
@@ -177,6 +180,7 @@ export default function AlmoxarifadoGeral() {
       defaultSupplier: formData.defaultSupplier || undefined,
       location: formData.location || undefined,
       externalCode: formData.externalCode || undefined,
+      unitCost: formData.unitCost || undefined,
     });
   };
 
@@ -207,6 +211,7 @@ export default function AlmoxarifadoGeral() {
       defaultSupplier: item.defaultSupplier || "",
       location: item.location || "",
       externalCode: item.externalCode || "",
+      unitCost: item.unitCost ? String(item.unitCost) : "",
     });
     setIsViewModalOpen(true);
   };
@@ -234,6 +239,7 @@ export default function AlmoxarifadoGeral() {
       defaultSupplier: item.defaultSupplier || "",
       location: item.location || "",
       externalCode: item.externalCode || "",
+      unitCost: item.unitCost ? String(item.unitCost) : "",
     });
     setIsEditModalOpen(true);
   };
@@ -255,6 +261,7 @@ export default function AlmoxarifadoGeral() {
       defaultSupplier: editData.defaultSupplier || undefined,
       location: editData.location || undefined,
       externalCode: editData.externalCode || undefined,
+      unitCost: editData.unitCost || undefined,
     });
   };
 
@@ -588,14 +595,27 @@ export default function AlmoxarifadoGeral() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="defaultSupplier">Fornecedor Padrão</Label>
-              <Input
-                id="defaultSupplier"
-                placeholder="Nome do fornecedor"
-                value={formData.defaultSupplier}
-                onChange={(e) => setFormData({ ...formData, defaultSupplier: e.target.value })}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="defaultSupplier">Fornecedor Padrão</Label>
+                <Input
+                  id="defaultSupplier"
+                  placeholder="Nome do fornecedor"
+                  value={formData.defaultSupplier}
+                  onChange={(e) => setFormData({ ...formData, defaultSupplier: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="unitCost">Custo Unitário (R$)</Label>
+                <Input
+                  id="unitCost"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.unitCost}
+                  onChange={(e) => setFormData({ ...formData, unitCost: e.target.value })}
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -771,13 +791,25 @@ export default function AlmoxarifadoGeral() {
                 />
               </div>
             </div>
-            <div>
-              <Label>Fornecedor Padrão</Label>
-              <Input
-                value={editData.defaultSupplier}
-                onChange={(e) => setEditData({ ...editData, defaultSupplier: e.target.value })}
-                placeholder="Nome do fornecedor"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Fornecedor Padrão</Label>
+                <Input
+                  value={editData.defaultSupplier}
+                  onChange={(e) => setEditData({ ...editData, defaultSupplier: e.target.value })}
+                  placeholder="Nome do fornecedor"
+                />
+              </div>
+              <div>
+                <Label>Custo Unitário (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editData.unitCost}
+                  onChange={(e) => setEditData({ ...editData, unitCost: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>

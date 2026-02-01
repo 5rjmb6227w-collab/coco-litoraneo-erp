@@ -558,6 +558,7 @@ export const appRouter = router({
         defaultSupplier: z.string().optional(),
         location: z.string().optional(),
         externalCode: z.string().optional(),
+        unitCost: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const id = await db.createWarehouseItem({
@@ -589,6 +590,7 @@ export const appRouter = router({
         minimumStock: z.string().optional(),
         defaultSupplier: z.string().optional(),
         location: z.string().optional(),
+        unitCost: z.string().optional(),
         status: z.enum(["ativo", "inativo"]).optional(),
         externalCode: z.string().optional(),
       }))
@@ -2666,6 +2668,43 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         return db.deleteBomItem(input.id);
+      }),
+
+    copyToSku: protectedProcedure
+      .input(z.object({
+        sourceSkuId: z.number(),
+        targetSkuId: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const sourceItems = await db.getBomItemsBySkuId(input.sourceSkuId);
+        
+        if (!sourceItems || sourceItems.length === 0) {
+          throw new Error("SKU de origem não possui itens na BOM");
+        }
+        
+        // Delete existing BOM items in target SKU
+        const existingItems = await db.getBomItemsBySkuId(input.targetSkuId);
+        for (const item of existingItems || []) {
+          await db.deleteBomItem(item.id);
+        }
+        
+        // Copy items from source to target
+        for (const item of sourceItems) {
+          await db.createBomItem({
+            skuId: input.targetSkuId,
+            itemId: item.itemId,
+            itemType: item.itemType,
+            itemName: item.itemName,
+            quantityPerUnit: String(item.quantityPerUnit),
+            unit: item.unit,
+            wastagePercent: item.wastagePercent ? String(item.wastagePercent) : undefined,
+            isOptional: item.isOptional || false,
+            observations: item.observations || undefined,
+            createdBy: ctx.user?.id,
+          });
+        }
+        
+        return { success: true, copiedItems: sourceItems.length };
       }),
   }),
 });

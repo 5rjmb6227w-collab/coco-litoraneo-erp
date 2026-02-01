@@ -140,6 +140,7 @@ export const warehouseItems = mysqlTable("warehouse_items", {
   currentStock: decimal("currentStock", { precision: 10, scale: 2 }).default("0").notNull(),
   defaultSupplier: varchar("defaultSupplier", { length: 255 }),
   location: varchar("location", { length: 100 }),
+  unitCost: decimal("unitCost", { precision: 10, scale: 2 }).default("0"),
   status: mysqlEnum("status", ["ativo", "inativo"]).default("ativo").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   createdBy: int("createdBy"),

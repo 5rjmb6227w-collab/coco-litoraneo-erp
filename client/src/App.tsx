@@ -55,6 +55,7 @@ import RankingProdutores from "./pages/RankingProdutores";
 import DashboardCEO from "./pages/DashboardCEO";
 import DashboardGerente from "./pages/DashboardGerente";
 import DashboardOperador from "./pages/DashboardOperador";
+import RelatorioNecessidadeCompra from "./pages/RelatorioNecessidadeCompra";
 import OrcamentoPreparacao from "./pages/OrcamentoPreparacao";
 import OrcamentoAcompanhamento from "./pages/OrcamentoAcompanhamento";
 import OrcamentoAnaliseIA from "./pages/OrcamentoAnaliseIA";
@@ -126,6 +127,7 @@ function Router() {
         
         {/* Relatórios */}
         <Route path="/relatorios" component={Relatorios} />
+        <Route path="/relatorios/necessidade-compra" component={RelatorioNecessidadeCompra} />
         
         {/* Histórico de Preços */}
         <Route path="/historico-precos" component={HistoricoPrecos} />

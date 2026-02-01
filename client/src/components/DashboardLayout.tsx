@@ -138,6 +138,7 @@ const menuGroups: Array<{
       { icon: DollarSign, label: "Financeiro", path: "/financeiro" },
       { icon: Calculator, label: "Custos", path: "/custos" },
       { icon: FileText, label: "Relatórios", path: "/relatorios" },
+      { icon: ShoppingCart, label: "Nec. Compra", path: "/relatorios/necessidade-compra" },
       { icon: TrendingUp, label: "Hist. Preços", path: "/historico-precos" },
     ],
   },

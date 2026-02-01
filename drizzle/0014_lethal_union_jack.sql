@@ -1,0 +1,1 @@
+ALTER TABLE `warehouse_items` ADD `unitCost` decimal(10,2) DEFAULT '0';
