@@ -29,7 +29,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Search, Download, PackageCheck, Eye, ArrowUpCircle, ArrowDownCircle, AlertTriangle } from "lucide-react";
+import { Plus, Search, Download, PackageCheck, Eye, ArrowUpCircle, ArrowDownCircle, AlertTriangle, Pencil } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -49,7 +50,19 @@ export default function EstoqueProdutoAcabado() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  
+  // Auth para verificar permissões
+  const { user } = useAuth();
+  const canEdit = user?.role === 'admin' || user?.role === 'gerente' || user?.role === 'ceo';
+
+  // Form state para edição
+  const [editFormData, setEditFormData] = useState({
+    code: "",
+    description: "",
+    externalCode: "",
+  });
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [showBelowMinimum, setShowBelowMinimum] = useState(false);
@@ -108,6 +121,41 @@ export default function EstoqueProdutoAcabado() {
       toast.error("Erro ao registrar movimentação: " + error.message);
     },
   });
+
+  const updateMutation = trpc.skus.update.useMutation({
+    onSuccess: () => {
+      toast.success("Produto atualizado com sucesso!");
+      setIsEditModalOpen(false);
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error("Erro ao atualizar produto: " + error.message);
+    },
+  });
+
+  const openEditModal = (item: any) => {
+    setSelectedItem(item);
+    setEditFormData({
+      code: item.code || "",
+      description: item.description || "",
+      externalCode: item.externalCode || "",
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = () => {
+    if (!selectedItem || !editFormData.code || !editFormData.description) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    updateMutation.mutate({
+      id: selectedItem.id,
+      code: editFormData.code,
+      description: editFormData.description,
+      externalCode: editFormData.externalCode || undefined,
+    });
+  };
 
   const resetForm = () => {
     setFormData({
@@ -639,9 +687,75 @@ export default function EstoqueProdutoAcabado() {
               )}
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="flex justify-between">
+            <div>
+              {canEdit && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsViewModalOpen(false);
+                    openEditModal(selectedItem);
+                  }}
+                  className="gap-2"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Editar
+                </Button>
+              )}
+            </div>
             <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>
               Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Edição de Produto */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Editar Produto</DialogTitle>
+            <DialogDescription>
+              Altere as informações do produto acabado
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editCode">Código *</Label>
+              <Input
+                id="editCode"
+                value={editFormData.code}
+                onChange={(e) => setEditFormData({ ...editFormData, code: e.target.value.toUpperCase() })}
+                placeholder="CRS-FL-5KG"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editDescription">Descrição *</Label>
+              <Input
+                id="editDescription"
+                value={editFormData.description}
+                onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                placeholder="Coco Ralado Seco - Flocos 5kg"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editExternalCode">Código Externo (ERP)</Label>
+              <Input
+                id="editExternalCode"
+                value={editFormData.externalCode}
+                onChange={(e) => setEditFormData({ ...editFormData, externalCode: e.target.value })}
+                placeholder="Código para integração"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleEditSubmit} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </DialogFooter>
         </DialogContent>

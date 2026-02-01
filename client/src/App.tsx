@@ -68,6 +68,7 @@ import Alertas from "./pages/Alertas";
 import Rastreabilidade from "./pages/Rastreabilidade";
 import BOMReceitas from "./pages/BOMReceitas";
 import DashboardQualidade from "./pages/DashboardQualidade";
+import CadastroProdutos from "./pages/CadastroProdutos";
 
 function Router() {
   return (
@@ -85,6 +86,7 @@ function Router() {
         <Route path="/almoxarifado/producao" component={AlmoxarifadoProducao} />
         <Route path="/almoxarifado/geral" component={AlmoxarifadoGeral} />
         <Route path="/estoque" component={EstoqueProdutoAcabado} />
+        <Route path="/cadastro/produtos" component={CadastroProdutos} />
         
         {/* Tarefa 2 */}
         <Route path="/producao/apontamentos" component={ProducaoApontamentos} />

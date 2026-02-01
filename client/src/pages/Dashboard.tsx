@@ -230,82 +230,82 @@ export default function Dashboard() {
         </div>
 
         {/* Cards de Resumo */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/producao/apontamentos")}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Produção Total</CardTitle>
-              <Factory className="h-4 w-4 text-green-600" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Produção Total</CardTitle>
+              <Factory className="h-4 w-4 text-green-600 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {statsLoading ? <Skeleton className="h-8 w-20" /> : `${formatNumber(stats?.production?.total || 0)} kg`}
+            <CardContent className="pb-3 px-3">
+              <div className="text-lg md:text-xl font-bold text-green-600 truncate">
+                {statsLoading ? <Skeleton className="h-6 w-16" /> : `${formatNumber(stats?.production?.total || 0)} kg`}
               </div>
-              <p className="text-xs text-muted-foreground">No período selecionado</p>
+              <p className="text-[10px] text-muted-foreground truncate">No período selecionado</p>
             </CardContent>
           </Card>
 
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/recebimento")}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Cargas Recebidas</CardTitle>
-              <Truck className="h-4 w-4 text-blue-600" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Cargas Recebidas</CardTitle>
+              <Truck className="h-4 w-4 text-blue-600 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {statsLoading ? <Skeleton className="h-8 w-16" /> : stats?.loads?.count || openLoads.length || 0}
+            <CardContent className="pb-3 px-3">
+              <div className="text-lg md:text-xl font-bold text-blue-600">
+                {statsLoading ? <Skeleton className="h-6 w-12" /> : stats?.loads?.count || openLoads.length || 0}
               </div>
-              <p className="text-xs text-muted-foreground">{formatNumber(stats?.loads?.totalWeight || 0)} kg total</p>
+              <p className="text-[10px] text-muted-foreground truncate">{formatNumber(stats?.loads?.totalWeight || 0)} kg total</p>
             </CardContent>
           </Card>
 
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/financeiro")}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">A Pagar Produtores</CardTitle>
-              <DollarSign className="h-4 w-4 text-yellow-600" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground">A Pagar Produtores</CardTitle>
+              <DollarSign className="h-4 w-4 text-yellow-600 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">
-                {statsLoading ? <Skeleton className="h-8 w-24" /> : formatCurrency(stats?.payables?.pending || totalPending || 0)}
+            <CardContent className="pb-3 px-3">
+              <div className="text-lg md:text-xl font-bold text-yellow-600 truncate">
+                {statsLoading ? <Skeleton className="h-6 w-20" /> : formatCurrency(stats?.payables?.pending || totalPending || 0)}
               </div>
-              <p className="text-xs text-muted-foreground">Pagamentos pendentes</p>
+              <p className="text-[10px] text-muted-foreground truncate">Pagamentos pendentes</p>
             </CardContent>
           </Card>
 
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/financeiro")}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pagamentos Atrasados</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-red-600" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Pgtos Atrasados</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                {statsLoading ? <Skeleton className="h-8 w-24" /> : formatCurrency(stats?.payables?.overdue || 0)}
+            <CardContent className="pb-3 px-3">
+              <div className="text-lg md:text-xl font-bold text-red-600 truncate">
+                {statsLoading ? <Skeleton className="h-6 w-20" /> : formatCurrency(stats?.payables?.overdue || 0)}
               </div>
-              <p className="text-xs text-muted-foreground">Requer atenção</p>
+              <p className="text-[10px] text-muted-foreground truncate">Requer atenção</p>
             </CardContent>
           </Card>
 
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/compras")}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Compras Pendentes</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-orange-600" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Compras Pendentes</CardTitle>
+              <ShoppingCart className="h-4 w-4 text-orange-600 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
-                {statsLoading ? <Skeleton className="h-8 w-12" /> : stats?.purchases?.pending || 0}
+            <CardContent className="pb-3 px-3">
+              <div className="text-lg md:text-xl font-bold text-orange-600">
+                {statsLoading ? <Skeleton className="h-6 w-10" /> : stats?.purchases?.pending || 0}
               </div>
-              <p className="text-xs text-muted-foreground">Aguardando aprovação</p>
+              <p className="text-[10px] text-muted-foreground truncate">Aguardando aprovação</p>
             </CardContent>
           </Card>
 
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/qualidade/nao-conformidades")}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">NCs Abertas</CardTitle>
-              <FileWarning className="h-4 w-4 text-red-600" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground">NCs Abertas</CardTitle>
+              <FileWarning className="h-4 w-4 text-red-600 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                {statsLoading ? <Skeleton className="h-8 w-12" /> : stats?.ncs?.open || 0}
+            <CardContent className="pb-3 px-3">
+              <div className="text-lg md:text-xl font-bold text-red-600">
+                {statsLoading ? <Skeleton className="h-6 w-10" /> : stats?.ncs?.open || 0}
               </div>
-              <p className="text-xs text-muted-foreground">Não conformidades</p>
+              <p className="text-[10px] text-muted-foreground truncate">Não conformidades</p>
             </CardContent>
           </Card>
         </div>
@@ -347,30 +347,33 @@ export default function Dashboard() {
 
           {/* Produção por Turno */}
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-2">
               <CardTitle className="text-lg">Produção por Turno</CardTitle>
               <CardDescription>Distribuição da produção por turno</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px]">
+              <div className="h-[280px] flex items-center justify-center">
                 {shiftChartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
+                    <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                       <Pie
                         data={shiftChartData}
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
+                        labelLine={true}
                         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={100}
+                        outerRadius={80}
+                        innerRadius={40}
                         fill="#8884d8"
                         dataKey="value"
+                        paddingAngle={2}
                       >
                         {shiftChartData.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
                       <Tooltip formatter={(value: number) => `${formatNumber(value)} kg`} />
+                      <Legend verticalAlign="bottom" height={36} />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
@@ -418,30 +421,33 @@ export default function Dashboard() {
 
           {/* Pagamentos por Status */}
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-2">
               <CardTitle className="text-lg">Pagamentos por Status</CardTitle>
               <CardDescription>Distribuição dos pagamentos a produtores</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px]">
+              <div className="h-[280px] flex items-center justify-center">
                 {paymentStatusData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
+                    <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                       <Pie
                         data={paymentStatusData}
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
+                        labelLine={true}
                         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={100}
+                        outerRadius={80}
+                        innerRadius={40}
                         fill="#8884d8"
                         dataKey="value"
+                        paddingAngle={2}
                       >
                         {paymentStatusData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name.toLowerCase()] || COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
                       <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                      <Legend verticalAlign="bottom" height={36} />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (

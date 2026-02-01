@@ -990,3 +990,16 @@
 - [x] Timer Integrado para Apontamentos - Botões Iniciar/Pausar/Parar com cálculo automático de tempo
 - [x] Alertas Visuais de Estoque Crítico - Linhas coloridas, badges com ícones e animação pulsante
 - [x] Dashboard de Fluxo de Caixa Visual - Gráfico de barras/linha com entradas, saídas e saldo acumulado
+
+
+## CORREÇÕES E MELHORIAS - Fevereiro 2026
+- [ ] Corrigir layout dos dashboards (caixas de métricas, gráfico donuts, distribuição visual)
+- [ ] Implementar edição de Produto Acabado com permissão de gerente
+- [ ] Verificar/criar área de cadastro de produtos (CRUD completo)
+
+
+## CORREÇÕES E MELHORIAS - Fevereiro 2026
+- [x] Corrigir layout dos dashboards (caixas menores, donuts com legenda, distribuição equilibrada)
+- [x] Implementar edição de PA com permissão de gerente (botão Editar no modal de detalhes)
+- [x] Criar área de cadastro de produtos (/cadastro/produtos) com CRUD completo e controle de permissões
+- [x] Adicionar role "gerente" ao sistema de permissões

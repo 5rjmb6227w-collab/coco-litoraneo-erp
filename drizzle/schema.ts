@@ -21,7 +21,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   phone: varchar("phone", { length: 20 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin", "ceo", "recebimento", "producao", "almox_prod", "almox_geral", "qualidade", "compras", "financeiro", "rh", "consulta"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "gerente", "ceo", "recebimento", "producao", "almox_prod", "almox_geral", "qualidade", "compras", "financeiro", "rh", "consulta"]).default("user").notNull(),
   sector: varchar("sector", { length: 100 }),
   status: mysqlEnum("status", ["ativo", "inativo", "bloqueado"]).default("ativo").notNull(),
   forcePasswordChange: boolean("forcePasswordChange").default(true),

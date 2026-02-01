@@ -126,6 +126,7 @@ const menuGroups: Array<{
     label: "Estoque",
     items: [
       { icon: Archive, label: "Produto Acabado", path: "/estoque" },
+      { icon: Package, label: "Cadastro Produtos", path: "/cadastro/produtos" },
       { icon: Box, label: "Gestão de Lotes", path: "/lotes" },
       { icon: QrCode, label: "Rastreabilidade", path: "/rastreabilidade" },
     ],
