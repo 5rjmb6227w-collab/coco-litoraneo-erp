@@ -231,7 +231,7 @@ export default function BOMReceitas() {
           {/* Products List */}
           <div className="space-y-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Package className="h-5 w-5 text-cyan-400" />
+              <Package className="h-5 w-5 text-primary" />
               Produtos (SKUs)
             </h2>
             
@@ -240,8 +240,8 @@ export default function BOMReceitas() {
                 {[...Array(4)].map((_, i) => (
                   <Card key={i} className="animate-pulse">
                     <CardContent className="p-4">
-                      <div className="h-4 bg-slate-700 rounded w-1/2 mb-2" />
-                      <div className="h-3 bg-slate-700 rounded w-3/4" />
+                      <div className="h-4 bg-muted rounded w-1/2 mb-2" />
+                      <div className="h-3 bg-muted rounded w-3/4" />
                     </CardContent>
                   </Card>
                 ))}
@@ -259,8 +259,8 @@ export default function BOMReceitas() {
                       key={sku.id}
                       className={`cursor-pointer transition-all hover:shadow-lg ${
                         isSelected 
-                          ? 'border-cyan-500 bg-cyan-900/10' 
-                          : 'border-slate-700 hover:border-slate-600'
+                          ? 'border-primary bg-primary/5' 
+                          : 'border hover:border-primary/50'
                       }`}
                       onClick={() => setSelectedSku(sku)}
                     >
@@ -270,19 +270,19 @@ export default function BOMReceitas() {
                             <div className="flex items-center gap-2">
                               <h3 className="font-semibold">{sku.code}</h3>
                               {isSelected && hasUnavailable && (
-                                <AlertTriangle className="h-4 w-4 text-orange-400" />
+                                <AlertTriangle className="h-4 w-4 text-orange-600" />
                               )}
                             </div>
                             <p className="text-sm text-muted-foreground">{sku.description}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-sm text-muted-foreground">Custo</p>
-                            <p className="font-semibold text-green-400">
+                            <p className="font-semibold text-green-600">
                               R$ {isSelected ? totalCost.toFixed(2) : "0.00"}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-700">
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t">
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Layers className="h-4 w-4" />
                             {isSelected ? (skuBomItems?.length || 0) : "?"} ingredientes
@@ -307,12 +307,12 @@ export default function BOMReceitas() {
           {/* BOM Details */}
           <div className="space-y-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              <FileText className="h-5 w-5 text-cyan-400" />
+              <FileText className="h-5 w-5 text-primary" />
               Receita / BOM
             </h2>
             
             {selectedSku ? (
-              <Card className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border-slate-700">
+              <Card className="bg-card border">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
@@ -470,16 +470,16 @@ export default function BOMReceitas() {
                             key={item.id}
                             className={`flex items-center justify-between p-3 rounded-lg ${
                               availability.available 
-                                ? 'bg-slate-800/50' 
-                                : 'bg-red-900/20 border border-red-500/30'
+                                ? 'bg-muted/50' 
+                                : 'bg-red-50 border border-red-200'
                             }`}
                           >
                             <div className="flex items-center gap-3">
                               <div className={`p-2 rounded-full ${
-                                availability.available ? 'bg-green-500/20' : 'bg-red-500/20'
+                                availability.available ? 'bg-green-100' : 'bg-red-100'
                               }`}>
                                 <Package className={`h-4 w-4 ${
-                                  availability.available ? 'text-green-400' : 'text-red-400'
+                                  availability.available ? 'text-green-600' : 'text-red-600'
                                 }`} />
                               </div>
                               <div>
@@ -493,7 +493,7 @@ export default function BOMReceitas() {
                                   {item.quantityPerUnit} {item.unit} × R$ {unitCost.toFixed(2)}
                                 </p>
                                 {!availability.available && (
-                                  <p className="text-xs text-red-400">Estoque: {availability.stock} {item.unit}</p>
+                                  <p className="text-xs text-red-600 font-medium">Estoque: {availability.stock} {item.unit}</p>
                                 )}
                               </div>
                             </div>
@@ -514,7 +514,7 @@ export default function BOMReceitas() {
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
-                                    className="h-8 w-8 text-red-400"
+                                    className="h-8 w-8 text-red-600"
                                     onClick={() => handleDeleteItem(item.id)}
                                     disabled={deleteMutation.isPending}
                                   >
@@ -539,20 +539,20 @@ export default function BOMReceitas() {
 
                   {/* Summary */}
                   {bomItems && bomItems.length > 0 && (
-                    <div className="pt-4 border-t border-slate-700">
+                    <div className="pt-4 border-t">
                       <div className="grid grid-cols-2 gap-4">
-                        <Card className="bg-slate-800/30">
+                        <Card className="bg-muted/30 border">
                           <CardContent className="p-4">
                             <div className="flex items-center gap-2 text-muted-foreground mb-1">
                               <Calculator className="h-4 w-4" />
                               <span className="text-sm">Custo Total</span>
                             </div>
-                            <p className="text-2xl font-bold text-green-400">
+                            <p className="text-2xl font-bold text-green-600">
                               R$ {calculateTotalCost(bomItems).toFixed(2)}
                             </p>
                           </CardContent>
                         </Card>
-                        <Card className="bg-slate-800/30">
+                        <Card className="bg-muted/30 border">
                           <CardContent className="p-4">
                             <div className="flex items-center gap-2 text-muted-foreground mb-1">
                               <Scale className="h-4 w-4" />
@@ -566,10 +566,10 @@ export default function BOMReceitas() {
                       </div>
                       
                       {bomItems.some((item: any) => !getItemAvailability(item.itemId).available) && (
-                        <div className="mt-4 p-3 rounded-lg bg-orange-900/20 border border-orange-500/30 flex items-start gap-3">
-                          <AlertTriangle className="h-5 w-5 text-orange-400 mt-0.5" />
+                        <div className="mt-4 p-3 rounded-lg bg-orange-50 border border-orange-200 flex items-start gap-3">
+                          <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5" />
                           <div>
-                            <p className="font-medium text-orange-400">Atenção: Itens Indisponíveis</p>
+                            <p className="font-medium text-orange-700">Atenção: Itens Indisponíveis</p>
                             <p className="text-sm text-muted-foreground">
                               Alguns ingredientes estão com estoque zerado ou abaixo do necessário.
                             </p>
