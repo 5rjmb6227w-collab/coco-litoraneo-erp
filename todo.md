@@ -983,3 +983,10 @@
 - [x] Data de vencimento padrão ao criar pagamentos (30 dias após criação)
 - [x] Filtro por período de datas (data inicial e final)
 - [x] Paginação na tabela de pagamentos (10 itens por página)
+
+
+## FUNCIONALIDADES ALTO IMPACTO - Janeiro 2026
+- [x] Busca Global Unificada (Ctrl+K) - Pesquisar em todos os módulos (páginas, produtores, colaboradores)
+- [x] Timer Integrado para Apontamentos - Botões Iniciar/Pausar/Parar com cálculo automático de tempo
+- [x] Alertas Visuais de Estoque Crítico - Linhas coloridas, badges com ícones e animação pulsante
+- [x] Dashboard de Fluxo de Caixa Visual - Gráfico de barras/linha com entradas, saídas e saldo acumulado

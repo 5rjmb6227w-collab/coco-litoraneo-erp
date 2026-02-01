@@ -28,7 +28,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Download, Factory, Search, Filter } from "lucide-react";
+import { Plus, Download, Factory, Search, Filter, Clock } from "lucide-react";
+import { ProductionTimer } from "@/components/ProductionTimer";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -75,7 +76,20 @@ export default function ProducaoApontamentos() {
     losses: "",
     lossReason: "" as "" | "processo" | "qualidade" | "equipamento" | "materia_prima" | "outro",
     observations: "",
+    startTime: "",
+    endTime: "",
+    durationMinutes: 0,
   });
+
+  // Callback do timer
+  const handleTimerUpdate = (startTime: string, endTime: string, durationSeconds: number) => {
+    setFormData(prev => ({
+      ...prev,
+      startTime,
+      endTime,
+      durationMinutes: Math.round(durationSeconds / 60),
+    }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,6 +186,28 @@ export default function ProducaoApontamentos() {
                 <DialogTitle>Novo Apontamento de Produção</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Timer de Produção */}
+                <ProductionTimer onTimeUpdate={handleTimerUpdate} />
+                
+                {/* Informações de tempo (preenchidas pelo timer) */}
+                {formData.startTime && formData.endTime && (
+                  <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg text-sm">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Início:</span>
+                      <span className="font-mono font-medium">{formData.startTime}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Fim:</span>
+                      <span className="font-mono font-medium">{formData.endTime}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Duração:</span>
+                      <span className="font-mono font-medium">{formData.durationMinutes} min</span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="productionDate">Data *</Label>

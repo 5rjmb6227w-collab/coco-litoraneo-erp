@@ -28,7 +28,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Download, DollarSign, TrendingUp, TrendingDown, CheckCircle, Calendar } from "lucide-react";
+import { Plus, Download, DollarSign, TrendingUp, TrendingDown, CheckCircle, Calendar, BarChart3 } from "lucide-react";
+import { CashFlowChart } from "@/components/CashFlowChart";
 import { toast } from "sonner";
 import { format, addDays, isAfter, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -563,6 +564,13 @@ export default function Financeiro() {
         </TabsContent>
 
         <TabsContent value="cashflow" className="space-y-4">
+          {/* Gráfico Visual de Fluxo de Caixa */}
+          <CashFlowChart 
+            data={cashFlow} 
+            title="Projeção de Fluxo de Caixa - Próximos 30 dias"
+          />
+
+          {/* Tabela detalhada */}
           <Card>
             <CardHeader>
               <CardTitle>Projeção de Fluxo de Caixa - Próximos 30 dias</CardTitle>

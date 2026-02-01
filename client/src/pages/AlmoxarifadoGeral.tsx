@@ -29,7 +29,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Search, Download, Boxes, Eye, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { Plus, Search, Download, Boxes, Eye, ArrowUpCircle, ArrowDownCircle, AlertTriangle, AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -204,13 +204,33 @@ export default function AlmoxarifadoGeral() {
   const getStockBadge = (status: string) => {
     switch (status) {
       case "critical":
-        return <Badge variant="destructive">Zerado</Badge>;
+        return (
+          <Badge variant="destructive" className="gap-1 animate-pulse">
+            <AlertCircle className="h-3 w-3" />
+            Zerado
+          </Badge>
+        );
       case "low":
-        return <Badge variant="destructive">Crítico</Badge>;
+        return (
+          <Badge variant="destructive" className="gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            Crítico
+          </Badge>
+        );
       case "warning":
-        return <Badge className="bg-yellow-500">Baixo</Badge>;
+        return (
+          <Badge className="bg-yellow-500 text-white gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            Baixo
+          </Badge>
+        );
       default:
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">OK</Badge>;
+        return (
+          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
+            <CheckCircle className="h-3 w-3" />
+            OK
+          </Badge>
+        );
     }
   };
 
@@ -326,7 +346,18 @@ export default function AlmoxarifadoGeral() {
                   items.map((item) => {
                     const stockStatus = getStockStatus(item.currentStock, item.minimumStock);
                     return (
-                      <TableRow key={item.id} className={stockStatus === "critical" || stockStatus === "low" ? "bg-destructive/5" : ""}>
+                      <TableRow 
+                        key={item.id} 
+                        className={`transition-colors ${
+                          stockStatus === "critical" 
+                            ? "bg-red-100 dark:bg-red-950/30 border-l-4 border-l-red-500" 
+                            : stockStatus === "low" 
+                              ? "bg-red-50 dark:bg-red-950/20 border-l-4 border-l-red-400" 
+                              : stockStatus === "warning" 
+                                ? "bg-yellow-50 dark:bg-yellow-950/20 border-l-4 border-l-yellow-500" 
+                                : ""
+                        }`}
+                      >
                         <TableCell className="font-mono">{item.internalCode}</TableCell>
                         <TableCell className="font-medium">{item.name}</TableCell>
                         <TableCell>{item.category}</TableCell>

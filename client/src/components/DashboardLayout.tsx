@@ -73,6 +73,7 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { NotificationCenter } from './NotificationCenter';
+import { GlobalSearch } from './GlobalSearch';
 import { Button } from "./ui/button";
 import {
   Collapsible,
@@ -407,6 +408,12 @@ function DashboardLayoutContent({
           </SidebarContent>
 
           <SidebarFooter className="p-3 border-t border-sidebar-border">
+            {/* Busca Global */}
+            {!isCollapsed && (
+              <div className="mb-2">
+                <GlobalSearch />
+              </div>
+            )}
             {/* Barra de ações rápidas */}
             <div className="flex items-center justify-between mb-2 group-data-[collapsible=icon]:justify-center">
               <NotificationCenter />
@@ -493,6 +500,7 @@ function DashboardLayoutContent({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <GlobalSearch />
               <NotificationCenter />
               {switchable && toggleTheme && (
                 <Button
