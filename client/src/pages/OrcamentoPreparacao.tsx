@@ -524,19 +524,19 @@ export default function OrcamentoPreparacao() {
                                 <SelectValue placeholder="Selecione..." />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="" disabled>-- Receitas --</SelectItem>
+                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">-- Receitas --</div>
                                 {CATEGORIES.receita.map((c) => (
                                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                                 ))}
-                                <SelectItem value="" disabled>-- Custos --</SelectItem>
+                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">-- Custos --</div>
                                 {CATEGORIES.custo.map((c) => (
                                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                                 ))}
-                                <SelectItem value="" disabled>-- Despesas --</SelectItem>
+                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">-- Despesas --</div>
                                 {CATEGORIES.despesa.map((c) => (
                                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                                 ))}
-                                <SelectItem value="" disabled>-- Investimentos (CAPEX) --</SelectItem>
+                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">-- Investimentos (CAPEX) --</div>
                                 {CATEGORIES.investimento.map((c) => (
                                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                                 ))}

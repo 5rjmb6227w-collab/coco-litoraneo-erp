@@ -1018,3 +1018,5 @@
 - [x] Gráfico de custos no Dashboard CEO (ajustado tamanho e legenda abaixo)
 - [x] Dashboard Geral - números maiores que os cards (formatação compacta e distribuição equilibrada)
 - [x] Almoxarifado - edição de itens (botão Editar com permissão gerente em Produção e Geral)
+
+- [x] CORRIGIDO: Bug Orçamento Nova Linha - SelectItem com value="" substituído por div separadores
