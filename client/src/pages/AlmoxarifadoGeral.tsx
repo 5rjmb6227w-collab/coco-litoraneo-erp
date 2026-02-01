@@ -29,7 +29,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Search, Download, Boxes, Eye, ArrowUpCircle, ArrowDownCircle, AlertTriangle, AlertCircle, CheckCircle } from "lucide-react";
+import { Plus, Search, Download, Boxes, Eye, ArrowUpCircle, ArrowDownCircle, AlertTriangle, AlertCircle, CheckCircle, Edit } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -45,13 +46,18 @@ const CATEGORIES_GERAL = [
 ];
 
 export default function AlmoxarifadoGeral() {
+  const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [showBelowMinimum, setShowBelowMinimum] = useState(false);
+
+  // Verifica se usuário pode editar (admin, gerente ou ceo)
+  const canEdit = user?.role === "admin" || user?.role === "gerente" || user?.role === "ceo";
 
   // Form state
   const [formData, setFormData] = useState({
@@ -105,6 +111,30 @@ export default function AlmoxarifadoGeral() {
     onError: (error) => {
       toast.error("Erro ao registrar movimentação: " + error.message);
     },
+  });
+
+  const updateMutation = trpc.warehouseItems.update.useMutation({
+    onSuccess: () => {
+      toast.success("Item atualizado com sucesso!");
+      setIsEditModalOpen(false);
+      refetch();
+    },
+    onError: (error) => {
+      toast.error("Erro ao atualizar item: " + error.message);
+    },
+  });
+
+  // Estado para edição
+  const [editData, setEditData] = useState({
+    internalCode: "",
+    name: "",
+    description: "",
+    unit: "unidade" as "kg" | "litro" | "unidade" | "metro" | "rolo",
+    category: "",
+    minimumStock: "",
+    defaultSupplier: "",
+    location: "",
+    externalCode: "",
   });
 
   const resetForm = () => {
@@ -190,6 +220,42 @@ export default function AlmoxarifadoGeral() {
       observations: "",
     });
     setIsMovementModalOpen(true);
+  };
+
+  const openEditModal = (item: any) => {
+    setSelectedItem(item);
+    setEditData({
+      internalCode: item.internalCode,
+      name: item.name,
+      description: item.description || "",
+      unit: item.unit,
+      category: item.category,
+      minimumStock: String(item.minimumStock),
+      defaultSupplier: item.defaultSupplier || "",
+      location: item.location || "",
+      externalCode: item.externalCode || "",
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdate = () => {
+    if (!selectedItem || !editData.name || !editData.category) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    updateMutation.mutate({
+      id: selectedItem.id,
+      internalCode: editData.internalCode,
+      name: editData.name,
+      description: editData.description || undefined,
+      unit: editData.unit,
+      category: editData.category,
+      minimumStock: editData.minimumStock,
+      defaultSupplier: editData.defaultSupplier || undefined,
+      location: editData.location || undefined,
+      externalCode: editData.externalCode || undefined,
+    });
   };
 
   const getStockStatus = (current: string, minimum: string) => {
@@ -394,6 +460,16 @@ export default function AlmoxarifadoGeral() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
+                            {canEdit && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditModal(item)}
+                                title="Editar"
+                              >
+                                <Edit className="h-4 w-4 text-blue-600" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -594,6 +670,122 @@ export default function AlmoxarifadoGeral() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>
               Fechar
+            </Button>
+            {canEdit && (
+              <Button onClick={() => { setIsViewModalOpen(false); openEditModal(selectedItem); }}>
+                <Edit className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Editar Item */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Editar Item</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Código Interno *</Label>
+                <Input
+                  value={editData.internalCode}
+                  onChange={(e) => setEditData({ ...editData, internalCode: e.target.value })}
+                  placeholder="Ex: LIM001"
+                />
+              </div>
+              <div>
+                <Label>Código Externo</Label>
+                <Input
+                  value={editData.externalCode}
+                  onChange={(e) => setEditData({ ...editData, externalCode: e.target.value })}
+                  placeholder="Código do fornecedor"
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Nome *</Label>
+              <Input
+                value={editData.name}
+                onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                placeholder="Nome do item"
+              />
+            </div>
+            <div>
+              <Label>Descrição</Label>
+              <Textarea
+                value={editData.description}
+                onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                placeholder="Descrição detalhada do item"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Categoria *</Label>
+                <Select value={editData.category} onValueChange={(v) => setEditData({ ...editData, category: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES_GERAL.map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Unidade *</Label>
+                <Select value={editData.unit} onValueChange={(v: any) => setEditData({ ...editData, unit: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unidade">Unidade</SelectItem>
+                    <SelectItem value="kg">Kg</SelectItem>
+                    <SelectItem value="litro">Litro</SelectItem>
+                    <SelectItem value="metro">Metro</SelectItem>
+                    <SelectItem value="rolo">Rolo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Estoque Mínimo *</Label>
+                <Input
+                  type="number"
+                  value={editData.minimumStock}
+                  onChange={(e) => setEditData({ ...editData, minimumStock: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <Label>Localização</Label>
+                <Input
+                  value={editData.location}
+                  onChange={(e) => setEditData({ ...editData, location: e.target.value })}
+                  placeholder="Ex: Prateleira A3"
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Fornecedor Padrão</Label>
+              <Input
+                value={editData.defaultSupplier}
+                onChange={(e) => setEditData({ ...editData, defaultSupplier: e.target.value })}
+                placeholder="Nome do fornecedor"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdate} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </DialogFooter>
         </DialogContent>

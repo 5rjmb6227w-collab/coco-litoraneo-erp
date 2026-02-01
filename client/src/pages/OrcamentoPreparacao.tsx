@@ -577,7 +577,7 @@ export default function OrcamentoPreparacao() {
                           </p>
                         </div>
 
-                        {selectedBudget.scenario === "base_zero" && (
+                        {selectedBudget?.scenario === "base_zero" && (
                           <div>
                             <Label>Justificativa (obrigatória para OBZ)</Label>
                             <Textarea

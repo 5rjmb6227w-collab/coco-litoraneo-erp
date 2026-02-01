@@ -416,17 +416,19 @@ export default function DashboardCEO() {
             <CardDescription>Composição dos custos operacionais</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
+            <div className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <RechartsPie>
                   <Pie
                     data={costDistribution}
                     cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
+                    cy="40%"
+                    innerRadius={50}
+                    outerRadius={85}
                     paddingAngle={2}
                     dataKey="value"
+                    label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
                   >
                     {costDistribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -437,10 +439,11 @@ export default function DashboardCEO() {
                     contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
                   />
                   <Legend 
-                    layout="vertical" 
-                    align="right" 
-                    verticalAlign="middle"
-                    formatter={(value) => <span className="text-sm">{value}</span>}
+                    layout="horizontal" 
+                    align="center" 
+                    verticalAlign="bottom"
+                    wrapperStyle={{ paddingTop: '10px' }}
+                    formatter={(value) => <span className="text-xs">{value}</span>}
                   />
                 </RechartsPie>
               </ResponsiveContainer>

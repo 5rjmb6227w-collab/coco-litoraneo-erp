@@ -1003,3 +1003,18 @@
 - [x] Implementar edição de PA com permissão de gerente (botão Editar no modal de detalhes)
 - [x] Criar área de cadastro de produtos (/cadastro/produtos) com CRUD completo e controle de permissões
 - [x] Adicionar role "gerente" ao sistema de permissões
+
+
+## BUGS REPORTADOS - Fevereiro 2026 (Urgente)
+- [ ] Orçamento - Nova Linha retorna página de erro
+- [ ] Dashboard CEO - Gráfico de custos não aparece todo
+- [ ] Dashboard Geral - Cards de métricas com números maiores que o espaço (A Pagar Produtores)
+- [ ] Dashboard Geral - Distribuição desequilibrada dos elementos
+- [ ] Almoxarifado - Não há opção de editar informações em cada linha
+
+
+## BUGS CORRIGIDOS - Fevereiro 2026
+- [x] Erro na página Orçamento - Nova Linha (selectedBudget undefined - adicionada verificação)
+- [x] Gráfico de custos no Dashboard CEO (ajustado tamanho e legenda abaixo)
+- [x] Dashboard Geral - números maiores que os cards (formatação compacta e distribuição equilibrada)
+- [x] Almoxarifado - edição de itens (botão Editar com permissão gerente em Produção e Geral)

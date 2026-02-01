@@ -161,6 +161,25 @@ export default function Dashboard() {
     return new Intl.NumberFormat('pt-BR').format(value);
   };
 
+  // Funções de formatação compacta para números grandes
+  const formatCompactNumber = (value: number) => {
+    if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `${(value / 1000).toFixed(1)}k`;
+    }
+    return formatNumber(value);
+  };
+
+  const formatCompactCurrency = (value: number) => {
+    if (value >= 1000000) {
+      return `R$ ${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `R$ ${(value / 1000).toFixed(1)}k`;
+    }
+    return formatCurrency(value);
+  };
+
   if (authLoading) {
     return (
       <DashboardLayout>
@@ -229,83 +248,87 @@ export default function Dashboard() {
           </Button>
         </div>
 
-        {/* Cards de Resumo */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/producao/apontamentos")}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3">
+        {/* Cards de Resumo - Layout equilibrado */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow min-w-0" onClick={() => navigate("/producao/apontamentos")}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-4 px-4">
               <CardTitle className="text-xs font-medium text-muted-foreground">Produção Total</CardTitle>
               <Factory className="h-4 w-4 text-green-600 flex-shrink-0" />
             </CardHeader>
-            <CardContent className="pb-3 px-3">
-              <div className="text-lg md:text-xl font-bold text-green-600 truncate">
-                {statsLoading ? <Skeleton className="h-6 w-16" /> : `${formatNumber(stats?.production?.total || 0)} kg`}
+            <CardContent className="pb-4 px-4">
+              <div className="text-base sm:text-lg font-bold text-green-600">
+                {statsLoading ? <Skeleton className="h-6 w-16" /> : (
+                  <span title={`${formatNumber(stats?.production?.total || 0)} kg`}>
+                    {formatCompactNumber(stats?.production?.total || 0)} kg
+                  </span>
+                )}
               </div>
-              <p className="text-[10px] text-muted-foreground truncate">No período selecionado</p>
+              <p className="text-[10px] text-muted-foreground mt-1">No período selecionado</p>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/recebimento")}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow min-w-0" onClick={() => navigate("/recebimento")}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-4 px-4">
               <CardTitle className="text-xs font-medium text-muted-foreground">Cargas Recebidas</CardTitle>
               <Truck className="h-4 w-4 text-blue-600 flex-shrink-0" />
             </CardHeader>
-            <CardContent className="pb-3 px-3">
-              <div className="text-lg md:text-xl font-bold text-blue-600">
+            <CardContent className="pb-4 px-4">
+              <div className="text-base sm:text-lg font-bold text-blue-600">
                 {statsLoading ? <Skeleton className="h-6 w-12" /> : stats?.loads?.count || openLoads.length || 0}
               </div>
-              <p className="text-[10px] text-muted-foreground truncate">{formatNumber(stats?.loads?.totalWeight || 0)} kg total</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{formatCompactNumber(stats?.loads?.totalWeight || 0)} kg total</p>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/financeiro")}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow min-w-0" onClick={() => navigate("/financeiro")}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-4 px-4">
               <CardTitle className="text-xs font-medium text-muted-foreground">A Pagar Produtores</CardTitle>
               <DollarSign className="h-4 w-4 text-yellow-600 flex-shrink-0" />
             </CardHeader>
-            <CardContent className="pb-3 px-3">
-              <div className="text-lg md:text-xl font-bold text-yellow-600 truncate">
-                {statsLoading ? <Skeleton className="h-6 w-20" /> : formatCurrency(stats?.payables?.pending || totalPending || 0)}
+            <CardContent className="pb-4 px-4">
+              <div className="text-base sm:text-lg font-bold text-yellow-600" title={formatCurrency(stats?.payables?.pending || totalPending || 0)}>
+                {statsLoading ? <Skeleton className="h-6 w-20" /> : formatCompactCurrency(stats?.payables?.pending || totalPending || 0)}
               </div>
-              <p className="text-[10px] text-muted-foreground truncate">Pagamentos pendentes</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Pagamentos pendentes</p>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/financeiro")}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow min-w-0" onClick={() => navigate("/financeiro")}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-4 px-4">
               <CardTitle className="text-xs font-medium text-muted-foreground">Pgtos Atrasados</CardTitle>
               <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0" />
             </CardHeader>
-            <CardContent className="pb-3 px-3">
-              <div className="text-lg md:text-xl font-bold text-red-600 truncate">
-                {statsLoading ? <Skeleton className="h-6 w-20" /> : formatCurrency(stats?.payables?.overdue || 0)}
+            <CardContent className="pb-4 px-4">
+              <div className="text-base sm:text-lg font-bold text-red-600" title={formatCurrency(stats?.payables?.overdue || 0)}>
+                {statsLoading ? <Skeleton className="h-6 w-20" /> : formatCompactCurrency(stats?.payables?.overdue || 0)}
               </div>
-              <p className="text-[10px] text-muted-foreground truncate">Requer atenção</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Requer atenção</p>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/compras")}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow min-w-0" onClick={() => navigate("/compras")}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-4 px-4">
               <CardTitle className="text-xs font-medium text-muted-foreground">Compras Pendentes</CardTitle>
               <ShoppingCart className="h-4 w-4 text-orange-600 flex-shrink-0" />
             </CardHeader>
-            <CardContent className="pb-3 px-3">
-              <div className="text-lg md:text-xl font-bold text-orange-600">
+            <CardContent className="pb-4 px-4">
+              <div className="text-base sm:text-lg font-bold text-orange-600">
                 {statsLoading ? <Skeleton className="h-6 w-10" /> : stats?.purchases?.pending || 0}
               </div>
-              <p className="text-[10px] text-muted-foreground truncate">Aguardando aprovação</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Aguardando aprovação</p>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/qualidade/nao-conformidades")}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow min-w-0" onClick={() => navigate("/qualidade/nao-conformidades")}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-4 px-4">
               <CardTitle className="text-xs font-medium text-muted-foreground">NCs Abertas</CardTitle>
               <FileWarning className="h-4 w-4 text-red-600 flex-shrink-0" />
             </CardHeader>
-            <CardContent className="pb-3 px-3">
-              <div className="text-lg md:text-xl font-bold text-red-600">
+            <CardContent className="pb-4 px-4">
+              <div className="text-base sm:text-lg font-bold text-red-600">
                 {statsLoading ? <Skeleton className="h-6 w-10" /> : stats?.ncs?.open || 0}
               </div>
-              <p className="text-[10px] text-muted-foreground truncate">Não conformidades</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Não conformidades</p>
             </CardContent>
           </Card>
         </div>
