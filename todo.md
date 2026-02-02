@@ -1089,3 +1089,5 @@
 ## BUG FIXES - MÓDULO DE CUSTOS
 - [x] Corrigir rota /custos/calculadora mostrando página errada (menu agora aponta para /custos/dashboard)
 - [x] Corrigir erro ao clicar no botão "Calculadora de Custos" no Dashboard de Custos (SelectItem com valor vazio corrigido para "none")
+
+- [x] Corrigir erro ao editar custo indireto lançado na página de Custos Indiretos Mensais (SelectItem com valor vazio corrigido para "none")

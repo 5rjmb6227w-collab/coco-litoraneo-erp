@@ -199,7 +199,7 @@ export default function CustoIndiretos() {
         category: formData.category,
         description: formData.description,
         value,
-        costCenterId: formData.costCenterId ? parseInt(formData.costCenterId) : null,
+        costCenterId: formData.costCenterId && formData.costCenterId !== "none" ? parseInt(formData.costCenterId) : null,
         observations: formData.observations || undefined,
       });
     } else {
@@ -208,7 +208,7 @@ export default function CustoIndiretos() {
         category: formData.category,
         description: formData.description,
         value,
-        costCenterId: formData.costCenterId ? parseInt(formData.costCenterId) : undefined,
+        costCenterId: formData.costCenterId && formData.costCenterId !== "none" ? parseInt(formData.costCenterId) : undefined,
         observations: formData.observations || undefined,
       });
     }
@@ -524,7 +524,7 @@ export default function CustoIndiretos() {
                   <SelectValue placeholder="Selecione (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="none">Nenhum</SelectItem>
                   {costCenters?.map(cc => (
                     <SelectItem key={cc.id} value={cc.id.toString()}>
                       {cc.code} - {cc.name}
