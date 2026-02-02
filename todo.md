@@ -1084,3 +1084,8 @@
 ### Testes
 - [x] Arquivo de testes server/costs/costs.test.ts criado
 
+
+
+## BUG FIXES - MÓDULO DE CUSTOS
+- [x] Corrigir rota /custos/calculadora mostrando página errada (menu agora aponta para /custos/dashboard)
+- [x] Corrigir erro ao clicar no botão "Calculadora de Custos" no Dashboard de Custos (SelectItem com valor vazio corrigido para "none")

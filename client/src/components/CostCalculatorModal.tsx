@@ -135,7 +135,7 @@ export function CostCalculatorModal({
       skuId: parseInt(formData.skuId),
       period: formData.period,
       quantityProduced: quantity,
-      destinationId: formData.destinationId ? parseInt(formData.destinationId) : undefined,
+      destinationId: formData.destinationId && formData.destinationId !== "none" ? parseInt(formData.destinationId) : undefined,
       wastagePercent: parseFloat(formData.wastagePercent) || 0,
       sellingPrice: parseFloat(formData.sellingPrice) || undefined,
       observations: formData.observations || undefined,
@@ -252,7 +252,7 @@ export function CostCalculatorModal({
                       <SelectValue placeholder="Selecione (opcional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
+                      <SelectItem value="none">Nenhum</SelectItem>
                       {destinations?.map(dest => (
                         <SelectItem key={dest.id} value={dest.id.toString()}>
                           {dest.code} - {dest.name}

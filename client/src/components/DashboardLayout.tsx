@@ -144,7 +144,7 @@ const menuGroups: Array<{
   {
     label: "Custos",
     items: [
-      { icon: Calculator, label: "Calculadora", path: "/custos" },
+      { icon: Calculator, label: "Calculadora", path: "/custos/dashboard" },
       { icon: BarChart3, label: "Dashboard", path: "/custos/dashboard" },
       { icon: Target, label: "Centros de Custo", path: "/custos/centros" },
       { icon: DollarSign, label: "Custos Indiretos", path: "/custos/indiretos" },
