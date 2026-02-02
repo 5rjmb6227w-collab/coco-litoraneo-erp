@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE monthly_indirect_costs \nADD COLUMN IF NOT EXISTS period VARCHAR(7),\nADD COLUMN IF NOT EXISTS costCenterId INT,\nADD COLUMN IF NOT EXISTS value DECIMAL(12,2) DEFAULT 0,\nADD COLUMN IF NOT EXISTS observations TEXT,\nADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'ativo',\nADD COLUMN IF NOT EXISTS createdBy INT,\nADD COLUMN IF NOT EXISTS updatedBy INT;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute ALTER TABLE monthly_indirect_costs \nADD COLUMN IF NOT EXISTS period VARCHAR(7),\nADD COLUMN IF NOT EXISTS costCenterId INT,\nADD COLUMN IF NOT EXISTS value DECIMAL(12,2) DEFAULT 0,\nADD COLUMN IF NOT EXISTS observations TEXT,\nADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'ativo',\nADD COLUMN IF NOT EXISTS createdBy INT,\nADD COLUMN IF NOT EXISTS updatedBy INT;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2074
+}

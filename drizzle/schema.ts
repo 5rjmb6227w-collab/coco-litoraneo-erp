@@ -551,6 +551,25 @@ export const employees = mysqlTable("employees", {
   emergencyContact: varchar("emergencyContact", { length: 255 }),
   status: mysqlEnum("status", ["ativo", "afastado", "desligado"]).default("ativo").notNull(),
   terminationDate: date("terminationDate"),
+  // Custos Trabalhistas
+  baseSalary: decimal("baseSalary", { precision: 10, scale: 2 }).default("0"),
+  fgtsPercent: decimal("fgtsPercent", { precision: 5, scale: 2 }).default("8.00"),
+  fgtsEnabled: boolean("fgtsEnabled").default(true),
+  inssPatronalPercent: decimal("inssPatronalPercent", { precision: 5, scale: 2 }).default("20.00"),
+  inssPatronalEnabled: boolean("inssPatronalEnabled").default(true),
+  inssColaboradorPercent: decimal("inssColaboradorPercent", { precision: 5, scale: 2 }).default("11.00"),
+  inssColaboradorEnabled: boolean("inssColaboradorEnabled").default(true),
+  vacationProvisionPercent: decimal("vacationProvisionPercent", { precision: 5, scale: 2 }).default("8.33"),
+  vacationProvisionEnabled: boolean("vacationProvisionEnabled").default(true),
+  vacationBonusPercent: decimal("vacationBonusPercent", { precision: 5, scale: 2 }).default("2.78"),
+  vacationBonusEnabled: boolean("vacationBonusEnabled").default(true),
+  thirteenthSalaryPercent: decimal("thirteenthSalaryPercent", { precision: 5, scale: 2 }).default("8.33"),
+  thirteenthSalaryEnabled: boolean("thirteenthSalaryEnabled").default(true),
+  ratPercent: decimal("ratPercent", { precision: 5, scale: 2 }).default("3.00"),
+  ratEnabled: boolean("ratEnabled").default(true),
+  otherLaborCosts: decimal("otherLaborCosts", { precision: 10, scale: 2 }).default("0"),
+  otherLaborCostsEnabled: boolean("otherLaborCostsEnabled").default(false),
+  otherLaborCostsDescription: varchar("otherLaborCostsDescription", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   createdBy: int("createdBy"),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -2384,3 +2403,193 @@ export const traceabilityChain = mysqlTable("traceability_chain", {
 
 export type TraceabilityChain = typeof traceabilityChain.$inferSelect;
 export type InsertTraceabilityChain = typeof traceabilityChain.$inferInsert;
+
+
+// ============================================================================
+// MÓDULO DE CUSTOS POR ABSORÇÃO SIMPLES
+// ============================================================================
+
+// ============================================================================
+// COST_CENTERS TABLE (Centros de Custo)
+// ============================================================================
+export const costCenters = mysqlTable("cost_centers", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 20 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  type: mysqlEnum("type", ["producao", "manutencao", "administrativo", "qualidade", "logistica"]).notNull(),
+  status: mysqlEnum("status", ["ativo", "inativo"]).default("ativo").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type CostCenter = typeof costCenters.$inferSelect;
+export type InsertCostCenter = typeof costCenters.$inferInsert;
+
+// ============================================================================
+// MONTHLY_INDIRECT_COSTS TABLE (Custos Indiretos Mensais)
+// ============================================================================
+export const monthlyIndirectCosts = mysqlTable("monthly_indirect_costs", {
+  id: int("id").autoincrement().primaryKey(),
+  period: varchar("period", { length: 7 }).notNull(), // YYYY-MM
+  costCenterId: int("costCenterId"),
+  category: mysqlEnum("category", ["energia", "manutencao", "limpeza_cip", "epis_uniformes", "depreciacao", "aluguel", "agua", "gas", "outros"]).notNull(),
+  description: varchar("description", { length: 255 }).notNull(),
+  value: decimal("value", { precision: 14, scale: 2 }).notNull(),
+  observations: text("observations"),
+  status: mysqlEnum("status", ["rascunho", "confirmado", "fechado"]).default("rascunho").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type MonthlyIndirectCost = typeof monthlyIndirectCosts.$inferSelect;
+export type InsertMonthlyIndirectCost = typeof monthlyIndirectCosts.$inferInsert;
+
+// ============================================================================
+// SHIPPING_DESTINATIONS TABLE (Destinos de Frete/Impostos)
+// ============================================================================
+export const shippingDestinations = mysqlTable("shipping_destinations", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 20 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  state: varchar("state", { length: 2 }).notNull(),
+  city: varchar("city", { length: 255 }),
+  region: mysqlEnum("region", ["norte", "nordeste", "centro_oeste", "sudeste", "sul"]).notNull(),
+  // Frete
+  freightType: mysqlEnum("freightType", ["valor_fixo", "formula"]).default("valor_fixo").notNull(),
+  freightFixedValue: decimal("freightFixedValue", { precision: 10, scale: 2 }).default("0"),
+  freightFormula: varchar("freightFormula", { length: 500 }), // Ex: "peso * 0.15 + 50"
+  freightFormulaDescription: varchar("freightFormulaDescription", { length: 255 }),
+  // Impostos
+  taxType: mysqlEnum("taxType", ["valor_fixo", "formula"]).default("formula").notNull(),
+  taxFixedValue: decimal("taxFixedValue", { precision: 10, scale: 2 }).default("0"),
+  taxFormula: varchar("taxFormula", { length: 500 }), // Ex: "valor * 0.18"
+  taxFormulaDescription: varchar("taxFormulaDescription", { length: 255 }),
+  // ICMS específico
+  icmsPercent: decimal("icmsPercent", { precision: 5, scale: 2 }).default("0"),
+  icmsStPercent: decimal("icmsStPercent", { precision: 5, scale: 2 }).default("0"),
+  pisPercent: decimal("pisPercent", { precision: 5, scale: 2 }).default("1.65"),
+  cofinsPercent: decimal("cofinsPercent", { precision: 5, scale: 2 }).default("7.60"),
+  ipiPercent: decimal("ipiPercent", { precision: 5, scale: 2 }).default("0"),
+  status: mysqlEnum("status", ["ativo", "inativo"]).default("ativo").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type ShippingDestination = typeof shippingDestinations.$inferSelect;
+export type InsertShippingDestination = typeof shippingDestinations.$inferInsert;
+
+// ============================================================================
+// COST_RECORDS TABLE (Registros de Custos - Principal)
+// ============================================================================
+export const costRecords = mysqlTable("cost_records", {
+  id: int("id").autoincrement().primaryKey(),
+  period: varchar("period", { length: 7 }).notNull(), // YYYY-MM
+  skuId: int("skuId").notNull(),
+  batchNumber: varchar("batchNumber", { length: 50 }),
+  quantityProduced: decimal("quantityProduced", { precision: 10, scale: 2 }).notNull(),
+  unit: mysqlEnum("unit", ["kg", "unidade"]).default("kg").notNull(),
+  // Custos Diretos (da BOM)
+  directCostTotal: decimal("directCostTotal", { precision: 14, scale: 2 }).notNull(),
+  directCostDetails: json("directCostDetails"), // Array com itens da BOM e custos
+  // Custos Indiretos (rateio)
+  indirectCostTotal: decimal("indirectCostTotal", { precision: 14, scale: 2 }).notNull(),
+  indirectCostDetails: json("indirectCostDetails"), // Detalhes do rateio
+  laborCostTotal: decimal("laborCostTotal", { precision: 14, scale: 2 }).notNull(),
+  laborCostDetails: json("laborCostDetails"), // Detalhes da MO
+  // Custos Variáveis
+  destinationId: int("destinationId"),
+  freightCost: decimal("freightCost", { precision: 10, scale: 2 }).default("0"),
+  taxCost: decimal("taxCost", { precision: 10, scale: 2 }).default("0"),
+  otherVariableCosts: decimal("otherVariableCosts", { precision: 10, scale: 2 }).default("0"),
+  otherVariableCostsDescription: text("otherVariableCostsDescription"),
+  // Perda/Refugo
+  wastagePercent: decimal("wastagePercent", { precision: 5, scale: 2 }).default("0"),
+  wastageValue: decimal("wastageValue", { precision: 10, scale: 2 }).default("0"),
+  // Totais
+  totalCost: decimal("totalCost", { precision: 14, scale: 2 }).notNull(),
+  unitCost: decimal("unitCost", { precision: 10, scale: 4 }).notNull(),
+  // Preço e Margem
+  sellingPrice: decimal("sellingPrice", { precision: 10, scale: 2 }),
+  grossMargin: decimal("grossMargin", { precision: 10, scale: 2 }),
+  grossMarginPercent: decimal("grossMarginPercent", { precision: 5, scale: 2 }),
+  // Status
+  status: mysqlEnum("status", ["rascunho", "confirmado", "fechado"]).default("rascunho").notNull(),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type CostRecord = typeof costRecords.$inferSelect;
+export type InsertCostRecord = typeof costRecords.$inferInsert;
+
+// ============================================================================
+// COST_PERIOD_CLOSURES TABLE (Fechamentos Mensais)
+// ============================================================================
+export const costPeriodClosures = mysqlTable("cost_period_closures", {
+  id: int("id").autoincrement().primaryKey(),
+  period: varchar("period", { length: 7 }).notNull().unique(), // YYYY-MM
+  totalProduction: decimal("totalProduction", { precision: 14, scale: 2 }).notNull(),
+  totalDirectCost: decimal("totalDirectCost", { precision: 14, scale: 2 }).notNull(),
+  totalIndirectCost: decimal("totalIndirectCost", { precision: 14, scale: 2 }).notNull(),
+  totalLaborCost: decimal("totalLaborCost", { precision: 14, scale: 2 }).notNull(),
+  totalVariableCost: decimal("totalVariableCost", { precision: 14, scale: 2 }).notNull(),
+  totalCost: decimal("totalCost", { precision: 14, scale: 2 }).notNull(),
+  averageUnitCost: decimal("averageUnitCost", { precision: 10, scale: 4 }).notNull(),
+  reportData: json("reportData"), // Relatório consolidado completo
+  closedAt: timestamp("closedAt").notNull(),
+  closedBy: int("closedBy").notNull(),
+  closedByName: varchar("closedByName", { length: 255 }),
+  observations: text("observations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CostPeriodClosure = typeof costPeriodClosures.$inferSelect;
+export type InsertCostPeriodClosure = typeof costPeriodClosures.$inferInsert;
+
+// ============================================================================
+// COST_ALERTS TABLE (Alertas de Variação de Custos)
+// ============================================================================
+export const costAlerts = mysqlTable("cost_alerts", {
+  id: int("id").autoincrement().primaryKey(),
+  skuId: int("skuId").notNull(),
+  period: varchar("period", { length: 7 }).notNull(),
+  previousPeriod: varchar("previousPeriod", { length: 7 }).notNull(),
+  previousUnitCost: decimal("previousUnitCost", { precision: 10, scale: 4 }).notNull(),
+  currentUnitCost: decimal("currentUnitCost", { precision: 10, scale: 4 }).notNull(),
+  variationPercent: decimal("variationPercent", { precision: 5, scale: 2 }).notNull(),
+  thresholdPercent: decimal("thresholdPercent", { precision: 5, scale: 2 }).notNull(),
+  alertType: mysqlEnum("alertType", ["aumento", "reducao"]).notNull(),
+  status: mysqlEnum("status", ["novo", "visualizado", "resolvido", "ignorado"]).default("novo").notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+  resolvedBy: int("resolvedBy"),
+  resolution: text("resolution"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CostAlert = typeof costAlerts.$inferSelect;
+export type InsertCostAlert = typeof costAlerts.$inferInsert;
+
+// ============================================================================
+// COST_SETTINGS TABLE (Configurações do Módulo de Custos)
+// ============================================================================
+export const costSettings = mysqlTable("cost_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  settingKey: varchar("settingKey", { length: 100 }).notNull().unique(),
+  settingValue: text("settingValue").notNull(),
+  settingType: mysqlEnum("settingType", ["number", "percent", "boolean", "json"]).notNull(),
+  description: varchar("description", { length: 255 }),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type CostSetting = typeof costSettings.$inferSelect;
+export type InsertCostSetting = typeof costSettings.$inferInsert;

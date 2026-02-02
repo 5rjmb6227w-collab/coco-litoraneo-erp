@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS cost_period_closures (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  yearMonth VARCHAR(7) NOT NULL UNIQUE,\n  status ENUM('open', 'closed', 'reopened') NOT NULL DEFAULT 'open',\n  closedAt BIGINT,\n  closedBy VARCHAR(100),\n  reopenedAt BIGINT,\n  reopenedBy VARCHAR(100),\n  reopenReason TEXT,\n  totalDirectCosts DECIMAL(14,2),\n  totalIndirectCosts DECIMAL(14,2),\n  totalProductionVolume DECIMAL(12,2),\n  reportGenerated BOOLEAN DEFAULT FALSE,\n  reportUrl VARCHAR(500),\n  notes TEXT,\n  createdAt BIGINT NOT NULL\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute CREATE TABLE IF NOT EXISTS cost_period_closures (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  yearMonth VARCHAR(7) NOT NULL UNIQUE,\n  status ENUM('open', 'closed', 'reopened') NOT NULL DEFAULT 'open',\n  closedAt BIGINT,\n  closedBy VARCHAR(100),\n  reopenedAt BIGINT,\n  reopenedBy VARCHAR(100),\n  reopenReason TEXT,\n  totalDirectCosts DECIMAL(14,2),\n  totalIndirectCosts DECIMAL(14,2),\n  totalProductionVolume DECIMAL(12,2),\n  reportGenerated BOOLEAN DEFAULT FALSE,\n  reportUrl VARCHAR(500),\n  notes TEXT,\n  createdAt BIGINT NOT NULL\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 267
+}

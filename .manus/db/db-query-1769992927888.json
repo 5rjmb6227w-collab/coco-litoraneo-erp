@@ -1,0 +1,307 @@
+{
+  "query": "SHOW TABLES;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute SHOW TABLES;",
+  "rows": [
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "__drizzle_migrations"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_ab_experiments"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_action_approvals"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_actions"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_alerts"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_config"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_conversations"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_events"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_feedback"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_feedback_advanced"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_insights"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_messages"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_performance_reports"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_predictions"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_retrain_logs"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_settings"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "ai_sources"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "attachments"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "audit_logs"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "backup_records"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "batch_movements"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "batches"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "bom_items"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "budget_actuals"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "budget_ai_insights"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "budget_approvals"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "budget_forecasts"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "budget_indicators"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "budget_lines"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "budget_revisions"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "budget_scenarios"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "budgets"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "change_log"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "checklist_items"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "checklist_templates"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "coconut_loads"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "compliance_documents"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "corrective_actions"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "customers"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "employee_events"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "employee_notes"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "employees"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "equipments"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "financial_entries"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "finished_goods_inventory"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "finished_goods_movements"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "fixed_costs"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "login_attempts"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "magic_moments"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "maintenance_records"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "non_conformities"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "notification_preferences"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "password_history"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "password_reset_tokens"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "price_history"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "producer_payables"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "producer_rankings"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "producers"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "production_costs"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "production_entries"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "production_goals"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "production_issues"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "production_orders"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "production_reprocesses"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "production_stages"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "production_stops"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "purchase_quotation_items"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "purchase_quotations"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "purchase_request_items"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "purchase_requests"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "push_subscriptions"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "qr_codes"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "quality_analyses"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "report_history"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "sales_order_items"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "sales_orders"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "security_alerts"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "security_policies"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "sensor_readings"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "shift_checklists"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "skus"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "system_alerts"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "system_settings"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "traceability_chain"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "user_active_sessions"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "user_credentials"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "user_sessions"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "user_two_factor"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "users"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "vw_anexos_processed"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "vw_daily_production_summary"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "vw_financial_due_summary"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "vw_inventory_below_minimum_finished_goods"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "vw_inventory_below_minimum_warehouse"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "vw_payables_status_summary"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "vw_purchases_pipeline_summary"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "vw_quality_nc_summary"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "warehouse_items"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq": "warehouse_movements"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_aAFi3UvfwvVXettMY36Wvq\n__drizzle_migrations\nai_ab_experiments\nai_action_approvals\nai_actions\nai_alerts\nai_config\nai_conversations\nai_events\nai_feedback\nai_feedback_advanced\nai_insights\nai_messages\nai_performance_reports\nai_predictions\nai_retrain_logs\nai_settings\nai_sources\nattachments\naudit_logs\nbackup_records\nbatch_movements\nbatches\nbom_items\nbudget_actuals\nbudget_ai_insights\nbudget_approvals\nbudget_forecasts\nbudget_indicators\nbudget_lines\nbudget_revisions\nbudget_scenarios\nbudgets\nchange_log\nchecklist_items\nchecklist_templates\ncoconut_loads\ncompliance_documents\ncorrective_actions\ncustomers\nemployee_events\nemployee_notes\nemployees\nequipments\nfinancial_entries\nfinished_goods_inventory\nfinished_goods_movements\nfixed_costs\nlogin_attempts\nmagic_moments\nmaintenance_records\nnon_conformities\nnotification_preferences\npassword_history\npassword_reset_tokens\nprice_history\nproducer_payables\nproducer_rankings\nproducers\nproduction_costs\nproduction_entries\nproduction_goals\nproduction_issues\nproduction_orders\nproduction_reprocesses\nproduction_stages\nproduction_stops\npurchase_quotation_items\npurchase_quotations\npurchase_request_items\npurchase_requests\npush_subscriptions\nqr_codes\nquality_analyses\nreport_history\nsales_order_items\nsales_orders\nsecurity_alerts\nsecurity_policies\nsensor_readings\nshift_checklists\nskus\nsystem_alerts\nsystem_settings\ntraceability_chain\nuser_active_sessions\nuser_credentials\nuser_sessions\nuser_two_factor\nusers\nvw_anexos_processed\nvw_daily_production_summary\nvw_financial_due_summary\nvw_inventory_below_minimum_finished_goods\nvw_inventory_below_minimum_warehouse\nvw_payables_status_summary\nvw_purchases_pipeline_summary\nvw_quality_nc_summary\nwarehouse_items\nwarehouse_movements\n",
+  "stderr": "",
+  "execution_time_ms": 52
+}

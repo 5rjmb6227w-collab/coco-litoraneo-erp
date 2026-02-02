@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS cost_alerts (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  skuId INT,\n  alertType ENUM('cost_increase', 'cost_decrease', 'margin_warning', 'budget_exceeded') NOT NULL,\n  threshold DECIMAL(5,2),\n  previousValue DECIMAL(12,4),\n  currentValue DECIMAL(12,4),\n  percentageChange DECIMAL(5,2),\n  message TEXT,\n  isRead BOOLEAN DEFAULT FALSE,\n  readAt BIGINT,\n  readBy VARCHAR(100),\n  createdAt BIGINT NOT NULL\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute CREATE TABLE IF NOT EXISTS cost_alerts (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  skuId INT,\n  alertType ENUM('cost_increase', 'cost_decrease', 'margin_warning', 'budget_exceeded') NOT NULL,\n  threshold DECIMAL(5,2),\n  previousValue DECIMAL(12,4),\n  currentValue DECIMAL(12,4),\n  percentageChange DECIMAL(5,2),\n  message TEXT,\n  isRead BOOLEAN DEFAULT FALSE,\n  readAt BIGINT,\n  readBy VARCHAR(100),\n  createdAt BIGINT NOT NULL\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 226
+}

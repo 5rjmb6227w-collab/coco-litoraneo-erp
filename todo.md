@@ -1035,3 +1035,52 @@
 ## BUG FIX - BOM Fevereiro 2026
 - [x] Adições na BOM dos SKUs não estão sendo registradas/salvas (implementado router backend completo com CRUD)
 - [x] Testes unitários para BOM (14 testes)
+
+
+## MÓDULO DE CUSTOS POR ABSORÇÃO SIMPLES - Fevereiro 2026
+
+### Escopo Principal (1-6)
+- [ ] 1. Calculadora de Custos em Modal (BOM automática + rateio + variáveis)
+- [ ] 2. Custos Trabalhistas no módulo Pessoas (salário, FGTS, INSS, férias, 13º, etc.)
+- [ ] 3. Custos Indiretos Mensais (energia, manutenção, limpeza, EPIs + MO do módulo Pessoas)
+- [ ] 4. Centros de Custo (Produção, Manutenção, Administrativo)
+- [ ] 5. Frete/Impostos por Destino (valor fixo ou fórmula editável)
+- [ ] 6. Painel de Análise (custo unitário, comparativos, margem, exportação)
+
+### Sugestões Adicionais
+- [ ] Histórico de Custos por SKU (mini-gráfico últimos 6 meses)
+- [ ] Alertas de Variação (notificar quando custo variar > X%)
+- [ ] Simulador de Cenários (testar impacto de variações)
+- [ ] Custo Médio Ponderado Automático (atualizar unitCost a cada compra)
+- [ ] Integração com Orçamento (realizado vs orçado)
+- [ ] Fechamento Mensal (congelar período, relatório consolidado)
+- [ ] Custo de Perda/Refugo (% de perda no cálculo)
+
+
+## MÓDULO DE CUSTOS POR ABSORÇÃO SIMPLES
+
+### Escopo 1-6: Estrutura Base ✅
+- [x] Criar tabelas de banco de dados (cost_centers, monthly_indirect_costs, cost_records, cost_settings, cost_alerts, cost_period_closures, shipping_destinations)
+- [x] Implementar router tRPC costs.* (costCenters, indirectCosts, destinations, records, alerts, periods, settings, dashboard)
+- [x] Página de Centros de Custo (/custos/centros)
+- [x] Página de Custos Indiretos Mensais (/custos/indiretos)
+- [x] Página de Destinos de Frete/Impostos (/custos/destinos)
+- [x] Modal Calculadora de Custos Inteligente (CostCalculatorModal)
+- [x] Dashboard de Análise de Custos (/custos/dashboard)
+
+### Sugestões Adicionais Implementadas ✅
+- [x] Histórico de Custos com comparação (/custos/historico)
+- [x] Alertas de Variação de Custos (/custos/alertas)
+- [x] Simulador de Preços what-if (/custos/simulador)
+- [x] Fechamento de Período Mensal (/custos/fechamento)
+
+### Funcionalidades Não Implementadas (por solicitação)
+- [ ] Rateio Configurável (excluído do escopo)
+
+### Navegação
+- [x] Rotas adicionadas ao App.tsx
+- [x] Menu lateral com seção "Custos" no DashboardLayout
+
+### Testes
+- [x] Arquivo de testes server/costs/costs.test.ts criado
+

@@ -47,6 +47,14 @@ import { CopilotFloatingButton } from "./components/copilot/CopilotFloatingButto
 import LoginLocal from "./pages/LoginLocal";
 import Setup2FA from "./pages/Setup2FA";
 import Custos from "./pages/Custos";
+import CustoCentros from "./pages/CustoCentros";
+import CustoIndiretos from "./pages/CustoIndiretos";
+import CustoDestinos from "./pages/CustoDestinos";
+import CustoDashboard from "./pages/CustoDashboard";
+import CustoHistorico from "./pages/CustoHistorico";
+import CustoAlertas from "./pages/CustoAlertas";
+import CustoSimulador from "./pages/CustoSimulador";
+import CustoFechamento from "./pages/CustoFechamento";
 import CalendarioProducao from "./pages/CalendarioProducao";
 import Relatorios from "./pages/Relatorios";
 import { useKeyboardShortcuts } from "./components/KeyboardShortcuts";
@@ -121,6 +129,14 @@ function Router() {
         
         {/* Gestão de Custos */}
         <Route path="/custos" component={Custos} />
+        <Route path="/custos/dashboard" component={CustoDashboard} />
+        <Route path="/custos/centros" component={CustoCentros} />
+        <Route path="/custos/indiretos" component={CustoIndiretos} />
+        <Route path="/custos/destinos" component={CustoDestinos} />
+        <Route path="/custos/historico" component={CustoHistorico} />
+        <Route path="/custos/alertas" component={CustoAlertas} />
+        <Route path="/custos/simulador" component={CustoSimulador} />
+        <Route path="/custos/fechamento" component={CustoFechamento} />
         
         {/* Calendário de Produção */}
         <Route path="/producao/calendario" component={CalendarioProducao} />

@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE cost_centers \nADD COLUMN IF NOT EXISTS code VARCHAR(20),\nADD COLUMN IF NOT EXISTS name VARCHAR(255),\nADD COLUMN IF NOT EXISTS description TEXT,\nADD COLUMN IF NOT EXISTS type VARCHAR(50),\nADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'ativo',\nADD COLUMN IF NOT EXISTS createdBy INT,\nADD COLUMN IF NOT EXISTS updatedBy INT;\nALTER TABLE cost_centers MODIFY COLUMN createdAt DATETIME DEFAULT CURRENT_TIMESTAMP;\nALTER TABLE cost_centers MODIFY COLUMN updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute ALTER TABLE cost_centers \nADD COLUMN IF NOT EXISTS code VARCHAR(20),\nADD COLUMN IF NOT EXISTS name VARCHAR(255),\nADD COLUMN IF NOT EXISTS description TEXT,\nADD COLUMN IF NOT EXISTS type VARCHAR(50),\nADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'ativo',\nADD COLUMN IF NOT EXISTS createdBy INT,\nADD COLUMN IF NOT EXISTS updatedBy INT;\nALTER TABLE cost_centers MODIFY COLUMN createdAt DATETIME DEFAULT CURRENT_TIMESTAMP;\nALTER TABLE cost_centers MODIFY COLUMN updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3618
+}

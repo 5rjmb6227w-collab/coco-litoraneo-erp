@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE cost_alerts \nADD COLUMN IF NOT EXISTS skuId INT,\nADD COLUMN IF NOT EXISTS period VARCHAR(7),\nADD COLUMN IF NOT EXISTS previousPeriod VARCHAR(7),\nADD COLUMN IF NOT EXISTS previousUnitCost DECIMAL(10,4),\nADD COLUMN IF NOT EXISTS currentUnitCost DECIMAL(10,4),\nADD COLUMN IF NOT EXISTS variationPercent DECIMAL(5,2),\nADD COLUMN IF NOT EXISTS thresholdPercent DECIMAL(5,2),\nADD COLUMN IF NOT EXISTS alertType VARCHAR(50),\nADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'novo',\nADD COLUMN IF NOT EXISTS resolvedAt DATETIME,\nADD COLUMN IF NOT EXISTS resolvedBy INT,\nADD COLUMN IF NOT EXISTS resolution TEXT;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute ALTER TABLE cost_alerts \nADD COLUMN IF NOT EXISTS skuId INT,\nADD COLUMN IF NOT EXISTS period VARCHAR(7),\nADD COLUMN IF NOT EXISTS previousPeriod VARCHAR(7),\nADD COLUMN IF NOT EXISTS previousUnitCost DECIMAL(10,4),\nADD COLUMN IF NOT EXISTS currentUnitCost DECIMAL(10,4),\nADD COLUMN IF NOT EXISTS variationPercent DECIMAL(5,2),\nADD COLUMN IF NOT EXISTS thresholdPercent DECIMAL(5,2),\nADD COLUMN IF NOT EXISTS alertType VARCHAR(50),\nADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'novo',\nADD COLUMN IF NOT EXISTS resolvedAt DATETIME,\nADD COLUMN IF NOT EXISTS resolvedBy INT,\nADD COLUMN IF NOT EXISTS resolution TEXT;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3408
+}

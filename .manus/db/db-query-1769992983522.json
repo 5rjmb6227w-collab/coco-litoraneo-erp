@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS shipping_destinations (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  name VARCHAR(100) NOT NULL,\n  state VARCHAR(2),\n  city VARCHAR(100),\n  region VARCHAR(50),\n  freightType ENUM('formula', 'fixed') NOT NULL DEFAULT 'fixed',\n  freightFormula VARCHAR(255),\n  freightFixedValue DECIMAL(10,2),\n  freightPerKg DECIMAL(10,4),\n  icmsRate DECIMAL(5,2) DEFAULT 0,\n  pisRate DECIMAL(5,4) DEFAULT 0,\n  cofinsRate DECIMAL(5,4) DEFAULT 0,\n  ipiRate DECIMAL(5,2) DEFAULT 0,\n  otherTaxes DECIMAL(10,2) DEFAULT 0,\n  taxFormula VARCHAR(255),\n  notes TEXT,\n  isActive BOOLEAN DEFAULT TRUE,\n  createdBy VARCHAR(100),\n  createdAt BIGINT NOT NULL,\n  updatedAt BIGINT NOT NULL\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute CREATE TABLE IF NOT EXISTS shipping_destinations (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  name VARCHAR(100) NOT NULL,\n  state VARCHAR(2),\n  city VARCHAR(100),\n  region VARCHAR(50),\n  freightType ENUM('formula', 'fixed') NOT NULL DEFAULT 'fixed',\n  freightFormula VARCHAR(255),\n  freightFixedValue DECIMAL(10,2),\n  freightPerKg DECIMAL(10,4),\n  icmsRate DECIMAL(5,2) DEFAULT 0,\n  pisRate DECIMAL(5,4) DEFAULT 0,\n  cofinsRate DECIMAL(5,4) DEFAULT 0,\n  ipiRate DECIMAL(5,2) DEFAULT 0,\n  otherTaxes DECIMAL(10,2) DEFAULT 0,\n  taxFormula VARCHAR(255),\n  notes TEXT,\n  isActive BOOLEAN DEFAULT TRUE,\n  createdBy VARCHAR(100),\n  createdAt BIGINT NOT NULL,\n  updatedAt BIGINT NOT NULL\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 291
+}

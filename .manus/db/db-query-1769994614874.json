@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE cost_settings MODIFY COLUMN updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute ALTER TABLE cost_settings MODIFY COLUMN updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 587
+}

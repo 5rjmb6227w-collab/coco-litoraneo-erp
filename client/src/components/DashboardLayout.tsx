@@ -136,10 +136,23 @@ const menuGroups: Array<{
     items: [
       { icon: ShoppingCart, label: "Compras", path: "/compras" },
       { icon: DollarSign, label: "Financeiro", path: "/financeiro" },
-      { icon: Calculator, label: "Custos", path: "/custos" },
       { icon: FileText, label: "Relatórios", path: "/relatorios" },
       { icon: ShoppingCart, label: "Nec. Compra", path: "/relatorios/necessidade-compra" },
       { icon: TrendingUp, label: "Hist. Preços", path: "/historico-precos" },
+    ],
+  },
+  {
+    label: "Custos",
+    items: [
+      { icon: Calculator, label: "Calculadora", path: "/custos" },
+      { icon: BarChart3, label: "Dashboard", path: "/custos/dashboard" },
+      { icon: Target, label: "Centros de Custo", path: "/custos/centros" },
+      { icon: DollarSign, label: "Custos Indiretos", path: "/custos/indiretos" },
+      { icon: Truck, label: "Frete/Impostos", path: "/custos/destinos" },
+      { icon: FileText, label: "Histórico", path: "/custos/historico" },
+      { icon: Bell, label: "Alertas", path: "/custos/alertas" },
+      { icon: TrendingUp, label: "Simulador", path: "/custos/simulador" },
+      { icon: Lock, label: "Fechamento", path: "/custos/fechamento" },
     ],
   },
   {
