@@ -1515,4 +1515,128 @@ export const costsRouter = router({
 
       return { success: true };
     }),
+
+  // =========================================================================
+  // COST CENTER TYPES (Tipos de Centros de Custo Personalizáveis)
+  // =========================================================================
+  costCenterTypes: router({
+    list: protectedProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      return db.select().from(schema.costCenterTypesTable).orderBy(schema.costCenterTypesTable.name);
+    }),
+    create: protectedProcedure
+      .input(z.object({
+        code: z.string().max(20),
+        name: z.string().max(100),
+        description: z.string().max(300).optional(),
+        icon: z.string().max(10).optional(),
+        color: z.string().max(7).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        const [result] = await db.insert(schema.costCenterTypesTable).values({
+          code: input.code,
+          name: input.name,
+          description: input.description || null,
+          icon: input.icon || null,
+          color: input.color || null,
+          createdBy: ctx.user?.id,
+          updatedBy: ctx.user?.id,
+        }).$returningId();
+        return { success: true, id: result.id };
+      }),
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        code: z.string().max(20).optional(),
+        name: z.string().max(100).optional(),
+        description: z.string().max(300).optional(),
+        icon: z.string().max(10).optional(),
+        color: z.string().max(7).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        const updateData: Record<string, any> = { updatedBy: ctx.user?.id };
+        if (input.code !== undefined) updateData.code = input.code;
+        if (input.name !== undefined) updateData.name = input.name;
+        if (input.description !== undefined) updateData.description = input.description;
+        if (input.icon !== undefined) updateData.icon = input.icon;
+        if (input.color !== undefined) updateData.color = input.color;
+        await db.update(schema.costCenterTypesTable).set(updateData).where(eq(schema.costCenterTypesTable.id, input.id));
+        return { success: true };
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        await db.delete(schema.costCenterTypesTable).where(eq(schema.costCenterTypesTable.id, input.id));
+        return { success: true };
+      }),
+  }),
+
+  // =========================================================================
+  // INDIRECT COST CATEGORIES (Categorias de Custos Indiretos Personalizáveis)
+  // =========================================================================
+  indirectCostCategories: router({
+    list: protectedProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      return db.select().from(schema.indirectCostCategoriesTable).orderBy(schema.indirectCostCategoriesTable.name);
+    }),
+    create: protectedProcedure
+      .input(z.object({
+        code: z.string().max(20),
+        name: z.string().max(100),
+        description: z.string().max(300).optional(),
+        icon: z.string().max(10).optional(),
+        color: z.string().max(7).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        const [result] = await db.insert(schema.indirectCostCategoriesTable).values({
+          code: input.code,
+          name: input.name,
+          description: input.description || null,
+          icon: input.icon || null,
+          color: input.color || null,
+          createdBy: ctx.user?.id,
+          updatedBy: ctx.user?.id,
+        }).$returningId();
+        return { success: true, id: result.id };
+      }),
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        code: z.string().max(20).optional(),
+        name: z.string().max(100).optional(),
+        description: z.string().max(300).optional(),
+        icon: z.string().max(10).optional(),
+        color: z.string().max(7).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        const updateData: Record<string, any> = { updatedBy: ctx.user?.id };
+        if (input.code !== undefined) updateData.code = input.code;
+        if (input.name !== undefined) updateData.name = input.name;
+        if (input.description !== undefined) updateData.description = input.description;
+        if (input.icon !== undefined) updateData.icon = input.icon;
+        if (input.color !== undefined) updateData.color = input.color;
+        await db.update(schema.indirectCostCategoriesTable).set(updateData).where(eq(schema.indirectCostCategoriesTable.id, input.id));
+        return { success: true };
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        await db.delete(schema.indirectCostCategoriesTable).where(eq(schema.indirectCostCategoriesTable.id, input.id));
+        return { success: true };
+      }),
+  }),
 });

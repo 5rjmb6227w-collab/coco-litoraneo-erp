@@ -1,0 +1,25 @@
+{
+  "query": "SHOW TABLES LIKE 'chart_of_accounts'; SHOW TABLES LIKE 'bank_accounts'; SHOW TABLES LIKE 'bank_transactions';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute SHOW TABLES LIKE 'chart_of_accounts'; SHOW TABLES LIKE 'bank_accounts'; SHOW TABLES LIKE 'bank_transactions';",
+  "rows": [
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (chart_of_accounts)": "chart_of_accounts"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (chart_of_accounts)": "Tables_in_aAFi3UvfwvVXettMY36Wvq (bank_accounts)"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (chart_of_accounts)": "bank_accounts"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (chart_of_accounts)": "Tables_in_aAFi3UvfwvVXettMY36Wvq (bank_transactions)"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (chart_of_accounts)": "bank_transactions"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_aAFi3UvfwvVXettMY36Wvq (chart_of_accounts)\nchart_of_accounts\nTables_in_aAFi3UvfwvVXettMY36Wvq (bank_accounts)\nbank_accounts\nTables_in_aAFi3UvfwvVXettMY36Wvq (bank_transactions)\nbank_transactions\n",
+  "stderr": "",
+  "execution_time_ms": 103
+}

@@ -12,6 +12,10 @@ import "./index.css";
 // Importar configuração do i18n (deve ser importado antes do App)
 import "./lib/i18n";
 
+// Inicializar Sentry (error tracking) — só ativa se VITE_SENTRY_DSN estiver configurada
+import { initSentry } from "./lib/sentry";
+initSentry();
+
 const queryClient = new QueryClient();
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
@@ -30,6 +34,8 @@ queryClient.getQueryCache().subscribe(event => {
     const error = event.query.state.error;
     redirectToLoginIfUnauthorized(error);
     console.error("[API Query Error]", error);
+    // Capturar erros de query no Sentry
+    try { import("./lib/sentry").then(s => s.captureException(error as Error)); } catch(_) {}
   }
 });
 
@@ -38,6 +44,8 @@ queryClient.getMutationCache().subscribe(event => {
     const error = event.mutation.state.error;
     redirectToLoginIfUnauthorized(error);
     console.error("[API Mutation Error]", error);
+    // Capturar erros de mutation no Sentry
+    try { import("./lib/sentry").then(s => s.captureException(error as Error)); } catch(_) {}
   }
 });
 

@@ -1,0 +1,19 @@
+{
+  "query": "SHOW TABLES LIKE '%cost_center_type%'; SHOW TABLES LIKE '%indirect_cost_categor%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute SHOW TABLES LIKE '%cost_center_type%'; SHOW TABLES LIKE '%indirect_cost_categor%';",
+  "rows": [
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (%cost_center_type%)": "cost_center_types"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (%cost_center_type%)": "Tables_in_aAFi3UvfwvVXettMY36Wvq (%indirect_cost_categor%)"
+    },
+    {
+      "Tables_in_aAFi3UvfwvVXettMY36Wvq (%cost_center_type%)": "indirect_cost_categories"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_aAFi3UvfwvVXettMY36Wvq (%cost_center_type%)\ncost_center_types\nTables_in_aAFi3UvfwvVXettMY36Wvq (%indirect_cost_categor%)\nindirect_cost_categories\n",
+  "stderr": "",
+  "execution_time_ms": 99
+}

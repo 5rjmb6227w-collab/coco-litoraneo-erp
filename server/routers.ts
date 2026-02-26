@@ -13,6 +13,9 @@ import { budgetRouter } from "./budget/budgetRouter";
 import { emitEvent, EVENT_TYPES } from "./ai/eventEmitter";
 import { batchesRouter } from "./batches/batchesRouter";
 import { alertsRouter } from "./alerts/alertsRouter";
+import { uploadRouter } from "./upload/uploadRouter";
+import { financeModuleRouter } from "./finance/financeRouter";
+import { stockReconciliationRouter } from "./stock/stockReconciliationRouter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -2614,6 +2617,9 @@ export const appRouter = router({
   budget: budgetRouter,
   batches: batchesRouter,
   alerts: alertsRouter,
+  upload: uploadRouter,
+  finance: financeModuleRouter,
+  stockReconciliation: stockReconciliationRouter,
 
   // ============================================================================
   // BOM (BILL OF MATERIALS)

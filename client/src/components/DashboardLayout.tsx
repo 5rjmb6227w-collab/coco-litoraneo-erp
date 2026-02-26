@@ -66,6 +66,11 @@ import {
   QrCode,
   Layers,
   Award,
+  Tags,
+  FolderCog,
+  BookOpen,
+  Landmark,
+  RefreshCw,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -129,6 +134,7 @@ const menuGroups: Array<{
       { icon: Package, label: "Cadastro Produtos", path: "/cadastro/produtos" },
       { icon: Box, label: "Gestão de Lotes", path: "/lotes" },
       { icon: QrCode, label: "Rastreabilidade", path: "/rastreabilidade" },
+      { icon: RefreshCw, label: "Reconciliação", path: "/estoque/reconciliacao" },
     ],
   },
   {
@@ -136,6 +142,8 @@ const menuGroups: Array<{
     items: [
       { icon: ShoppingCart, label: "Compras", path: "/compras" },
       { icon: DollarSign, label: "Financeiro", path: "/financeiro" },
+      { icon: BookOpen, label: "Plano de Contas", path: "/financeiro/plano-contas" },
+      { icon: Landmark, label: "Contas Bancárias", path: "/financeiro/bancos" },
       { icon: FileText, label: "Relatórios", path: "/relatorios" },
       { icon: ShoppingCart, label: "Nec. Compra", path: "/relatorios/necessidade-compra" },
       { icon: TrendingUp, label: "Hist. Preços", path: "/historico-precos" },
@@ -153,6 +161,8 @@ const menuGroups: Array<{
       { icon: Bell, label: "Alertas", path: "/custos/alertas" },
       { icon: TrendingUp, label: "Simulador", path: "/custos/simulador" },
       { icon: Lock, label: "Fechamento", path: "/custos/fechamento" },
+      { icon: Tags, label: "Config. Tipos", path: "/custos/config/tipos" },
+      { icon: FolderCog, label: "Config. Categorias", path: "/custos/config/categorias" },
     ],
   },
   {

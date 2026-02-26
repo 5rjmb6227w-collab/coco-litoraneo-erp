@@ -2593,3 +2593,142 @@ export const costSettings = mysqlTable("cost_settings", {
 
 export type CostSetting = typeof costSettings.$inferSelect;
 export type InsertCostSetting = typeof costSettings.$inferInsert;
+
+
+// ============================================================================
+// CHART OF ACCOUNTS TABLE (Plano de Contas Hierárquico)
+// ============================================================================
+export const chartOfAccounts = mysqlTable("chart_of_accounts", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 20 }).notNull().unique(),
+  name: varchar("name", { length: 200 }).notNull(),
+  nature: mysqlEnum("nature", ["ativo", "passivo", "receita", "despesa", "patrimonio_liquido"]).notNull(),
+  type: mysqlEnum("type", ["sintetica", "analitica"]).notNull(),
+  level: int("level").notNull(), // 1-5
+  parentId: int("parentId"), // FK para conta pai (null = raiz)
+  description: text("description"),
+  isActive: boolean("isActive").default(true).notNull(),
+  acceptsEntries: boolean("acceptsEntries").default(false).notNull(), // Só analíticas aceitam lançamentos
+  displayOrder: int("displayOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type ChartOfAccount = typeof chartOfAccounts.$inferSelect;
+export type InsertChartOfAccount = typeof chartOfAccounts.$inferInsert;
+
+// ============================================================================
+// BANK ACCOUNTS TABLE (Contas Bancárias)
+// ============================================================================
+export const bankAccounts = mysqlTable("bank_accounts", {
+  id: int("id").autoincrement().primaryKey(),
+  bankName: varchar("bankName", { length: 100 }).notNull(),
+  bankCode: varchar("bankCode", { length: 10 }),
+  agency: varchar("agency", { length: 20 }),
+  accountNumber: varchar("accountNumber", { length: 30 }).notNull(),
+  accountType: mysqlEnum("accountType", ["corrente", "poupanca", "investimento", "caixa"]).notNull(),
+  accountHolder: varchar("accountHolder", { length: 200 }),
+  cnpjCpf: varchar("cnpjCpf", { length: 20 }),
+  pixKey: varchar("pixKey", { length: 100 }),
+  initialBalance: decimal("initialBalance", { precision: 15, scale: 2 }).default("0").notNull(),
+  currentBalance: decimal("currentBalance", { precision: 15, scale: 2 }).default("0").notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  isDefault: boolean("isDefault").default(false).notNull(),
+  chartOfAccountId: int("chartOfAccountId"), // FK para plano de contas
+  color: varchar("color", { length: 7 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type BankAccount = typeof bankAccounts.$inferSelect;
+export type InsertBankAccount = typeof bankAccounts.$inferInsert;
+
+// ============================================================================
+// BANK TRANSACTIONS TABLE (Movimentações Bancárias)
+// ============================================================================
+export const bankTransactions = mysqlTable("bank_transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  bankAccountId: int("bankAccountId").notNull(), // FK para bank_accounts
+  type: mysqlEnum("type", ["credito", "debito", "transferencia"]).notNull(),
+  category: mysqlEnum("category", [
+    "receita_vendas",
+    "receita_outros",
+    "pagamento_produtor",
+    "pagamento_fornecedor",
+    "pagamento_funcionario",
+    "pagamento_imposto",
+    "pagamento_servico",
+    "tarifa_bancaria",
+    "transferencia_entre_contas",
+    "rendimento",
+    "emprestimo",
+    "investimento",
+    "outros"
+  ]).notNull(),
+  description: varchar("description", { length: 300 }).notNull(),
+  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+  balanceAfter: decimal("balanceAfter", { precision: 15, scale: 2 }),
+  transactionDate: date("transactionDate").notNull(),
+  competenceDate: date("competenceDate"), // Data de competência (pode diferir da transação)
+  documentNumber: varchar("documentNumber", { length: 50 }),
+  chartOfAccountId: int("chartOfAccountId"), // FK para plano de contas
+  relatedEntityType: varchar("relatedEntityType", { length: 50 }), // "producer_payable", "purchase_order", etc.
+  relatedEntityId: int("relatedEntityId"),
+  transferToAccountId: int("transferToAccountId"), // FK para bank_accounts (transferência)
+  reconciled: boolean("reconciled").default(false).notNull(),
+  reconciledAt: timestamp("reconciledAt"),
+  reconciledBy: int("reconciledBy"),
+  attachmentUrl: varchar("attachmentUrl", { length: 500 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+
+export type BankTransaction = typeof bankTransactions.$inferSelect;
+export type InsertBankTransaction = typeof bankTransactions.$inferInsert;
+
+
+// ============================================================================
+// COST CENTER TYPES TABLE (Tipos de Centros de Custo Personalizáveis)
+// ============================================================================
+export const costCenterTypesTable = mysqlTable("cost_center_types", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 20 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: varchar("description", { length: 300 }),
+  icon: varchar("icon", { length: 10 }),
+  color: varchar("color", { length: 7 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+export type CostCenterType = typeof costCenterTypesTable.$inferSelect;
+export type InsertCostCenterType = typeof costCenterTypesTable.$inferInsert;
+
+// ============================================================================
+// INDIRECT COST CATEGORIES TABLE (Categorias de Custos Indiretos Personalizáveis)
+// ============================================================================
+export const indirectCostCategoriesTable = mysqlTable("indirect_cost_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 20 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: varchar("description", { length: 300 }),
+  icon: varchar("icon", { length: 10 }),
+  color: varchar("color", { length: 7 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+});
+export type IndirectCostCategory = typeof indirectCostCategoriesTable.$inferSelect;
+export type InsertIndirectCostCategory = typeof indirectCostCategoriesTable.$inferInsert;

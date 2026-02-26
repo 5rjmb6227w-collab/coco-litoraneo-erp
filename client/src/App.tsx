@@ -78,6 +78,11 @@ import Rastreabilidade from "./pages/Rastreabilidade";
 import BOMReceitas from "./pages/BOMReceitas";
 import DashboardQualidade from "./pages/DashboardQualidade";
 import CadastroProdutos from "./pages/CadastroProdutos";
+import CustoConfigTipos from "./pages/CustoConfigTipos";
+import CustoConfigCategorias from "./pages/CustoConfigCategorias";
+import FinancePlanoContas from "./pages/FinancePlanoContas";
+import FinanceBancos from "./pages/FinanceBancos";
+import EstoqueReconciliacao from "./pages/EstoqueReconciliacao";
 
 function Router() {
   return (
@@ -137,6 +142,15 @@ function Router() {
         <Route path="/custos/alertas" component={CustoAlertas} />
         <Route path="/custos/simulador" component={CustoSimulador} />
         <Route path="/custos/fechamento" component={CustoFechamento} />
+        <Route path="/custos/config/tipos" component={CustoConfigTipos} />
+        <Route path="/custos/config/categorias" component={CustoConfigCategorias} />
+        
+        {/* Financeiro - Plano de Contas e Bancos */}
+        <Route path="/financeiro/plano-contas" component={FinancePlanoContas} />
+        <Route path="/financeiro/bancos" component={FinanceBancos} />
+        
+        {/* Estoque - Reconciliação */}
+        <Route path="/estoque/reconciliacao" component={EstoqueReconciliacao} />
         
         {/* Calendário de Produção */}
         <Route path="/producao/calendario" component={CalendarioProducao} />

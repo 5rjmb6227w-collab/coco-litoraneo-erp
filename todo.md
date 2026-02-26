@@ -1091,3 +1091,45 @@
 - [x] Corrigir erro ao clicar no botão "Calculadora de Custos" no Dashboard de Custos (SelectItem com valor vazio corrigido para "none")
 
 - [x] Corrigir erro ao editar custo indireto lançado na página de Custos Indiretos Mensais (SelectItem com valor vazio corrigido para "none")
+
+
+## MELHORIAS APROVADAS (Análise Comparativa do Consultor)
+
+### 1. Health Check Endpoint
+- [x] Endpoint /api/health no servidor Express
+- [x] Retorna status do servidor, conexão com banco, uso de memória, uptime
+
+### 2. Upload de Arquivos (Componente Reutilizável)
+- [x] Endpoint tRPC para upload no backend (storagePut)
+- [x] Componente React FileUpload com drag-and-drop e preview
+- [ ] Integração nas entidades existentes (produtores, cargas, equipamentos, pagamentos) - pendente
+
+### 3. Plano de Contas Hierárquico
+- [x] Tabela chart_of_accounts no schema Drizzle (estrutura em árvore até 5 níveis)
+- [x] Router tRPC finance/chartOfAccounts (CRUD + árvore)
+- [x] Página /financeiro/plano-contas com interface de árvore
+- [x] Plano de contas padrão pré-cadastrado (modelo brasileiro)
+
+### 4. Movimentação Bancária
+- [x] Tabela bank_accounts no schema Drizzle
+- [x] Tabela bank_transactions no schema Drizzle
+- [x] Router tRPC finance/bankAccounts e finance/bankTransactions
+- [x] Página /financeiro/bancos (contas + movimentações integradas)
+- [x] Saldo bancário calculado em tempo real
+- [x] Transferências entre contas
+
+### 5. Job de Reconciliação de Estoque
+- [x] Endpoint tRPC para verificar consistência currentStock vs soma de movimentações
+- [x] Relatório de divergências encontradas
+- [x] Opção de correção automática
+- [x] Índices compostos nas tabelas de movimentação
+- [x] Página /estoque/reconciliacao
+
+### 6. Sentry — Error Tracking
+- [x] Integração Sentry SDK no frontend (React)
+- [x] Integração Sentry SDK no backend (Express)
+- [x] Captura automática de erros não tratados
+- [x] Contexto do usuário em cada erro
+
+### Testes
+- [x] Testes unitários para todos os novos módulos (21 testes - 713 total passando)

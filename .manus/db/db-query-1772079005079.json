@@ -1,0 +1,21 @@
+{
+  "query": "SELECT * FROM indirect_cost_categories LIMIT 1",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute SELECT * FROM indirect_cost_categories LIMIT 1",
+  "rows": [
+    {
+      "id": "1",
+      "code": "energia",
+      "name": "Energia Elétrica",
+      "description": "Custos de energia elétrica",
+      "icon": "Zap",
+      "color": "bg-yellow-500",
+      "status": "ativo",
+      "createdAt": "2026-02-02 12:26:59",
+      "updatedAt": "2026-02-02 12:26:59"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tname\tdescription\ticon\tcolor\tstatus\tcreatedAt\tupdatedAt\n1\tenergia\tEnergia Elétrica\tCustos de energia elétrica\tZap\tbg-yellow-500\tativo\t2026-02-02 12:26:59\t2026-02-02 12:26:59\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}
