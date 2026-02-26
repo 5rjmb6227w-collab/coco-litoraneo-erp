@@ -117,6 +117,7 @@ export const appRouter = router({
         defaultDiscountPercent: z.string().optional(),
         status: z.enum(["ativo", "inativo"]).optional(),
         externalCode: z.string().optional(),
+        photoUrl: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;

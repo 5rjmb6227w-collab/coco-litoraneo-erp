@@ -15,7 +15,7 @@
 - [x] Implementar cálculo automático de peso líquido
 - [x] Implementar fluxo de status (Recebido → Conferido → Fechado)
 - [x] Implementar trava de edição quando status = Fechado
-- [ ] Implementar upload de foto da carga (pendente - requer storage)
+- [x] Implementar upload de foto da carga (FileUpload integrado)
 - [x] Implementar export CSV
 
 ### Módulo 2: Produtores/Fornecedores
@@ -30,7 +30,7 @@
 - [x] Implementar cálculo automático (peso × preço - desconto)
 - [x] Implementar fluxo de status (Pendente → Aprovado → Programado → Pago)
 - [x] Implementar destaque visual (atrasados vermelho, próximos amarelo)
-- [ ] Implementar upload de comprovante (pendente - requer storage)
+- [x] Implementar upload de comprovante (FileUpload integrado)
 - [x] Implementar campos de auditoria (quem aprovou, quem pagou)
 
 ### Módulo 4: Almoxarifado Produção
@@ -156,8 +156,8 @@
 - [ ] Checkpoint Tarefa 4: (pendente)
 
 ## PENDÊNCIAS MENORES (não bloqueantes)
-- [ ] Upload de foto da carga (requer configuração de storage S3)
-- [ ] Upload de comprovante de pagamento (requer configuração de storage S3)
+- [x] Upload de foto da carga (FileUpload integrado com S3)
+- [x] Upload de comprovante de pagamento (FileUpload integrado com S3)
 - [ ] Modo escuro/claro (toggle no header)
 - [ ] Notificações em tempo real (WebSocket)
 
@@ -1133,3 +1133,21 @@
 
 ### Testes
 - [x] Testes unitários para todos os novos módulos (21 testes - 713 total passando)
+
+
+## SUGESTÕES DE ACOMPANHAMENTO - Fevereiro 2026
+
+### 1. Configurar Sentry DSN (ADIADO - usuário fará depois)
+- [ ] Solicitar variável SENTRY_DSN ao usuário
+- [ ] Configurar no frontend e backend
+
+### 2. Seed de Dados Financeiros Iniciais
+- [ ] Criar script de seed com contas bancárias padrão
+- [ ] Popular plano de contas com estrutura brasileira padrão
+- [ ] Executar seed automaticamente
+
+### 3. Integrar FileUpload nas Entidades Existentes
+- [ ] Adicionar campo de foto/documento na página de Produtores
+- [ ] Adicionar campo de fotos na página de Cargas (fotos da carga)
+- [ ] Adicionar campo de comprovante na página de Pagamentos
+- [ ] Atualizar schema do banco com colunas de URL de arquivo

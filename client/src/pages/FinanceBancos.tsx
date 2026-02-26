@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import {
   Plus, Building2, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight,
   Edit2, Trash2, Wallet, TrendingUp, TrendingDown, CheckCircle2,
-  MoreHorizontal, CreditCard, Banknote, PiggyBank, DollarSign
+  MoreHorizontal, CreditCard, Banknote, PiggyBank, DollarSign, Database
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -152,6 +152,14 @@ export default function FinanceBancos() {
     onError: (err) => toast.error(err.message),
   });
 
+  const seedAccountsMutation = trpc.finance.bankAccounts.seedDefault.useMutation({
+    onSuccess: (data) => {
+      toast.success(`${data.totalAccounts} contas bancárias padrão criadas`);
+      utils.finance.bankAccounts.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const accounts = accountsQuery.data || [];
   const summary = summaryQuery.data;
   const transactions = txnsQuery.data || [];
@@ -284,7 +292,13 @@ export default function FinanceBancos() {
 
         {/* TAB: CONTAS BANCÁRIAS */}
         <TabsContent value="contas" className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            {accounts.length === 0 && (
+              <Button variant="outline" onClick={() => seedAccountsMutation.mutate()} disabled={seedAccountsMutation.isPending}>
+                <Database className="h-4 w-4 mr-2" />
+                {seedAccountsMutation.isPending ? "Criando..." : "Carregar Contas Padrão"}
+              </Button>
+            )}
             <Button onClick={openNewAccount}>
               <Plus className="h-4 w-4 mr-2" /> Nova Conta
             </Button>

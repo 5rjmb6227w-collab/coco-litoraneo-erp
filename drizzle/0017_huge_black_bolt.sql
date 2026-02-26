@@ -1,0 +1,1 @@
+ALTER TABLE `producers` ADD `photoUrl` varchar(500);

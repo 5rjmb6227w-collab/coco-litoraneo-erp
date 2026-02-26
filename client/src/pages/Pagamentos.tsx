@@ -29,7 +29,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Download, Wallet, Eye, Check, Calendar, CreditCard, ChevronLeft, ChevronRight, Filter, X } from "lucide-react";
+import { Search, Download, Wallet, Eye, Check, Calendar, CreditCard, ChevronLeft, ChevronRight, Filter, X, Receipt } from "lucide-react";
+import { FileUpload } from "@/components/FileUpload";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -478,7 +479,7 @@ export default function Pagamentos() {
 
       {/* Modal Visualizar/Editar Pagamento */}
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Detalhes do Pagamento</DialogTitle>
             <DialogDescription>
@@ -601,6 +602,41 @@ export default function Pagamentos() {
                   value={formData.observations}
                   onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
                   disabled={selectedPayable.status === "pago"}
+                />
+              </div>
+
+              {/* Comprovante de Pagamento */}
+              <div className="space-y-2 border-t pt-4">
+                <Label className="text-muted-foreground flex items-center gap-2">
+                  <Receipt className="h-4 w-4" />
+                  Comprovante de Pagamento
+                </Label>
+                {selectedPayable.receiptUrl && (
+                  <div className="mb-2">
+                    <a
+                      href={selectedPayable.receiptUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline flex items-center gap-1"
+                    >
+                      <Receipt className="h-4 w-4" />
+                      Ver comprovante atual
+                    </a>
+                  </div>
+                )}
+                <FileUpload
+                  folder="pagamentos"
+                  entityType="producer_payable"
+                  entityId={selectedPayable.id}
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  maxSizeMB={10}
+                  label={selectedPayable.receiptUrl ? "Substituir comprovante" : "Enviar comprovante"}
+                  currentFileUrl={selectedPayable.receiptUrl || undefined}
+                  compact
+                  onUploadComplete={(result) => {
+                    updateMutation.mutate({ id: selectedPayable.id, receiptUrl: result.url });
+                    setSelectedPayable({ ...selectedPayable, receiptUrl: result.url });
+                  }}
                 />
               </div>
 

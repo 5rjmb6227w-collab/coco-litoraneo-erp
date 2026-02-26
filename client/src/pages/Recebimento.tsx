@@ -29,7 +29,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Search, Download, Truck, Eye, Check, Lock } from "lucide-react";
+import { Plus, Search, Download, Truck, Eye, Check, Lock, ImageIcon } from "lucide-react";
+import { FileUpload } from "@/components/FileUpload";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -75,7 +76,6 @@ export default function Recebimento() {
   const updateMutation = trpc.coconutLoads.update.useMutation({
     onSuccess: () => {
       toast.success("Carga atualizada com sucesso!");
-      setIsViewModalOpen(false);
       refetch();
     },
     onError: (error) => {
@@ -238,6 +238,7 @@ export default function Recebimento() {
                   <TableHead>Produtor</TableHead>
                   <TableHead>Placa</TableHead>
                   <TableHead className="text-right">Peso Líquido (kg)</TableHead>
+                  <TableHead>Foto</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -253,6 +254,15 @@ export default function Recebimento() {
                       <TableCell>{load.licensePlate}</TableCell>
                       <TableCell className="text-right font-mono">
                         {Number(load.netWeight).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell>
+                        {load.photoUrl ? (
+                          <a href={load.photoUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            <ImageIcon className="h-4 w-4" />
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">-</span>
+                        )}
                       </TableCell>
                       <TableCell>{getStatusBadge(load.status)}</TableCell>
                       <TableCell className="text-right">
@@ -291,7 +301,7 @@ export default function Recebimento() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Nenhuma carga registrada
                     </TableCell>
                   </TableRow>
@@ -304,7 +314,7 @@ export default function Recebimento() {
 
       {/* Modal Nova Carga */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Nova Carga de Coco</DialogTitle>
             <DialogDescription>
@@ -403,6 +413,19 @@ export default function Recebimento() {
                 onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
               />
             </div>
+
+            <div className="space-y-2">
+              <Label>Foto da Carga</Label>
+              <p className="text-xs text-muted-foreground">Envie uma foto da carga. O upload será vinculado após o registro.</p>
+              <FileUpload
+                folder="cargas"
+                entityType="coconut_load"
+                accept="image/jpeg,image/png,image/webp"
+                maxSizeMB={10}
+                label="Enviar foto da carga"
+                compact
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>
@@ -417,7 +440,7 @@ export default function Recebimento() {
 
       {/* Modal Visualizar/Editar Carga */}
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Detalhes da Carga</DialogTitle>
             <DialogDescription>
@@ -482,6 +505,47 @@ export default function Recebimento() {
                   <p className="font-medium">{selectedLoad.observations}</p>
                 </div>
               )}
+
+              {/* Seção de Foto da Carga */}
+              <div className="space-y-2 border-t pt-4">
+                <Label className="text-muted-foreground flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4" />
+                  Foto da Carga
+                </Label>
+                {selectedLoad.photoUrl && (
+                  <div className="mb-2">
+                    <a href={selectedLoad.photoUrl} target="_blank" rel="noopener noreferrer">
+                      <img
+                        src={selectedLoad.photoUrl}
+                        alt="Foto da carga"
+                        className="w-full max-h-48 object-contain rounded-md border"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </a>
+                  </div>
+                )}
+                {selectedLoad.status !== "fechado" && (
+                  <FileUpload
+                    folder="cargas"
+                    entityType="coconut_load"
+                    entityId={selectedLoad.id}
+                    accept="image/jpeg,image/png,image/webp"
+                    maxSizeMB={10}
+                    label={selectedLoad.photoUrl ? "Substituir foto" : "Enviar foto da carga"}
+                    currentFileUrl={selectedLoad.photoUrl || undefined}
+                    compact
+                    onUploadComplete={(result) => {
+                      updateMutation.mutate({ id: selectedLoad.id, photoUrl: result.url });
+                      setSelectedLoad({ ...selectedLoad, photoUrl: result.url });
+                    }}
+                  />
+                )}
+                {selectedLoad.status === "fechado" && !selectedLoad.photoUrl && (
+                  <p className="text-sm text-muted-foreground">Nenhuma foto anexada. Carga fechada, não é possível adicionar.</p>
+                )}
+              </div>
 
               <div className="text-xs text-muted-foreground border-t pt-4">
                 <p>Criado em: {format(new Date(selectedLoad.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>

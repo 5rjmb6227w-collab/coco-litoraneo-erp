@@ -29,6 +29,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Search, Download, Users, Edit, Eye } from "lucide-react";
+import { FileUpload } from "@/components/FileUpload";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -337,10 +338,11 @@ export default function Produtores() {
             </DialogDescription>
           </DialogHeader>
           <Tabs defaultValue="dados" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="dados">Dados</TabsTrigger>
               <TabsTrigger value="bancarios">Bancários</TabsTrigger>
               <TabsTrigger value="comercial">Comercial</TabsTrigger>
+              <TabsTrigger value="documentos">Documentos</TabsTrigger>
             </TabsList>
             <TabsContent value="dados" className="space-y-4 mt-4">
               <div className="space-y-2">
@@ -484,6 +486,19 @@ export default function Produtores() {
                 />
               </div>
             </TabsContent>
+            <TabsContent value="documentos" className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label>Foto / Documento do Produtor</Label>
+                <p className="text-xs text-muted-foreground">Envie uma foto ou documento do produtor. O upload será vinculado após o cadastro.</p>
+                <FileUpload
+                  folder="produtores"
+                  entityType="producer"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  maxSizeMB={10}
+                  label="Enviar foto ou documento"
+                />
+              </div>
+            </TabsContent>
           </Tabs>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => { setIsModalOpen(false); resetForm(); }}>
@@ -511,10 +526,11 @@ export default function Produtores() {
             </DialogTitle>
           </DialogHeader>
           <Tabs defaultValue="dados" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="dados">Dados</TabsTrigger>
               <TabsTrigger value="bancarios">Bancários</TabsTrigger>
               <TabsTrigger value="comercial">Comercial</TabsTrigger>
+              <TabsTrigger value="documentos">Documentos</TabsTrigger>
             </TabsList>
             <TabsContent value="dados" className="space-y-4 mt-4">
               <div className="space-y-2">
@@ -683,6 +699,25 @@ export default function Produtores() {
                 ) : (
                   <p className="font-medium">{formData.externalCode || "-"}</p>
                 )}
+              </div>
+            </TabsContent>
+            <TabsContent value="documentos" className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label>Foto / Documento do Produtor</Label>
+                <FileUpload
+                  folder="produtores"
+                  entityType="producer"
+                  entityId={selectedProducer?.id}
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  maxSizeMB={10}
+                  label="Enviar foto ou documento"
+                  currentFileUrl={selectedProducer?.photoUrl || undefined}
+                  onUploadComplete={(result) => {
+                    if (selectedProducer) {
+                      updateMutation.mutate({ id: selectedProducer.id, photoUrl: result.url });
+                    }
+                  }}
+                />
               </div>
             </TabsContent>
           </Tabs>

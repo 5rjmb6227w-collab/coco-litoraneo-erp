@@ -53,13 +53,13 @@ export const producers = mysqlTable("producers", {
   pixKey: varchar("pixKey", { length: 255 }),
   defaultPricePerKg: decimal("defaultPricePerKg", { precision: 10, scale: 2 }).notNull(),
   defaultDiscountPercent: decimal("defaultDiscountPercent", { precision: 5, scale: 2 }).default("0"),
+   photoUrl: varchar("photoUrl", { length: 500 }),
   status: mysqlEnum("status", ["ativo", "inativo"]).default("ativo").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   createdBy: int("createdBy"),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   updatedBy: int("updatedBy"),
 });
-
 export type Producer = typeof producers.$inferSelect;
 export type InsertProducer = typeof producers.$inferInsert;
 

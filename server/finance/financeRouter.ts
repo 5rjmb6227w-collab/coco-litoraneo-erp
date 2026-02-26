@@ -361,6 +361,81 @@ export const financeModuleRouter = router({
         return { success: true };
       }),
 
+    seedDefault: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const db = await getDb();
+        const existing = await db.select().from(bankAccounts).limit(1);
+        if (existing.length > 0) {
+          throw new Error("Já existem contas bancárias cadastradas.");
+        }
+
+        const defaultAccounts: InsertBankAccount[] = [
+          {
+            bankName: "Caixa Interno",
+            bankCode: "000",
+            agency: "0001",
+            accountNumber: "00001-0",
+            accountType: "caixa" as const,
+            accountHolder: "Coco Litorâneo",
+            initialBalance: "0",
+            currentBalance: "0",
+            color: "#22C55E",
+            notes: "Caixa físico da empresa",
+            isDefault: true,
+            createdBy: ctx.user?.id,
+            updatedBy: ctx.user?.id,
+          },
+          {
+            bankName: "Banco do Brasil",
+            bankCode: "001",
+            agency: "0000",
+            accountNumber: "00000-0",
+            accountType: "corrente" as const,
+            accountHolder: "Coco Litorâneo Ltda",
+            initialBalance: "0",
+            currentBalance: "0",
+            color: "#FBBF24",
+            notes: "Conta corrente principal",
+            createdBy: ctx.user?.id,
+            updatedBy: ctx.user?.id,
+          },
+          {
+            bankName: "Bradesco",
+            bankCode: "237",
+            agency: "0000",
+            accountNumber: "00000-0",
+            accountType: "corrente" as const,
+            accountHolder: "Coco Litorâneo Ltda",
+            initialBalance: "0",
+            currentBalance: "0",
+            color: "#EF4444",
+            notes: "Conta corrente secundária",
+            createdBy: ctx.user?.id,
+            updatedBy: ctx.user?.id,
+          },
+          {
+            bankName: "Nubank",
+            bankCode: "260",
+            agency: "0001",
+            accountNumber: "00000-0",
+            accountType: "corrente" as const,
+            accountHolder: "Coco Litorâneo Ltda",
+            initialBalance: "0",
+            currentBalance: "0",
+            color: "#8B5CF6",
+            notes: "Conta digital",
+            createdBy: ctx.user?.id,
+            updatedBy: ctx.user?.id,
+          },
+        ];
+
+        for (const acc of defaultAccounts) {
+          await db.insert(bankAccounts).values(acc);
+        }
+
+        return { success: true, totalAccounts: defaultAccounts.length };
+      }),
+
     getSummary: protectedProcedure
       .query(async () => {
         const db = await getDb();

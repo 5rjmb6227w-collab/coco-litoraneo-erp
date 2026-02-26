@@ -120,6 +120,13 @@
       "when": 1772078458733,
       "tag": "0016_awesome_blob",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1772080223324,
+      "tag": "0017_huge_black_bolt",
+      "breakpoints": true
     }
   ]
 }
