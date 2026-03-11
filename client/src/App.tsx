@@ -83,6 +83,9 @@ import CustoConfigCategorias from "./pages/CustoConfigCategorias";
 import FinancePlanoContas from "./pages/FinancePlanoContas";
 import FinanceBancos from "./pages/FinanceBancos";
 import EstoqueReconciliacao from "./pages/EstoqueReconciliacao";
+import { lazy } from "react";
+
+
 
 function Router() {
   return (
@@ -189,6 +192,9 @@ function Router() {
         
         {/* Dashboard de Qualidade */}
         <Route path="/qualidade/dashboard" component={DashboardQualidade} />
+        
+        {/* Meus Projetos */}
+
         
         {/* Segurança e Autenticação */}
         <Route path="/seguranca/2fa" component={Setup2FA} />

@@ -71,6 +71,8 @@ import {
   BookOpen,
   Landmark,
   RefreshCw,
+  Briefcase,
+  FolderKanban,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -191,6 +193,13 @@ const menuGroups: Array<{
     items: [
       { icon: UserCog, label: "Colaboradores", path: "/rh/colaboradores" },
       { icon: ClipboardList, label: "Ocorrências", path: "/rh/ocorrencias" },
+    ],
+  },
+  {
+    label: "Meus Projetos",
+    items: [
+      { icon: LayoutDashboard, label: "Dashboard", path: "/projetos/dashboard" },
+      { icon: FolderKanban, label: "Todos os Projetos", path: "/projetos" },
     ],
   },
   {
