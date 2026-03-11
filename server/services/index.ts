@@ -16,7 +16,10 @@ export { LoadService, getLoadService } from './load.service';
 export { FinancialService, getFinancialService } from './financial.service';
 export { StockService, getStockService } from './stock.service';
 export { QualityService, getQualityService } from './quality.service';
+export { StrategicProjectService, getStrategicProjectService } from './strategic-project.service';
+export { StrategicTaskService, getStrategicTaskService } from './strategic-task.service';
 
+// Services de Projetos Estratégicos implementados acima
 // TODO: Adicionar mais services conforme implementados
 // export { ProductionService, getProductionService } from './production.service';
 // export { BatchService, getBatchService } from './batch.service';

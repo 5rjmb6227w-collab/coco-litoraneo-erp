@@ -72,6 +72,17 @@ export const EVENT_TYPES = {
   USER_LOGIN: "user.login",
   USER_LOGOUT: "user.logout",
   USER_BLOCKED: "user.blocked",
+
+  // Projetos Estratégicos
+  STRATEGIC_PROJECT_CREATED: "strategic_project.created",
+  STRATEGIC_PROJECT_UPDATED: "strategic_project.updated",
+  STRATEGIC_PROJECT_COMPLETED: "strategic_project.completed",
+  STRATEGIC_PROJECT_OVERDUE: "strategic_project.overdue",
+  STRATEGIC_TASK_CREATED: "strategic_task.created",
+  STRATEGIC_TASK_UPDATED: "strategic_task.updated",
+  STRATEGIC_TASK_COMPLETED: "strategic_task.completed",
+  STRATEGIC_TASK_OVERDUE: "strategic_task.overdue",
+  STRATEGIC_BUDGET_EXCEEDED: "strategic_budget.exceeded",
 } as const;
 
 export type EventType = typeof EVENT_TYPES[keyof typeof EVENT_TYPES];
@@ -91,7 +102,10 @@ const EVENT_MODULE_MAP: Record<string, string> = {
   "quality": "qualidade",
   "nc": "qualidade",
   "employee": "rh",
-  "user": "seguranca",
+  "user": "segurança",
+  "strategic_project": "projetos_estrategicos",
+  "strategic_task": "projetos_estrategicos",
+  "strategic_budget": "projetos_estrategicos",
 };
 
 // Interface para dados do evento

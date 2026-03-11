@@ -16,6 +16,7 @@ import { alertsRouter } from "./alerts/alertsRouter";
 import { uploadRouter } from "./upload/uploadRouter";
 import { financeModuleRouter } from "./finance/financeRouter";
 import { stockReconciliationRouter } from "./stock/stockReconciliationRouter";
+import { strategicRouter } from "./strategic/strategicRouter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -2714,6 +2715,11 @@ export const appRouter = router({
         return { success: true, copiedItems: sourceItems.length };
       }),
   }),
+
+  // ============================================================================
+  // STRATEGIC PROJECTS ROUTER
+  // ============================================================================
+  strategic: strategicRouter,
 });
 
 export type AppRouter = typeof appRouter;

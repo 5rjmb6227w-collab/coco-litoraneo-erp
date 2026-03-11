@@ -1167,3 +1167,18 @@
 - [x] NÃO criou nada em server/db.ts ✔️
 - [x] NÃO criou Services nem Routers ✔️ (Tarefa 2)
 - [x] NÃO criou Frontend ✔️ (Tarefa 3)
+
+
+## Módulo Meus Projetos — Tarefa 2 (Services + Router)
+- [ ] PASSO 1: IStrategicProjectService.ts criado com 6 métodos
+- [ ] PASSO 1: IStrategicTaskService.ts criado com 10 métodos
+- [ ] PASSO 1: interfaces/index.ts atualizado
+- [ ] PASSO 2: strategic-project.service.ts implementado com DI e lógica de negócio
+- [ ] PASSO 2: strategic-task.service.ts implementado com DI e lógica de negócio
+- [ ] PASSO 2: services/index.ts atualizado com getters
+- [ ] PASSO 2: EVENT_TYPES adicionados em eventEmitter.ts
+- [ ] PASSO 3: strategicRouter.ts criado como router modular enxuto
+- [ ] PASSO 4: strategicRouter registrado no appRouter
+- [ ] PASSO 5: Testes unitários dos Services passando (com mocks)
+- [ ] Router NÃO contém lógica de negócio (apenas Zod + Service)
+- [ ] NÃO criar Frontend (isso é Tarefa 3)
