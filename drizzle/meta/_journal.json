@@ -1,132 +1,139 @@
 {
-    "version": "7",
-    "dialect": "mysql",
-    "entries": [
-        {
-            "idx": 0,
-            "version": "5",
-            "when": 1767464286860,
-            "tag": "0000_romantic_ego",
-            "breakpoints": true
-        },
-        {
-            "idx": 1,
-            "version": "5",
-            "when": 1767469493596,
-            "tag": "0001_low_wong",
-            "breakpoints": true
-        },
-        {
-            "idx": 2,
-            "version": "5",
-            "when": 1767470641316,
-            "tag": "0002_many_la_nuit",
-            "breakpoints": true
-        },
-        {
-            "idx": 3,
-            "version": "5",
-            "when": 1767472192843,
-            "tag": "0003_safe_rocket_racer",
-            "breakpoints": true
-        },
-        {
-            "idx": 4,
-            "version": "5",
-            "when": 1767505841175,
-            "tag": "0004_slimy_iron_fist",
-            "breakpoints": true
-        },
-        {
-            "idx": 5,
-            "version": "5",
-            "when": 1767581394271,
-            "tag": "0005_petite_franklin_storm",
-            "breakpoints": true
-        },
-        {
-            "idx": 6,
-            "version": "5",
-            "when": 1767581634273,
-            "tag": "0006_fantastic_sentinels",
-            "breakpoints": true
-        },
-        {
-            "idx": 7,
-            "version": "5",
-            "when": 1767582897973,
-            "tag": "0007_lying_blazing_skull",
-            "breakpoints": true
-        },
-        {
-            "idx": 8,
-            "version": "5",
-            "when": 1767585268097,
-            "tag": "0008_loving_spitfire",
-            "breakpoints": true
-        },
-        {
-            "idx": 9,
-            "version": "5",
-            "when": 1768081288223,
-            "tag": "0009_amazing_shatterstar",
-            "breakpoints": true
-        },
-        {
-            "idx": 10,
-            "version": "5",
-            "when": 1769712846283,
-            "tag": "0010_neat_greymalkin",
-            "breakpoints": true
-        },
-        {
-            "idx": 11,
-            "version": "5",
-            "when": 1769725865543,
-            "tag": "0011_perpetual_lyja",
-            "breakpoints": true
-        },
-        {
-            "idx": 12,
-            "version": "5",
-            "when": 1769777338885,
-            "tag": "0012_useful_lake",
-            "breakpoints": true
-        },
-        {
-            "idx": 13,
-            "version": "5",
-            "when": 1769906487491,
-            "tag": "0013_ambiguous_proteus",
-            "breakpoints": true
-        },
-        {
-            "idx": 14,
-            "version": "5",
-            "when": 1769979514686,
-            "tag": "0014_lethal_union_jack",
-            "breakpoints": true
-        },
-        {
-            "idx": 15,
-            "version": "5",
-            "when": 1772077240272,
-            "tag": "0015_clean_proudstar",
-            "breakpoints": true
-        },
-        {
-            "idx": 16,
-            "version": "5",
-            "when": 1772078458733,
-            "tag": "0016_awesome_blob",
-            "breakpoints": true
-        },
-        {
-            "idx": 17,
-            "version": "5",
-            "when": 1772080223324,
-            "tag": "0017_huge_black_bolt",
-            "breakpoints": true
-        }
-    ]
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1767464286860,
+      "tag": "0000_romantic_ego",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1767469493596,
+      "tag": "0001_low_wong",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1767470641316,
+      "tag": "0002_many_la_nuit",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1767472192843,
+      "tag": "0003_safe_rocket_racer",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1767505841175,
+      "tag": "0004_slimy_iron_fist",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1767581394271,
+      "tag": "0005_petite_franklin_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1767581634273,
+      "tag": "0006_fantastic_sentinels",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1767582897973,
+      "tag": "0007_lying_blazing_skull",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1767585268097,
+      "tag": "0008_loving_spitfire",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1768081288223,
+      "tag": "0009_amazing_shatterstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1769712846283,
+      "tag": "0010_neat_greymalkin",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1769725865543,
+      "tag": "0011_perpetual_lyja",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1769777338885,
+      "tag": "0012_useful_lake",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1769906487491,
+      "tag": "0013_ambiguous_proteus",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1769979514686,
+      "tag": "0014_lethal_union_jack",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "5",
+      "when": 1772077240272,
+      "tag": "0015_clean_proudstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1772078458733,
+      "tag": "0016_awesome_blob",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1772080223324,
+      "tag": "0017_huge_black_bolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1773255053626,
+      "tag": "0018_round_red_ghost",
+      "breakpoints": true
+    }
+  ]
 }

@@ -12,6 +12,9 @@ export * from './interfaces';
 export { ProducerRepository, getProducerRepository } from './producer.repository';
 export { LoadRepository, getLoadRepository } from './load.repository';
 
+export { StrategicProjectRepository, getStrategicProjectRepository } from './strategic-project.repository';
+export { StrategicTaskRepository, getStrategicTaskRepository } from './strategic-task.repository';
+
 // TODO: Adicionar mais repositories conforme implementados
 // export { ProductionRepository, getProductionRepository } from './production.repository';
 // export { StockRepository, getStockRepository } from './stock.repository';

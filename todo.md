@@ -1152,3 +1152,18 @@
 - [ ] Adicionar campo de comprovante na página de Pagamentos
 - [ ] Atualizar schema do banco com colunas de URL de arquivo
 
+
+## Módulo Meus Projetos — Tarefa 1 (Schema + Repositories)
+- [x] PASSO 1: 7 tabelas criadas em drizzle/schema.ts
+- [x] PASSO 1: pnpm db:push executado sem erros (tabelas criadas via SQL direto + migration registrada)
+- [x] PASSO 2: IStrategicProjectRepository.ts criado com DTOs e 16 métodos
+- [x] PASSO 2: IStrategicTaskRepository.ts criado com DTOs e 19 métodos
+- [x] PASSO 2: interfaces/index.ts atualizado
+- [x] PASSO 3: strategic-project.repository.ts implementado
+- [x] PASSO 3: strategic-task.repository.ts implementado
+- [x] PASSO 3: repositories/index.ts atualizado com getters
+- [x] PASSO 4: Seed de dados de exemplo criado e executado (3 projetos, 7 fases, 12 tarefas)
+- [x] PASSO 5: Testes do repository passando (21 + 24 = 45 novos testes, 767 total)
+- [x] NÃO criou nada em server/db.ts ✔️
+- [x] NÃO criou Services nem Routers ✔️ (Tarefa 2)
+- [x] NÃO criou Frontend ✔️ (Tarefa 3)

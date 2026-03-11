@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `strategic_task_links` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`taskId` int NOT NULL,\n\t`projectId` int NOT NULL,\n\t`linkedModule` enum('compras','financeiro','orcamento','producao','qualidade','almoxarifado','produtores','cargas','pagamentos','rh','estoque','custos','lotes') NOT NULL,\n\t`linkedEntityType` varchar(100) NOT NULL,\n\t`linkedEntityId` int NOT NULL,\n\t`linkedEntityLabel` varchar(255) NOT NULL,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`createdBy` int,\n\tCONSTRAINT `strategic_task_links_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute CREATE TABLE `strategic_task_links` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`taskId` int NOT NULL,\n\t`projectId` int NOT NULL,\n\t`linkedModule` enum('compras','financeiro','orcamento','producao','qualidade','almoxarifado','produtores','cargas','pagamentos','rh','estoque','custos','lotes') NOT NULL,\n\t`linkedEntityType` varchar(100) NOT NULL,\n\t`linkedEntityId` int NOT NULL,\n\t`linkedEntityLabel` varchar(255) NOT NULL,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`createdBy` int,\n\tCONSTRAINT `strategic_task_links_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 115
+}

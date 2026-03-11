@@ -2732,3 +2732,142 @@ export const indirectCostCategoriesTable = mysqlTable("indirect_cost_categories"
 });
 export type IndirectCostCategory = typeof indirectCostCategoriesTable.$inferSelect;
 export type InsertIndirectCostCategory = typeof indirectCostCategoriesTable.$inferInsert;
+
+
+// ============================================================================
+// STRATEGIC PROJECTS TABLE (Projetos Estratégicos do Gestor)
+// ============================================================================
+export const strategicProjects = mysqlTable("strategic_projects", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 20 }).unique().notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  category: mysqlEnum("category", ["equipamento", "obra", "insumo", "processo", "comercial", "outro"]).notNull(),
+  priority: mysqlEnum("priority", ["critica", "alta", "media", "baixa"]).notNull().default("media"),
+  status: mysqlEnum("status", ["planejamento", "em_andamento", "pausado", "concluido", "cancelado"]).notNull().default("planejamento"),
+  startDate: date("startDate"),
+  targetEndDate: date("targetEndDate"),
+  actualEndDate: date("actualEndDate"),
+  budgetPlanned: decimal("budgetPlanned", { precision: 14, scale: 2 }),
+  budgetActual: decimal("budgetActual", { precision: 14, scale: 2 }).default("0.00"),
+  progress: int("progress").notNull().default(0),
+  ownerId: int("ownerId").notNull(),
+  photoUrl: varchar("photoUrl", { length: 500 }),
+  tags: json("tags"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+  updatedBy: int("updatedBy"),
+});
+export type StrategicProject = typeof strategicProjects.$inferSelect;
+export type InsertStrategicProject = typeof strategicProjects.$inferInsert;
+
+// ============================================================================
+// STRATEGIC PHASES TABLE (Fases/Etapas dentro de cada projeto)
+// ============================================================================
+export const strategicPhases = mysqlTable("strategic_phases", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  orderIndex: int("orderIndex").notNull().default(0),
+  status: mysqlEnum("status", ["pendente", "em_andamento", "concluida"]).notNull().default("pendente"),
+  startDate: date("startDate"),
+  endDate: date("endDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+});
+export type StrategicPhase = typeof strategicPhases.$inferSelect;
+export type InsertStrategicPhase = typeof strategicPhases.$inferInsert;
+
+// ============================================================================
+// STRATEGIC TASKS TABLE (Tarefas dentro das fases)
+// ============================================================================
+export const strategicTasks = mysqlTable("strategic_tasks", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  phaseId: int("phaseId"),
+  parentTaskId: int("parentTaskId"),
+  code: varchar("code", { length: 20 }),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  priority: mysqlEnum("priority", ["critica", "alta", "media", "baixa"]).notNull().default("media"),
+  status: mysqlEnum("status", ["a_fazer", "em_andamento", "aguardando", "concluida", "cancelada"]).notNull().default("a_fazer"),
+  assigneeId: int("assigneeId"),
+  assigneeName: varchar("assigneeName", { length: 255 }),
+  startDate: date("startDate"),
+  dueDate: date("dueDate"),
+  completedAt: timestamp("completedAt"),
+  estimatedHours: decimal("estimatedHours", { precision: 8, scale: 2 }),
+  actualHours: decimal("actualHours", { precision: 8, scale: 2 }),
+  estimatedCost: decimal("estimatedCost", { precision: 14, scale: 2 }),
+  actualCost: decimal("actualCost", { precision: 14, scale: 2 }),
+  orderIndex: int("orderIndex").notNull().default(0),
+  tags: json("tags"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+  updatedBy: int("updatedBy"),
+});
+export type StrategicTask = typeof strategicTasks.$inferSelect;
+export type InsertStrategicTask = typeof strategicTasks.$inferInsert;
+
+// ============================================================================
+// STRATEGIC TASK NOTES TABLE (Diário de bordo - observações datadas)
+// ============================================================================
+export const strategicTaskNotes = mysqlTable("strategic_task_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId").notNull(),
+  projectId: int("projectId").notNull(),
+  content: text("content").notNull(),
+  noteType: mysqlEnum("noteType", ["observacao", "decisao", "problema", "mudanca", "valor"]).notNull().default("observacao"),
+  attachmentUrl: varchar("attachmentUrl", { length: 500 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+  createdByName: varchar("createdByName", { length: 255 }),
+});
+export type StrategicTaskNote = typeof strategicTaskNotes.$inferSelect;
+export type InsertStrategicTaskNote = typeof strategicTaskNotes.$inferInsert;
+
+// ============================================================================
+// STRATEGIC TASK DEPENDENCIES TABLE (Dependências entre tarefas)
+// ============================================================================
+export const strategicTaskDependencies = mysqlTable("strategic_task_dependencies", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId").notNull(),
+  dependsOnTaskId: int("dependsOnTaskId").notNull(),
+  dependencyType: mysqlEnum("dependencyType", ["FS", "SS", "FF", "SF"]).notNull().default("FS"),
+});
+export type StrategicTaskDependency = typeof strategicTaskDependencies.$inferSelect;
+export type InsertStrategicTaskDependency = typeof strategicTaskDependencies.$inferInsert;
+
+// ============================================================================
+// STRATEGIC TASK LINKS TABLE (Vínculos com outros módulos do ERP)
+// ============================================================================
+export const strategicTaskLinks = mysqlTable("strategic_task_links", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId").notNull(),
+  projectId: int("projectId").notNull(),
+  linkedModule: mysqlEnum("linkedModule", ["compras", "financeiro", "orcamento", "producao", "qualidade", "almoxarifado", "produtores", "cargas", "pagamentos", "rh", "estoque", "custos", "lotes"]).notNull(),
+  linkedEntityType: varchar("linkedEntityType", { length: 100 }).notNull(),
+  linkedEntityId: int("linkedEntityId").notNull(),
+  linkedEntityLabel: varchar("linkedEntityLabel", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy"),
+});
+export type StrategicTaskLink = typeof strategicTaskLinks.$inferSelect;
+export type InsertStrategicTaskLink = typeof strategicTaskLinks.$inferInsert;
+
+// ============================================================================
+// STRATEGIC PROJECT MEMBERS TABLE (Membros com acesso ao projeto)
+// ============================================================================
+export const strategicProjectMembers = mysqlTable("strategic_project_members", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  userId: int("userId").notNull(),
+  role: mysqlEnum("role", ["owner", "editor", "viewer"]).notNull().default("viewer"),
+  addedAt: timestamp("addedAt").defaultNow().notNull(),
+  addedBy: int("addedBy"),
+});
+export type StrategicProjectMember = typeof strategicProjectMembers.$inferSelect;
+export type InsertStrategicProjectMember = typeof strategicProjectMembers.$inferInsert;

@@ -161,3 +161,31 @@ export type {
   SecuritySummary,
   AuditAction
 } from './IAuditRepository';
+
+export type {
+  IStrategicProjectRepository,
+  StrategicProjectFilters,
+  CreateStrategicProjectDTO,
+  UpdateStrategicProjectDTO,
+  StrategicProject,
+  StrategicPhaseDTO,
+  StrategicPhase,
+  StrategicProjectMemberDTO,
+  StrategicProjectMember,
+  DashboardStats
+} from './IStrategicProjectRepository';
+
+export type {
+  IStrategicTaskRepository,
+  StrategicTaskFilters,
+  CreateStrategicTaskDTO,
+  UpdateStrategicTaskDTO,
+  StrategicTask,
+  CreateTaskNoteDTO,
+  TaskNote,
+  CreateTaskDependencyDTO,
+  TaskDependency,
+  CreateTaskLinkDTO,
+  TaskLink,
+  TaskCountByStatus
+} from './IStrategicTaskRepository';

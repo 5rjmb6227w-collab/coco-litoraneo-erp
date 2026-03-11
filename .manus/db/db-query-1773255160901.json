@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `strategic_phases` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`projectId` int NOT NULL,\n\t`title` varchar(255) NOT NULL,\n\t`description` text,\n\t`orderIndex` int NOT NULL DEFAULT 0,\n\t`status` enum('pendente','em_andamento','concluida') NOT NULL DEFAULT 'pendente',\n\t`startDate` date,\n\t`endDate` date,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `strategic_phases_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute CREATE TABLE `strategic_phases` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`projectId` int NOT NULL,\n\t`title` varchar(255) NOT NULL,\n\t`description` text,\n\t`orderIndex` int NOT NULL DEFAULT 0,\n\t`status` enum('pendente','em_andamento','concluida') NOT NULL DEFAULT 'pendente',\n\t`startDate` date,\n\t`endDate` date,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `strategic_phases_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 177
+}

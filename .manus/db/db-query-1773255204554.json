@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `strategic_task_notes` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`taskId` int NOT NULL,\n\t`projectId` int NOT NULL,\n\t`content` text NOT NULL,\n\t`noteType` enum('observacao','decisao','problema','mudanca','valor') NOT NULL DEFAULT 'observacao',\n\t`attachmentUrl` varchar(500),\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`createdBy` int,\n\t`createdByName` varchar(255),\n\tCONSTRAINT `strategic_task_notes_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute CREATE TABLE `strategic_task_notes` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`taskId` int NOT NULL,\n\t`projectId` int NOT NULL,\n\t`content` text NOT NULL,\n\t`noteType` enum('observacao','decisao','problema','mudanca','valor') NOT NULL DEFAULT 'observacao',\n\t`attachmentUrl` varchar(500),\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`createdBy` int,\n\t`createdByName` varchar(255),\n\tCONSTRAINT `strategic_task_notes_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 136
+}

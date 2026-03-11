@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `strategic_project_members` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`projectId` int NOT NULL,\n\t`userId` int NOT NULL,\n\t`role` enum('owner','editor','viewer') NOT NULL DEFAULT 'viewer',\n\t`addedAt` timestamp NOT NULL DEFAULT (now()),\n\t`addedBy` int,\n\tCONSTRAINT `strategic_project_members_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute CREATE TABLE `strategic_project_members` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`projectId` int NOT NULL,\n\t`userId` int NOT NULL,\n\t`role` enum('owner','editor','viewer') NOT NULL DEFAULT 'viewer',\n\t`addedAt` timestamp NOT NULL DEFAULT (now()),\n\t`addedBy` int,\n\tCONSTRAINT `strategic_project_members_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 128
+}

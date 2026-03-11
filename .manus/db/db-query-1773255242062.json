@@ -1,0 +1,31 @@
+{
+  "query": "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME LIKE 'strategic%' ORDER BY TABLE_NAME;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uYwUxtivMj8soi.e2c3e95bc24b --database aAFi3UvfwvVXettMY36Wvq --execute SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME LIKE 'strategic%' ORDER BY TABLE_NAME;",
+  "rows": [
+    {
+      "TABLE_NAME": "strategic_phases"
+    },
+    {
+      "TABLE_NAME": "strategic_project_members"
+    },
+    {
+      "TABLE_NAME": "strategic_projects"
+    },
+    {
+      "TABLE_NAME": "strategic_task_dependencies"
+    },
+    {
+      "TABLE_NAME": "strategic_task_links"
+    },
+    {
+      "TABLE_NAME": "strategic_task_notes"
+    },
+    {
+      "TABLE_NAME": "strategic_tasks"
+    }
+  ],
+  "messages": [],
+  "stdout": "TABLE_NAME\nstrategic_phases\nstrategic_project_members\nstrategic_projects\nstrategic_task_dependencies\nstrategic_task_links\nstrategic_task_notes\nstrategic_tasks\n",
+  "stderr": "",
+  "execution_time_ms": 49
+}
