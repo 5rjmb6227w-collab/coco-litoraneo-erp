@@ -1151,3 +1151,4 @@
 - [ ] Adicionar campo de fotos na página de Cargas (fotos da carga)
 - [ ] Adicionar campo de comprovante na página de Pagamentos
 - [ ] Atualizar schema do banco com colunas de URL de arquivo
+
