@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Briefcase, PlayCircle, AlertTriangle, DollarSign, CheckCircle, ThumbsUp, Plus, FolderKanban } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from "chart.js";
 import { Doughnut, Bar } from "react-chartjs-2";
 
@@ -28,6 +29,8 @@ interface NewProjectForm {
 
 export default function MeusProjetosDashboard() {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
+  const isGlobalAdmin = user?.role === 'admin' || user?.role === 'ceo';
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState<NewProjectForm>({
     title: "",
@@ -161,8 +164,15 @@ export default function MeusProjetosDashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Meus Projetos</h1>
-          <p className="text-sm text-muted-foreground mt-1">Dashboard de projetos estratégicos</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-foreground">Meus Projetos</h1>
+            {isGlobalAdmin && (
+              <Badge className="bg-amber-100 text-amber-800 text-xs">Visão Global</Badge>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            {isGlobalAdmin ? 'Todos os projetos da organização' : 'Projetos onde você participa'}
+          </p>
         </div>
         <Button onClick={() => setIsDialogOpen(true)} className="bg-[#8B7355] hover:bg-[#5D4E37]">
           <Plus className="w-4 h-4 mr-2" />

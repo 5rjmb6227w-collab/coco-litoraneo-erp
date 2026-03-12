@@ -134,6 +134,13 @@
       "when": 1773255053626,
       "tag": "0018_round_red_ghost",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1773331332477,
+      "tag": "0019_lively_sir_ram",
+      "breakpoints": true
     }
   ]
 }

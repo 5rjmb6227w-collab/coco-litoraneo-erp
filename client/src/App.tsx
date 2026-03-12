@@ -89,6 +89,7 @@ import { lazy, Suspense } from "react";
 const MeusProjetosDashboard = lazy(() => import("./pages/MeusProjetosDashboard"));
 const MeusProjetosLista = lazy(() => import("./pages/MeusProjetosLista"));
 const MeusProjetosDetalhe = lazy(() => import("./pages/MeusProjetosDetalhe"));
+const MeusProjetosPortfolio = lazy(() => import("./pages/MeusProjetosPortfolio"));
 
 function Router() {
   return (
@@ -197,6 +198,7 @@ function Router() {
         <Route path="/qualidade/dashboard" component={DashboardQualidade} />
         
         {/* Meus Projetos */}
+        <Route path="/projetos/portfolio">{() => <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B7355]"></div></div>}><MeusProjetosPortfolio /></Suspense>}</Route>
         <Route path="/projetos/dashboard">{() => <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B7355]"></div></div>}><MeusProjetosDashboard /></Suspense>}</Route>
         <Route path="/projetos/:id">{(params: any) => <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B7355]"></div></div>}><MeusProjetosDetalhe /></Suspense>}</Route>
         <Route path="/projetos">{() => <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B7355]"></div></div>}><MeusProjetosLista /></Suspense>}</Route>

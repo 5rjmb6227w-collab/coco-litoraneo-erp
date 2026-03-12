@@ -3,6 +3,11 @@
  * Segue o princípio SOLID de Single Responsibility - apenas lógica de negócio.
  * 
  * Este service orquestra o StrategicProjectRepository e aplica regras de negócio.
+ * 
+ * CONTROLE DE ACESSO:
+ * - admin / ceo → veem TODOS os projetos
+ * - gerente → vê projetos onde é membro OU owner
+ * - demais roles → veem APENAS projetos onde são membros
  */
 
 import type {
@@ -19,6 +24,9 @@ import { getStrategicProjectRepository } from '../repositories';
 import { NotFoundError, ValidationError, ForbiddenError } from '../errors';
 import { emitEvent, EVENT_TYPES } from '../ai/eventEmitter';
 
+// Roles que têm visão global de todos os projetos
+const GLOBAL_VIEW_ROLES = ['admin', 'ceo'];
+
 export class StrategicProjectService implements IStrategicProjectService {
   private repository: IStrategicProjectRepository;
 
@@ -26,21 +34,47 @@ export class StrategicProjectService implements IStrategicProjectService {
     this.repository = repository || getStrategicProjectRepository();
   }
 
-  async list(
+  /**
+   * Verifica se o usuário tem visão global (admin/ceo)
+   */
+  private hasGlobalView(userRole: string): boolean {
+    return GLOBAL_VIEW_ROLES.includes(userRole);
+  }
+
+  /**
+   * Filtra projetos com base no papel do usuário.
+   * admin/ceo → todos os projetos
+   * demais → apenas projetos onde é owner ou membro
+   */
+  private async filterByAccess(
+    projects: StrategicProject[],
     userId: number,
-    filters: StrategicProjectFilters,
-    pagination: PaginationOptions
-  ): Promise<PaginatedResult<StrategicProject>> {
-    const result = await this.repository.findAll(filters, pagination);
-    
-    // Filtrar apenas projetos acessíveis ao usuário (owner ou membro)
+    userRole: string
+  ): Promise<StrategicProject[]> {
+    // admin/ceo veem tudo
+    if (this.hasGlobalView(userRole)) {
+      return projects;
+    }
+
+    // Demais: filtrar por membership
     const memberChecks = await Promise.all(
-      result.data.map(async (project) => {
+      projects.map(async (project) => {
         if (project.ownerId === userId) return true;
         return this.repository.isMember(project.id, userId);
       })
     );
-    const accessibleProjects = result.data.filter((_, i) => memberChecks[i]);
+    return projects.filter((_, i) => memberChecks[i]);
+  }
+
+  async list(
+    userId: number,
+    filters: StrategicProjectFilters,
+    pagination: PaginationOptions,
+    userRole: string = 'user'
+  ): Promise<PaginatedResult<StrategicProject>> {
+    const result = await this.repository.findAll(filters, pagination);
+    
+    const accessibleProjects = await this.filterByAccess(result.data, userId, userRole);
 
     return {
       ...result,
@@ -49,14 +83,16 @@ export class StrategicProjectService implements IStrategicProjectService {
     };
   }
 
-  async getById(id: number, userId: number): Promise<StrategicProject> {
+  async getById(id: number, userId: number, userRole: string = 'user'): Promise<StrategicProject> {
     const project = await this.repository.findById(id);
     if (!project) {
       throw new NotFoundError('Projeto Estratégico', id);
     }
 
-    // Verificar acesso
-    await this.checkAccess(id, userId, 'viewer');
+    // admin/ceo podem ver qualquer projeto
+    if (!this.hasGlobalView(userRole)) {
+      await this.checkAccess(id, userId, 'viewer');
+    }
 
     return project;
   }
@@ -97,14 +133,16 @@ export class StrategicProjectService implements IStrategicProjectService {
     return project;
   }
 
-  async update(id: number, data: UpdateStrategicProjectDTO, userId: number): Promise<StrategicProject> {
+  async update(id: number, data: UpdateStrategicProjectDTO, userId: number, userRole: string = 'user'): Promise<StrategicProject> {
     const existing = await this.repository.findById(id);
     if (!existing) {
       throw new NotFoundError('Projeto Estratégico', id);
     }
 
-    // Verificar acesso (apenas owner ou editor podem editar)
-    await this.checkAccess(id, userId, 'editor');
+    // admin/ceo podem editar qualquer projeto
+    if (!this.hasGlobalView(userRole)) {
+      await this.checkAccess(id, userId, 'editor');
+    }
 
     // Atualizar projeto
     const updated = await this.repository.update(id, { ...data, updatedBy: userId });
@@ -149,14 +187,14 @@ export class StrategicProjectService implements IStrategicProjectService {
     return updated;
   }
 
-  async delete(id: number, userId: number): Promise<void> {
+  async delete(id: number, userId: number, userRole: string = 'user'): Promise<void> {
     const project = await this.repository.findById(id);
     if (!project) {
       throw new NotFoundError('Projeto Estratégico', id);
     }
 
-    // Apenas owner pode excluir
-    if (project.ownerId !== userId) {
+    // admin/ceo podem excluir qualquer projeto; demais apenas o owner
+    if (!this.hasGlobalView(userRole) && project.ownerId !== userId) {
       throw new ForbiddenError('Apenas o owner pode excluir o projeto');
     }
 
@@ -164,17 +202,10 @@ export class StrategicProjectService implements IStrategicProjectService {
     await this.repository.update(id, { status: 'cancelado' });
   }
 
-  async getDashboard(userId: number): Promise<StrategicProjectDashboard> {
+  async getDashboard(userId: number, userRole: string = 'user'): Promise<StrategicProjectDashboard> {
     const projects = await this.repository.findAll({}, { page: 1, limit: 1000 });
     
-    // Filtrar apenas projetos acessíveis ao usuário
-    const memberChecks = await Promise.all(
-      projects.data.map(async (project) => {
-        if (project.ownerId === userId) return true;
-        return this.repository.isMember(project.id, userId);
-      })
-    );
-    const accessibleProjects = projects.data.filter((_, i) => memberChecks[i]);
+    const accessibleProjects = await this.filterByAccess(projects.data, userId, userRole);
 
     const inProgress = accessibleProjects.filter(p => p.status === 'em_andamento').length;
     const completed = accessibleProjects.filter(p => p.status === 'concluido').length;

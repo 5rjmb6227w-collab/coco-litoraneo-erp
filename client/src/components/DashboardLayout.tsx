@@ -73,6 +73,7 @@ import {
   RefreshCw,
   Briefcase,
   FolderKanban,
+  PieChart,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -200,6 +201,7 @@ const menuGroups: Array<{
     items: [
       { icon: LayoutDashboard, label: "Dashboard", path: "/projetos/dashboard" },
       { icon: FolderKanban, label: "Todos os Projetos", path: "/projetos" },
+      { icon: PieChart, label: "Portfólio", path: "/projetos/portfolio" },
     ],
   },
   {

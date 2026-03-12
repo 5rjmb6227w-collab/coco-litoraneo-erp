@@ -40,14 +40,14 @@ export const strategicRouter = router({
         return service.list(ctx.user.id, filters, {
           page: input?.page || 1,
           limit: input?.limit || 50
-        });
+        }, ctx.user.role);
       }),
 
     getById: protectedProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .query(async ({ input, ctx }) => {
         const service = new StrategicProjectService();
-        return service.getById(input.id, ctx.user.id);
+        return service.getById(input.id, ctx.user.id, ctx.user.role);
       }),
 
     create: protectedProcedure
@@ -93,21 +93,21 @@ export const strategicRouter = router({
       .mutation(async ({ input, ctx }) => {
         const service = new StrategicProjectService();
         const { id, ...data } = input;
-        return service.update(id, data, ctx.user.id);
+        return service.update(id, data, ctx.user.id, ctx.user.role);
       }),
 
     delete: protectedProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
         const service = new StrategicProjectService();
-        await service.delete(input.id, ctx.user.id);
+        await service.delete(input.id, ctx.user.id, ctx.user.role);
         return { success: true };
       }),
 
     dashboard: protectedProcedure
       .query(async ({ ctx }) => {
         const service = new StrategicProjectService();
-        return service.getDashboard(ctx.user.id);
+        return service.getDashboard(ctx.user.id, ctx.user.role);
       })
   }),
 
@@ -328,6 +328,59 @@ export const strategicRouter = router({
           createdBy: ctx.user.id,
           createdByName: ctx.user.name || 'Usuário',
         });
+      }),
+
+    // --- Comentários ---
+    getComments: protectedProcedure
+      .input(z.object({ taskId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        const { getDb } = await import('../db');
+        const { strategicTaskComments } = await import('../../drizzle/schema');
+        const { eq, desc } = await import('drizzle-orm');
+        const db = await getDb();
+        return db!.select().from(strategicTaskComments)
+          .where(eq(strategicTaskComments.taskId, input.taskId))
+          .orderBy(desc(strategicTaskComments.createdAt));
+      }),
+
+    createComment: protectedProcedure
+      .input(z.object({
+        taskId: z.number().int().positive(),
+        projectId: z.number().int().positive(),
+        content: z.string().min(1),
+        mentions: z.array(z.object({ userId: z.number(), name: z.string() })).optional(),
+        parentCommentId: z.number().int().positive().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { getDb } = await import('../db');
+        const { strategicTaskComments } = await import('../../drizzle/schema');
+        const db = await getDb();
+        const [result] = await db!.insert(strategicTaskComments).values({
+          taskId: input.taskId,
+          projectId: input.projectId,
+          authorId: ctx.user.id,
+          authorName: ctx.user.name || 'Usuário',
+          content: input.content,
+          mentions: input.mentions || [],
+          parentCommentId: input.parentCommentId,
+        });
+        return { id: result.insertId };
+      }),
+
+    deleteComment: protectedProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ input, ctx }) => {
+        const { getDb } = await import('../db');
+        const { strategicTaskComments } = await import('../../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const db = await getDb();
+        await db!.delete(strategicTaskComments).where(
+          and(
+            eq(strategicTaskComments.id, input.id),
+            eq(strategicTaskComments.authorId, ctx.user.id)
+          )
+        );
+        return { success: true };
       }),
 
     // --- Subtarefas ---

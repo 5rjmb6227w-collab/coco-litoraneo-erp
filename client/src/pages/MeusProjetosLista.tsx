@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Download, Search, X, ChevronLeft, ChevronRight, ArrowUpDown, FolderKanban } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 const STATUS_OPTIONS = [
   { value: "all", label: "Todos os Status" },
@@ -39,6 +40,8 @@ const PRIORITY_OPTIONS = [
 
 export default function MeusProjetosLista() {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
+  const isGlobalAdmin = user?.role === 'admin' || user?.role === 'ceo';
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
@@ -127,8 +130,16 @@ export default function MeusProjetosLista() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Todos os Projetos</h1>
-          <p className="text-sm text-muted-foreground mt-1">{sortedProjects.length} projeto(s) encontrado(s)</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-foreground">Todos os Projetos</h1>
+            {isGlobalAdmin && (
+              <Badge className="bg-amber-100 text-amber-800 text-xs">Visão Global</Badge>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            {sortedProjects.length} projeto(s) encontrado(s)
+            {isGlobalAdmin ? ' — Visão completa da organização' : ''}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExportCSV}><Download className="w-4 h-4 mr-2" />Export CSV</Button>

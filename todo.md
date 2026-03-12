@@ -1241,3 +1241,19 @@
 - [x] Módulo Meus Projetos — Export PDF
 - [x] Módulo Meus Projetos — Testes unitários (45 testes)
 - [x] Módulo Meus Projetos — Testes de integração (14 testes)
+
+
+## Novos Recursos — Comentários, Portfólio e Controle de Acesso ✅
+- [x] Item 1: Schema strategic_task_comments com campos id, taskId, userId, userName, content, mentions, createdAt
+- [x] Item 1: CRUD de comentários no strategicRouter (comments.list, comments.create, comments.delete)
+- [x] Item 1: Seção de comentários no TaskSidebar com @menções
+- [x] Item 2: Página MeusProjetosPortfolio.tsx com visão consolidada (6 KPIs, distribuição, orçamento)
+- [x] Item 2: Gráfico de dispersão risco vs. progresso (scatter plot interativo)
+- [x] Item 2: Comparativo de orçamento planejado vs. real (barras)
+- [x] Item 2: Tabela comparativa de todos os projetos
+- [x] Item 2: Rota /projetos/portfolio no App.tsx e link no DashboardLayout
+- [x] Item 3: Filtro de acesso no service (admin/ceo vê tudo, demais veem só seus projetos)
+- [x] Item 3: Badge "Visão Global" para admin/ceo no frontend
+- [x] Item 3: Botões Editar/Excluir condicionais (só owner ou admin)
+- [x] Item 3: Testes unitários para controle de acesso (5 novos testes)
+- [x] 837 testes passando em 35 arquivos

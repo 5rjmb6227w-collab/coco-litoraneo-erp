@@ -2871,3 +2871,22 @@ export const strategicProjectMembers = mysqlTable("strategic_project_members", {
 });
 export type StrategicProjectMember = typeof strategicProjectMembers.$inferSelect;
 export type InsertStrategicProjectMember = typeof strategicProjectMembers.$inferInsert;
+
+
+// ============================================================================
+// STRATEGIC TASK COMMENTS TABLE (Comentários com menções nas tarefas)
+// ============================================================================
+export const strategicTaskComments = mysqlTable("strategic_task_comments", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId").notNull(),
+  projectId: int("projectId").notNull(),
+  authorId: int("authorId").notNull(),
+  authorName: varchar("authorName", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  mentions: json("mentions"), // Array de { userId: number, name: string }
+  parentCommentId: int("parentCommentId"), // Para respostas a comentários
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+});
+export type StrategicTaskComment = typeof strategicTaskComments.$inferSelect;
+export type InsertStrategicTaskComment = typeof strategicTaskComments.$inferInsert;

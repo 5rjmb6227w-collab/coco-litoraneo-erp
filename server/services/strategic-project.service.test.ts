@@ -468,6 +468,144 @@ describe('StrategicProjectService', () => {
       expect(result.data[0].ownerId).toBe(userId);
     });
   });
+
+  // ==================== TESTES DE CONTROLE DE ACESSO POR ROLE ====================
+
+  describe('controle de acesso por role (CEO/admin vs. membros)', () => {
+    const allProjects = [
+      makeProject({ id: 1, ownerId: 1, code: 'PROJ-001' }),
+      makeProject({ id: 2, ownerId: 2, code: 'PROJ-002' }),
+      makeProject({ id: 3, ownerId: 3, code: 'PROJ-003' }),
+    ];
+
+    it('admin deve ver TODOS os projetos na listagem', async () => {
+      vi.mocked(mockRepository.findAll).mockResolvedValue({
+        data: allProjects,
+        total: 3,
+        page: 1,
+        limit: 10,
+      });
+
+      const result = await service.list(99, {}, { page: 1, limit: 10 }, 'admin');
+
+      expect(result.data).toHaveLength(3);
+      expect(result.total).toBe(3);
+    });
+
+    it('ceo deve ver TODOS os projetos na listagem', async () => {
+      vi.mocked(mockRepository.findAll).mockResolvedValue({
+        data: allProjects,
+        total: 3,
+        page: 1,
+        limit: 10,
+      });
+
+      const result = await service.list(99, {}, { page: 1, limit: 10 }, 'ceo');
+
+      expect(result.data).toHaveLength(3);
+      expect(result.total).toBe(3);
+    });
+
+    it('user comum deve ver APENAS projetos onde é owner ou membro', async () => {
+      vi.mocked(mockRepository.findAll).mockResolvedValue({
+        data: allProjects,
+        total: 3,
+        page: 1,
+        limit: 10,
+      });
+      vi.mocked(mockRepository.isMember).mockResolvedValue(false);
+
+      const result = await service.list(2, {}, { page: 1, limit: 10 }, 'user');
+
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].ownerId).toBe(2);
+    });
+
+    it('admin deve ver qualquer projeto por ID sem ser membro', async () => {
+      const project = makeProject({ id: 1, ownerId: 1 });
+      vi.mocked(mockRepository.findById).mockResolvedValue(project);
+
+      const result = await service.getById(1, 99, 'admin');
+
+      expect(result).toEqual(project);
+      // Não deve chamar getMemberRole para admin
+      expect(mockRepository.getMemberRole).not.toHaveBeenCalled();
+    });
+
+    it('ceo deve ver qualquer projeto por ID sem ser membro', async () => {
+      const project = makeProject({ id: 1, ownerId: 1 });
+      vi.mocked(mockRepository.findById).mockResolvedValue(project);
+
+      const result = await service.getById(1, 99, 'ceo');
+
+      expect(result).toEqual(project);
+      expect(mockRepository.getMemberRole).not.toHaveBeenCalled();
+    });
+
+    it('user comum NÃO pode ver projeto onde não é membro', async () => {
+      const project = makeProject({ id: 1, ownerId: 1 });
+      vi.mocked(mockRepository.findById).mockResolvedValue(project);
+      vi.mocked(mockRepository.getMemberRole).mockResolvedValue(null);
+
+      await expect(service.getById(1, 99, 'user')).rejects.toThrow(ForbiddenError);
+    });
+
+    it('admin deve poder editar qualquer projeto', async () => {
+      const existing = makeProject({ ownerId: 1 });
+      const updated = makeProject({ ownerId: 1, title: 'Editado pelo Admin' });
+      vi.mocked(mockRepository.findById).mockResolvedValue(existing);
+      vi.mocked(mockRepository.update).mockResolvedValue(updated);
+
+      const result = await service.update(1, { title: 'Editado pelo Admin' }, 99, 'admin');
+
+      expect(result.title).toBe('Editado pelo Admin');
+      expect(mockRepository.getMemberRole).not.toHaveBeenCalled();
+    });
+
+    it('admin deve poder excluir qualquer projeto', async () => {
+      const project = makeProject({ ownerId: 1 });
+      vi.mocked(mockRepository.findById).mockResolvedValue(project);
+      vi.mocked(mockRepository.update).mockResolvedValue({ ...project, status: 'cancelado' as const });
+
+      await service.delete(1, 99, 'admin');
+
+      expect(mockRepository.update).toHaveBeenCalledWith(1, { status: 'cancelado' });
+    });
+
+    it('user comum NÃO pode excluir projeto de outro owner', async () => {
+      const project = makeProject({ ownerId: 1 });
+      vi.mocked(mockRepository.findById).mockResolvedValue(project);
+
+      await expect(service.delete(1, 2, 'user')).rejects.toThrow(ForbiddenError);
+    });
+
+    it('admin deve ver dashboard com TODOS os projetos', async () => {
+      vi.mocked(mockRepository.findAll).mockResolvedValue({
+        data: allProjects,
+        total: 3,
+        page: 1,
+        limit: 1000,
+      });
+
+      const result = await service.getDashboard(99, 'admin');
+
+      expect(result.totalProjects).toBe(3);
+    });
+
+    it('user comum deve ver dashboard apenas com seus projetos', async () => {
+      vi.mocked(mockRepository.findAll).mockResolvedValue({
+        data: allProjects,
+        total: 3,
+        page: 1,
+        limit: 1000,
+      });
+      vi.mocked(mockRepository.isMember).mockResolvedValue(false);
+
+      const result = await service.getDashboard(2, 'user');
+
+      expect(result.totalProjects).toBe(1);
+    });
+  });
 });
 
 export {};

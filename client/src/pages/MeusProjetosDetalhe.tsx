@@ -20,6 +20,7 @@ import TaskSidebar from "@/components/TaskSidebar";
 import EditProjectModal from "@/components/EditProjectModal";
 import { toast } from "sonner";
 import { generatePDFReport, downloadPDF } from "@/lib/pdfExport";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Download, GripVertical, BarChart3, FolderOpen, ClipboardList, BookOpen, Link2 } from "lucide-react";
 
 // Helpers
@@ -63,6 +64,8 @@ export default function MeusProjetosDetalhe() {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const projectId = parseInt(params.id || "0");
+  const { user } = useAuth();
+  const isGlobalAdmin = user?.role === 'admin' || user?.role === 'ceo';
 
   const [activeTab, setActiveTab] = useState("visao-geral");
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
@@ -88,11 +91,49 @@ export default function MeusProjetosDetalhe() {
   const updateTaskMutation = trpc.strategic.tasks.update.useMutation();
   const utils = trpc.useUtils();
 
+  // 7a) Drag-and-drop state
+  const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
+
   const project = projectQuery.data;
   const phases = phasesQuery.data || [];
   const tasks = (tasksQuery.data as any)?.data || tasksQuery.data || [];
   const members = membersQuery.data || [];
+  const isProjectOwner = user?.id === project?.ownerId;
+  const canEdit = isGlobalAdmin || isProjectOwner;
+  const tasksList = Array.isArray(tasks) ? tasks : [];
 
+  // 7c) Atalhos de teclado
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+        e.preventDefault();
+        if (phases.length > 0) setNewTaskForm(prev => ({ ...prev, phaseId: phases[0].id }));
+        setIsNewTaskOpen(true);
+      }
+      if (e.key === "Escape") {
+        if (selectedTaskId) setSelectedTaskId(null);
+        else if (isNewTaskOpen) setIsNewTaskOpen(false);
+        else if (isNewPhaseOpen) setIsNewPhaseOpen(false);
+        else if (isEditProjectOpen) setIsEditProjectOpen(false);
+        else if (isDeleteConfirmOpen) setIsDeleteConfirmOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [phases, selectedTaskId, isNewTaskOpen, isNewPhaseOpen, isEditProjectOpen, isDeleteConfirmOpen]);
+
+  // 7b) Gantt timeline helper
+  const ganttData = useMemo(() => {
+    if (!phases.length) return null;
+    const allDates = [...phases.map((p: any) => p.startDate), ...phases.map((p: any) => p.endDate)].filter(Boolean).map((d: any) => new Date(d).getTime());
+    if (!allDates.length) return null;
+    const minDate = Math.min(...allDates);
+    const maxDate = Math.max(...allDates);
+    const range = maxDate - minDate || 1;
+    return { minDate, maxDate, range };
+  }, [phases]);
+
+  // Early returns AFTER all hooks
   if (!project && projectQuery.isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -190,33 +231,6 @@ export default function MeusProjetosDetalhe() {
     }
   };
 
-  const tasksList = Array.isArray(tasks) ? tasks : [];
-
-  // 7c) Atalhos de teclado
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+N: nova tarefa (se em detalhe)
-      if ((e.ctrlKey || e.metaKey) && e.key === "n") {
-        e.preventDefault();
-        if (phases.length > 0) setNewTaskForm(prev => ({ ...prev, phaseId: phases[0].id }));
-        setIsNewTaskOpen(true);
-      }
-      // Escape: fechar modais/sidebar
-      if (e.key === "Escape") {
-        if (selectedTaskId) setSelectedTaskId(null);
-        else if (isNewTaskOpen) setIsNewTaskOpen(false);
-        else if (isNewPhaseOpen) setIsNewPhaseOpen(false);
-        else if (isEditProjectOpen) setIsEditProjectOpen(false);
-        else if (isDeleteConfirmOpen) setIsDeleteConfirmOpen(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [phases, selectedTaskId, isNewTaskOpen, isNewPhaseOpen, isEditProjectOpen, isDeleteConfirmOpen]);
-
-  // 7a) Drag-and-drop state
-  const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
-
   const handleTaskDragStart = (e: React.DragEvent, taskId: number) => {
     setDraggedTaskId(taskId);
     e.dataTransfer.effectAllowed = "move";
@@ -240,17 +254,6 @@ export default function MeusProjetosDetalhe() {
     }
     setDraggedTaskId(null);
   };
-
-  // 7b) Gantt timeline helper
-  const ganttData = useMemo(() => {
-    if (!phases.length) return null;
-    const allDates = [...phases.map((p: any) => p.startDate), ...phases.map((p: any) => p.endDate)].filter(Boolean).map((d: any) => new Date(d).getTime());
-    if (!allDates.length) return null;
-    const minDate = Math.min(...allDates);
-    const maxDate = Math.max(...allDates);
-    const range = maxDate - minDate || 1;
-    return { minDate, maxDate, range };
-  }, [phases]);
 
   return (
     <div className="space-y-6">
@@ -330,12 +333,16 @@ export default function MeusProjetosDetalhe() {
           }}>
             <Download className="w-4 h-4 mr-1" />PDF
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setIsEditProjectOpen(true)}>
-            <Edit className="w-4 h-4 mr-1" />Editar
-          </Button>
-          <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setIsDeleteConfirmOpen(true)}>
-            <Trash2 className="w-4 h-4 mr-1" />Excluir
-          </Button>
+          {canEdit && (
+            <Button variant="outline" size="sm" onClick={() => setIsEditProjectOpen(true)}>
+              <Edit className="w-4 h-4 mr-1" />Editar
+            </Button>
+          )}
+          {canEdit && (
+            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setIsDeleteConfirmOpen(true)}>
+              <Trash2 className="w-4 h-4 mr-1" />Excluir
+            </Button>
+          )}
         </div>
       </div>
 

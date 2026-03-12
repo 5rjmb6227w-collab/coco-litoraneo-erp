@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,8 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Trash2, Loader2, MessageSquare, BookOpen, Send, AtSign } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TaskSidebarProps {
@@ -27,9 +28,18 @@ interface TaskSidebarProps {
   onClose: () => void;
 }
 
+interface MentionItem {
+  userId: number;
+  name: string;
+}
+
 export default function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarProps) {
   const [newNote, setNewNote] = useState('');
   const [noteType, setNoteType] = useState<string>('observacao');
+  const [newComment, setNewComment] = useState('');
+  const [showMentionList, setShowMentionList] = useState(false);
+  const [mentionFilter, setMentionFilter] = useState('');
+  const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: task, isLoading } = trpc.strategic.tasks.getById.useQuery(
     { id: taskId },
@@ -46,17 +56,77 @@ export default function TaskSidebar({ taskId, projectId, isOpen, onClose }: Task
     { enabled: isOpen && taskId > 0 }
   );
 
+  const { data: comments } = trpc.strategic.tasks.getComments.useQuery(
+    { taskId },
+    { enabled: isOpen && taskId > 0 }
+  );
+
+  const { data: members } = trpc.strategic.members.list.useQuery(
+    { projectId },
+    { enabled: isOpen && projectId > 0 }
+  );
+
   const updateTask = trpc.strategic.tasks.update.useMutation();
   const createNote = trpc.strategic.tasks.createNote.useMutation();
+  const createComment = trpc.strategic.tasks.createComment.useMutation();
+  const deleteComment = trpc.strategic.tasks.deleteComment.useMutation();
   const deleteTask = trpc.strategic.tasks.delete.useMutation();
   const utils = trpc.useUtils();
 
+  const filteredMembers = useMemo(() => {
+    if (!members || !mentionFilter) return members || [];
+    return (members as any[]).filter((m: any) =>
+      (m.userName || m.name || '').toLowerCase().includes(mentionFilter.toLowerCase())
+    );
+  }, [members, mentionFilter]);
+
+  const handleCommentChange = (value: string) => {
+    setNewComment(value);
+    const lastAtIndex = value.lastIndexOf('@');
+    if (lastAtIndex >= 0) {
+      const afterAt = value.substring(lastAtIndex + 1);
+      const hasSpace = afterAt.includes(' ');
+      if (!hasSpace && afterAt.length <= 20) {
+        setShowMentionList(true);
+        setMentionFilter(afterAt);
+      } else {
+        setShowMentionList(false);
+      }
+    } else {
+      setShowMentionList(false);
+    }
+  };
+
+  const handleSelectMention = (member: any) => {
+    const memberName = member.userName || member.name || 'Usuário';
+    const lastAtIndex = newComment.lastIndexOf('@');
+    if (lastAtIndex >= 0) {
+      const before = newComment.substring(0, lastAtIndex);
+      setNewComment(before + '@' + memberName + ' ');
+    }
+    setShowMentionList(false);
+    commentInputRef.current?.focus();
+  };
+
+  const extractMentions = (text: string): MentionItem[] => {
+    const mentionRegex = /@(\S+)/g;
+    const mentions: MentionItem[] = [];
+    let match;
+    while ((match = mentionRegex.exec(text)) !== null) {
+      const name = match[1];
+      const member = (members as any[] || []).find(
+        (m: any) => (m.userName || m.name || '') === name
+      );
+      if (member) {
+        mentions.push({ userId: member.userId || member.id, name });
+      }
+    }
+    return mentions;
+  };
+
   const handleUpdateField = async (field: string, value: any) => {
     try {
-      await updateTask.mutateAsync({
-        id: taskId,
-        [field]: value,
-      });
+      await updateTask.mutateAsync({ id: taskId, [field]: value });
       utils.strategic.tasks.getById.invalidate({ id: taskId });
       utils.strategic.tasks.list.invalidate({ projectId });
     } catch (error) {
@@ -83,6 +153,36 @@ export default function TaskSidebar({ taskId, projectId, isOpen, onClose }: Task
     }
   };
 
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+    try {
+      const mentions = extractMentions(newComment);
+      await createComment.mutateAsync({
+        taskId,
+        projectId,
+        content: newComment,
+        mentions: mentions.length > 0 ? mentions : undefined,
+      });
+      utils.strategic.tasks.getComments.invalidate({ taskId });
+      setNewComment('');
+      toast.success('Comentário adicionado');
+    } catch (error) {
+      console.error('Erro ao criar comentário:', error);
+      toast.error('Erro ao criar comentário');
+    }
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    try {
+      await deleteComment.mutateAsync({ id: commentId });
+      utils.strategic.tasks.getComments.invalidate({ taskId });
+      toast.success('Comentário removido');
+    } catch (error) {
+      console.error('Erro ao excluir comentário:', error);
+      toast.error('Erro ao excluir comentário');
+    }
+  };
+
   const handleDeleteTask = async () => {
     if (!window.confirm('Tem certeza que deseja excluir esta tarefa?')) return;
     try {
@@ -96,9 +196,23 @@ export default function TaskSidebar({ taskId, projectId, isOpen, onClose }: Task
     }
   };
 
+  const renderCommentContent = (content: string) => {
+    const parts = content.split(/(@\S+)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('@')) {
+        return (
+          <span key={i} className="text-[#8B7355] font-semibold bg-[#8B7355]/10 rounded px-0.5">
+            {part}
+          </span>
+        );
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <SheetContent side="right" className="w-full sm:w-[500px] overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{task?.title || 'Carregando...'}</SheetTitle>
         </SheetHeader>
@@ -241,7 +355,7 @@ export default function TaskSidebar({ taskId, projectId, isOpen, onClose }: Task
                 defaultValue={task.description || ''}
                 onBlur={(e) => handleUpdateField('description', e.target.value || null)}
                 placeholder="Descrição da tarefa"
-                rows={4}
+                rows={3}
               />
             </div>
 
@@ -270,12 +384,150 @@ export default function TaskSidebar({ taskId, projectId, isOpen, onClose }: Task
               </CardContent>
             </Card>
 
-            {/* Notas / Diário de Bordo */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Diário de Bordo</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            {/* Tabs: Comentários e Diário de Bordo */}
+            <Tabs defaultValue="comments" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="comments" className="gap-1.5">
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  Comentários
+                  {comments && (comments as any[]).length > 0 && (
+                    <span className="ml-1 text-xs bg-[#8B7355]/20 text-[#8B7355] rounded-full px-1.5">
+                      {(comments as any[]).length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="notes" className="gap-1.5">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Diário de Bordo
+                  {notes && (notes as any[]).length > 0 && (
+                    <span className="ml-1 text-xs bg-[#8B7355]/20 text-[#8B7355] rounded-full px-1.5">
+                      {(notes as any[]).length}
+                    </span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Comentários Tab */}
+              <TabsContent value="comments" className="mt-4 space-y-4">
+                {/* Input de novo comentário */}
+                <div className="relative">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1 relative">
+                      <Textarea
+                        ref={commentInputRef}
+                        value={newComment}
+                        onChange={(e) => handleCommentChange(e.target.value)}
+                        placeholder="Escreva um comentário... Use @ para mencionar"
+                        rows={2}
+                        className="pr-10 resize-none"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleAddComment();
+                          }
+                        }}
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="absolute right-1 bottom-1 h-7 w-7 text-[#8B7355] hover:text-[#5D4E37]"
+                        onClick={() => {
+                          setNewComment(prev => prev + '@');
+                          setShowMentionList(true);
+                          setMentionFilter('');
+                          commentInputRef.current?.focus();
+                        }}
+                        title="Mencionar membro"
+                      >
+                        <AtSign className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Button
+                      size="icon"
+                      className="bg-[#8B7355] hover:bg-[#5D4E37] shrink-0 mt-0"
+                      onClick={handleAddComment}
+                      disabled={!newComment.trim() || createComment.isPending}
+                    >
+                      {createComment.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Dropdown de menções */}
+                  {showMentionList && filteredMembers.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
+                      {filteredMembers.map((member: any) => (
+                        <button
+                          key={member.id || member.userId}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center gap-2"
+                          onClick={() => handleSelectMention(member)}
+                        >
+                          <div className="w-6 h-6 rounded-full bg-[#8B7355]/20 flex items-center justify-center text-xs font-medium text-[#8B7355]">
+                            {(member.userName || member.name || '?')[0]?.toUpperCase()}
+                          </div>
+                          <span>{member.userName || member.name || 'Usuário'}</span>
+                          <span className="text-xs text-muted-foreground ml-auto capitalize">{member.role}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Lista de comentários */}
+                {(!comments || (comments as any[]).length === 0) ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Nenhum comentário ainda</p>
+                    <p className="text-xs mt-1">Seja o primeiro a comentar nesta tarefa</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {(comments as any[]).map((comment: any) => (
+                      <div key={comment.id} className="group p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-[#8B7355]/20 flex items-center justify-center text-xs font-medium text-[#8B7355]">
+                              {(comment.authorName || '?')[0]?.toUpperCase()}
+                            </div>
+                            <span className="text-sm font-medium">{comment.authorName}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {comment.createdAt ? new Date(comment.createdAt).toLocaleString('pt-BR', {
+                                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+                              }) : ''}
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDeleteComment(comment.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <p className="text-sm leading-relaxed pl-8">
+                          {renderCommentContent(comment.content)}
+                        </p>
+                        {comment.mentions && (comment.mentions as any[]).length > 0 && (
+                          <div className="flex gap-1 mt-2 pl-8">
+                            {(comment.mentions as any[]).map((m: any, i: number) => (
+                              <span key={i} className="text-xs bg-[#8B7355]/10 text-[#8B7355] rounded px-1.5 py-0.5">
+                                @{m.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Diário de Bordo Tab */}
+              <TabsContent value="notes" className="mt-4 space-y-4">
                 <div className="space-y-2">
                   <Select value={noteType} onValueChange={setNoteType}>
                     <SelectTrigger>
@@ -304,21 +556,29 @@ export default function TaskSidebar({ taskId, projectId, isOpen, onClose }: Task
                   </Button>
                 </div>
 
-                {(notes || []).map((note: any) => (
-                  <div key={note.id} className="p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-medium capitalize px-2 py-0.5 rounded bg-[#8B7355]/10 text-[#8B7355]">
-                        {note.noteType || 'observação'}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {note.createdByName || 'Usuário'} • {note.createdAt ? new Date(note.createdAt).toLocaleString('pt-BR') : ''}
-                      </span>
-                    </div>
-                    <p className="text-sm mt-1">{note.content}</p>
+                {(!notes || (notes as any[]).length === 0) ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Nenhuma nota registrada</p>
+                    <p className="text-xs mt-1">Registre observações, decisões e mudanças</p>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
+                ) : (
+                  (notes as any[]).map((note: any) => (
+                    <div key={note.id} className="p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium capitalize px-2 py-0.5 rounded bg-[#8B7355]/10 text-[#8B7355]">
+                          {note.noteType || 'observação'}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {note.createdByName || 'Usuário'} • {note.createdAt ? new Date(note.createdAt).toLocaleString('pt-BR') : ''}
+                        </span>
+                      </div>
+                      <p className="text-sm mt-1">{note.content}</p>
+                    </div>
+                  ))
+                )}
+              </TabsContent>
+            </Tabs>
 
             {/* Botões de Ação */}
             <div className="flex gap-2 pb-4">
