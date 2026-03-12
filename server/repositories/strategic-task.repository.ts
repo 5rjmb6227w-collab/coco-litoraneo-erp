@@ -135,8 +135,8 @@ export class StrategicTaskRepository implements IStrategicTaskRepository {
         conditions.push(eq(strategicTasks.parentTaskId, parentTaskId));
       }
     }
-    if (dueDateStart) conditions.push(gte(strategicTasks.dueDate, dueDateStart));
-    if (dueDateEnd) conditions.push(lte(strategicTasks.dueDate, dueDateEnd));
+    if (dueDateStart) conditions.push(gte(strategicTasks.dueDate, new Date(dueDateStart)));
+    if (dueDateEnd) conditions.push(lte(strategicTasks.dueDate, new Date(dueDateEnd)));
     if (search) {
       conditions.push(
         or(
@@ -211,7 +211,7 @@ export class StrategicTaskRepository implements IStrategicTaskRepository {
       .from(strategicTasks)
       .where(
         and(
-          eq(strategicTasks.dueDate, today),
+          sql`DATE(${strategicTasks.dueDate}) = ${today}`,
           eq(strategicTasks.assigneeId, userId),
           sql`${strategicTasks.status} NOT IN ('concluida', 'cancelada')`
         )
@@ -267,8 +267,8 @@ export class StrategicTaskRepository implements IStrategicTaskRepository {
       status: data.status ?? 'a_fazer',
       assigneeId: data.assigneeId ?? null,
       assigneeName: data.assigneeName ?? null,
-      startDate: data.startDate ?? null,
-      dueDate: data.dueDate ?? null,
+      startDate: data.startDate ? new Date(data.startDate) : null,
+      dueDate: data.dueDate ? new Date(data.dueDate) : null,
       estimatedHours: data.estimatedHours ?? null,
       estimatedCost: data.estimatedCost ?? null,
       orderIndex: data.orderIndex ?? 0,

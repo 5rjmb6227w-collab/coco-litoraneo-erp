@@ -1,5 +1,3 @@
-'use client';
-
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -17,37 +15,39 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetClose,
 } from '@/components/ui/sheet';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface TaskSidebarProps {
-  taskId: string;
-  projectId: string;
+  taskId: number;
+  projectId: number;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarProps) {
-  const [editingField, setEditingField] = useState<string | null>(null);
+export default function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarProps) {
   const [newNote, setNewNote] = useState('');
+  const [noteType, setNoteType] = useState<string>('observacao');
 
-  const { data: task, isLoading } = trpc.strategic.tasks.getById.useQuery({
-    id: taskId,
-  });
+  const { data: task, isLoading } = trpc.strategic.tasks.getById.useQuery(
+    { id: taskId },
+    { enabled: isOpen && taskId > 0 }
+  );
 
-  const { data: notes } = trpc.strategic.tasks.getNotes.useQuery({
-    taskId,
-  });
+  const { data: notes } = trpc.strategic.tasks.getNotes.useQuery(
+    { taskId },
+    { enabled: isOpen && taskId > 0 }
+  );
 
-  const { data: subtasks } = trpc.strategic.tasks.getSubtasks.useQuery({
-    taskId,
-  });
+  const { data: subtasks } = trpc.strategic.tasks.getSubtasks.useQuery(
+    { parentTaskId: taskId },
+    { enabled: isOpen && taskId > 0 }
+  );
 
   const updateTask = trpc.strategic.tasks.update.useMutation();
-  const createNote = trpc.strategic.taskNotes.create.useMutation();
+  const createNote = trpc.strategic.tasks.createNote.useMutation();
   const deleteTask = trpc.strategic.tasks.delete.useMutation();
   const utils = trpc.useUtils();
 
@@ -57,10 +57,11 @@ export function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarP
         id: taskId,
         [field]: value,
       });
-      await utils.strategic.tasks.getById.invalidate({ id: taskId });
-      setEditingField(null);
+      utils.strategic.tasks.getById.invalidate({ id: taskId });
+      utils.strategic.tasks.list.invalidate({ projectId });
     } catch (error) {
-      console.error('Error updating task:', error);
+      console.error('Erro ao atualizar tarefa:', error);
+      toast.error('Erro ao atualizar tarefa');
     }
   };
 
@@ -69,13 +70,16 @@ export function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarP
     try {
       await createNote.mutateAsync({
         taskId,
+        projectId,
         content: newNote,
-        type: 'Observacao',
+        noteType: noteType as any,
       });
-      await utils.strategic.tasks.getNotes.invalidate({ taskId });
+      utils.strategic.tasks.getNotes.invalidate({ taskId });
       setNewNote('');
+      toast.success('Nota adicionada');
     } catch (error) {
-      console.error('Error creating note:', error);
+      console.error('Erro ao criar nota:', error);
+      toast.error('Erro ao criar nota');
     }
   };
 
@@ -83,29 +87,33 @@ export function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarP
     if (!window.confirm('Tem certeza que deseja excluir esta tarefa?')) return;
     try {
       await deleteTask.mutateAsync({ id: taskId });
-      await utils.strategic.tasks.list.invalidate({ projectId });
+      utils.strategic.tasks.list.invalidate({ projectId });
       onClose();
+      toast.success('Tarefa excluída');
     } catch (error) {
-      console.error('Error deleting task:', error);
+      console.error('Erro ao excluir tarefa:', error);
+      toast.error('Erro ao excluir tarefa');
     }
   };
 
-  if (!task) return null;
-
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
+    <Sheet open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <SheetContent side="right" className="w-full sm:w-[500px] overflow-y-auto">
         <SheetHeader>
-          <div className="flex items-center justify-between">
-            <SheetTitle>{task.title}</SheetTitle>
-            <SheetClose />
-          </div>
+          <SheetTitle>{task?.title || 'Carregando...'}</SheetTitle>
         </SheetHeader>
 
         {isLoading ? (
-          <div>Carregando...</div>
-        ) : (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-[#8B7355]" />
+          </div>
+        ) : task ? (
           <div className="space-y-6 mt-6">
+            {/* Código */}
+            <div className="text-sm text-muted-foreground">
+              Código: <span className="font-mono font-medium">{task.code}</span>
+            </div>
+
             {/* Status e Prioridade */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -122,6 +130,7 @@ export function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarP
                     <SelectItem value="em_andamento">Em Andamento</SelectItem>
                     <SelectItem value="aguardando">Aguardando</SelectItem>
                     <SelectItem value="concluida">Concluída</SelectItem>
+                    <SelectItem value="cancelada">Cancelada</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -135,10 +144,10 @@ export function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarP
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Critica">Crítica</SelectItem>
-                    <SelectItem value="Alta">Alta</SelectItem>
-                    <SelectItem value="Media">Média</SelectItem>
-                    <SelectItem value="Baixa">Baixa</SelectItem>
+                    <SelectItem value="critica">Crítica</SelectItem>
+                    <SelectItem value="alta">Alta</SelectItem>
+                    <SelectItem value="media">Média</SelectItem>
+                    <SelectItem value="baixa">Baixa</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -149,8 +158,8 @@ export function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarP
               <label className="text-sm font-medium">Responsável</label>
               <Input
                 className="mt-2"
-                value={task.assigneeName || ''}
-                onChange={(e) => handleUpdateField('assigneeName', e.target.value)}
+                defaultValue={task.assigneeName || ''}
+                onBlur={(e) => handleUpdateField('assigneeName', e.target.value || null)}
                 placeholder="Nome do responsável"
               />
             </div>
@@ -162,8 +171,8 @@ export function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarP
                 <Input
                   type="date"
                   className="mt-2"
-                  value={task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : ''}
-                  onChange={(e) => handleUpdateField('startDate', new Date(e.target.value).getTime())}
+                  defaultValue={task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : ''}
+                  onChange={(e) => handleUpdateField('startDate', e.target.value || null)}
                 />
               </div>
               <div>
@@ -171,8 +180,8 @@ export function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarP
                 <Input
                   type="date"
                   className="mt-2"
-                  value={task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ''}
-                  onChange={(e) => handleUpdateField('dueDate', new Date(e.target.value).getTime())}
+                  defaultValue={task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ''}
+                  onChange={(e) => handleUpdateField('dueDate', e.target.value || null)}
                 />
               </div>
             </div>
@@ -184,8 +193,9 @@ export function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarP
                 <Input
                   type="number"
                   className="mt-2"
-                  value={task.estimatedHours || 0}
-                  onChange={(e) => handleUpdateField('estimatedHours', parseFloat(e.target.value))}
+                  defaultValue={task.estimatedHours || ''}
+                  onBlur={(e) => handleUpdateField('estimatedHours', e.target.value || null)}
+                  step="0.5"
                 />
               </div>
               <div>
@@ -193,8 +203,32 @@ export function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarP
                 <Input
                   type="number"
                   className="mt-2"
-                  value={task.realHours || 0}
-                  onChange={(e) => handleUpdateField('realHours', parseFloat(e.target.value))}
+                  defaultValue={task.actualHours || ''}
+                  onBlur={(e) => handleUpdateField('actualHours', e.target.value || null)}
+                  step="0.5"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Custo Estimado (R$)</label>
+                <Input
+                  type="number"
+                  className="mt-2"
+                  defaultValue={task.estimatedCost || ''}
+                  onBlur={(e) => handleUpdateField('estimatedCost', e.target.value || null)}
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Custo Real (R$)</label>
+                <Input
+                  type="number"
+                  className="mt-2"
+                  defaultValue={task.actualCost || ''}
+                  onBlur={(e) => handleUpdateField('actualCost', e.target.value || null)}
+                  step="0.01"
                 />
               </div>
             </div>
@@ -204,8 +238,8 @@ export function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarP
               <label className="text-sm font-medium">Descrição</label>
               <Textarea
                 className="mt-2"
-                value={task.description || ''}
-                onChange={(e) => handleUpdateField('description', e.target.value)}
+                defaultValue={task.description || ''}
+                onBlur={(e) => handleUpdateField('description', e.target.value || null)}
                 placeholder="Descrição da tarefa"
                 rows={4}
               />
@@ -213,29 +247,48 @@ export function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarP
 
             {/* Subtarefas */}
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-2">
                 <CardTitle className="text-base">Subtarefas</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {(subtasks || []).map((subtask) => (
-                  <div key={subtask.id} className="flex items-center gap-2">
-                    <input type="checkbox" className="w-4 h-4" />
-                    <span className="text-sm">{subtask.title}</span>
+                {(subtasks || []).length === 0 && (
+                  <p className="text-sm text-muted-foreground">Nenhuma subtarefa</p>
+                )}
+                {(subtasks || []).map((subtask: any) => (
+                  <div key={subtask.id} className="flex items-center gap-2 py-1">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded border-gray-300"
+                      checked={subtask.status === 'concluida'}
+                      readOnly
+                    />
+                    <span className={`text-sm ${subtask.status === 'concluida' ? 'line-through text-muted-foreground' : ''}`}>
+                      {subtask.title}
+                    </span>
                   </div>
                 ))}
-                <Button variant="outline" size="sm" className="w-full mt-2">
-                  <Plus className="h-4 w-4 mr-2" /> Adicionar Subtarefa
-                </Button>
               </CardContent>
             </Card>
 
-            {/* Notas */}
+            {/* Notas / Diário de Bordo */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Notas</CardTitle>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Diário de Bordo</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
+                <div className="space-y-2">
+                  <Select value={noteType} onValueChange={setNoteType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tipo da nota" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="observacao">Observação</SelectItem>
+                      <SelectItem value="decisao">Decisão</SelectItem>
+                      <SelectItem value="problema">Problema</SelectItem>
+                      <SelectItem value="mudanca">Mudança</SelectItem>
+                      <SelectItem value="valor">Valor</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <Textarea
                     value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}
@@ -243,26 +296,32 @@ export function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarP
                     rows={3}
                   />
                   <Button
-                    className="mt-2 w-full bg-[#8B7355] hover:bg-[#5D4E37]"
+                    className="w-full bg-[#8B7355] hover:bg-[#5D4E37]"
                     onClick={handleAddNote}
+                    disabled={!newNote.trim()}
                   >
-                    Adicionar Nota
+                    <Plus className="h-4 w-4 mr-2" /> Adicionar Nota
                   </Button>
                 </div>
 
-                {(notes || []).map((note) => (
-                  <div key={note.id} className="p-3 bg-gray-50 rounded">
-                    <p className="text-xs text-gray-600">
-                      {note.authorName} • {note.createdAt ? new Date(note.createdAt).toLocaleString('pt-BR') : ''}
-                    </p>
-                    <p className="text-sm mt-2">{note.content}</p>
+                {(notes || []).map((note: any) => (
+                  <div key={note.id} className="p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-medium capitalize px-2 py-0.5 rounded bg-[#8B7355]/10 text-[#8B7355]">
+                        {note.noteType || 'observação'}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {note.createdByName || 'Usuário'} • {note.createdAt ? new Date(note.createdAt).toLocaleString('pt-BR') : ''}
+                      </span>
+                    </div>
+                    <p className="text-sm mt-1">{note.content}</p>
                   </div>
                 ))}
               </CardContent>
             </Card>
 
             {/* Botões de Ação */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 pb-4">
               <Button
                 variant="outline"
                 className="flex-1"
@@ -272,12 +331,16 @@ export function TaskSidebar({ taskId, projectId, isOpen, onClose }: TaskSidebarP
               </Button>
               <Button
                 variant="destructive"
-                size="sm"
+                size="icon"
                 onClick={handleDeleteTask}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
+          </div>
+        ) : (
+          <div className="text-center py-12 text-muted-foreground">
+            Tarefa não encontrada
           </div>
         )}
       </SheetContent>

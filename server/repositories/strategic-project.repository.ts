@@ -201,12 +201,10 @@ export class StrategicProjectRepository implements IStrategicProjectRepository {
       .from(strategicProjects)
       .where(eq(strategicProjects.ownerId, userId));
 
-    const allProjectIds = [
-      ...new Set([
-        ...memberProjectIds.map(r => r.projectId),
-        ...ownerProjectIds.map(r => r.id)
-      ])
-    ];
+    const allProjectIds = Array.from(new Set([
+      ...memberProjectIds.map(r => r.projectId),
+      ...ownerProjectIds.map(r => r.id)
+    ]));
 
     if (allProjectIds.length === 0) {
       return { data: [], total: 0, page, limit, totalPages: 0 };
@@ -276,8 +274,8 @@ export class StrategicProjectRepository implements IStrategicProjectRepository {
         category: data.category,
         priority: data.priority,
         status: data.status ?? 'planejamento',
-        startDate: data.startDate ?? null,
-        targetEndDate: data.targetEndDate ?? null,
+        startDate: data.startDate ? new Date(data.startDate) : null,
+        targetEndDate: data.targetEndDate ? new Date(data.targetEndDate) : null,
         budgetPlanned: data.budgetPlanned ?? null,
         ownerId: data.ownerId,
         photoUrl: data.photoUrl ?? null,
@@ -376,12 +374,10 @@ export class StrategicProjectRepository implements IStrategicProjectRepository {
       .from(strategicProjects)
       .where(eq(strategicProjects.ownerId, userId));
 
-    const allProjectIds = [
-      ...new Set([
-        ...memberProjectIds.map(r => r.projectId),
-        ...ownerProjectIds.map(r => r.id)
-      ])
-    ];
+    const allProjectIds = Array.from(new Set([
+      ...memberProjectIds.map(r => r.projectId),
+      ...ownerProjectIds.map(r => r.id)
+    ]));
 
     if (allProjectIds.length === 0) {
       return {
@@ -411,7 +407,7 @@ export class StrategicProjectRepository implements IStrategicProjectRepository {
     for (const p of projects) {
       if (p.status === 'em_andamento') inProgress++;
       if (p.status === 'concluido') completed++;
-      if (p.targetEndDate && p.targetEndDate < now && p.status !== 'concluido' && p.status !== 'cancelado') {
+      if (p.targetEndDate && new Date(p.targetEndDate) < new Date(now) && p.status !== 'concluido' && p.status !== 'cancelado') {
         overdue++;
       }
       totalBudgetPlanned += parseFloat(p.budgetPlanned ?? '0');
@@ -453,8 +449,8 @@ export class StrategicProjectRepository implements IStrategicProjectRepository {
       description: data.description ?? null,
       orderIndex: data.orderIndex,
       status: data.status ?? 'pendente',
-      startDate: data.startDate ?? null,
-      endDate: data.endDate ?? null,
+      startDate: data.startDate ? new Date(data.startDate) : null,
+      endDate: data.endDate ? new Date(data.endDate) : null,
     });
 
     const insertId = result[0].insertId;

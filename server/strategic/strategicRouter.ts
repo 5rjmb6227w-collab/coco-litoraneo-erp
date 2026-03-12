@@ -13,6 +13,7 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../_core/trpc';
 import { StrategicProjectService, StrategicTaskService } from '../services';
+import { getStrategicProjectRepository } from '../repositories';
 
 export const strategicRouter = router({
   // ============================================================================
@@ -21,8 +22,8 @@ export const strategicRouter = router({
   projects: router({
     list: protectedProcedure
       .input(z.object({
-        status: z.enum(['planejamento', 'andamento', 'concluido', 'cancelado']).optional(),
-        category: z.string().optional(),
+        status: z.enum(['planejamento', 'em_andamento', 'pausado', 'concluido', 'cancelado']).optional(),
+        category: z.enum(['equipamento', 'obra', 'insumo', 'processo', 'comercial', 'outro']).optional(),
         priority: z.enum(['baixa', 'media', 'alta', 'critica']).optional(),
         search: z.string().optional(),
         page: z.number().int().positive().default(1),
@@ -30,7 +31,13 @@ export const strategicRouter = router({
       }).optional())
       .query(async ({ input, ctx }) => {
         const service = new StrategicProjectService();
-        return service.list(ctx.user.id, input || {}, {
+        const filters = input ? {
+          status: input.status,
+          category: input.category,
+          priority: input.priority,
+          search: input.search,
+        } : {};
+        return service.list(ctx.user.id, filters, {
           page: input?.page || 1,
           limit: input?.limit || 50
         });
@@ -47,26 +54,41 @@ export const strategicRouter = router({
       .input(z.object({
         title: z.string().min(1).max(255),
         description: z.string().optional(),
-        category: z.string().optional(),
+        category: z.enum(['equipamento', 'obra', 'insumo', 'processo', 'comercial', 'outro']).default('outro'),
         priority: z.enum(['baixa', 'media', 'alta', 'critica']).default('media'),
-        budgetPlanned: z.number().nonnegative().default(0),
-        dueDate: z.date().optional()
+        budgetPlanned: z.string().optional(),
+        startDate: z.string().optional(),
+        targetEndDate: z.string().optional(),
+        tags: z.array(z.string()).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const service = new StrategicProjectService();
-        return service.create(input, ctx.user.id);
+        return service.create({
+          title: input.title,
+          description: input.description,
+          category: input.category,
+          priority: input.priority,
+          budgetPlanned: input.budgetPlanned,
+          startDate: input.startDate,
+          targetEndDate: input.targetEndDate,
+          tags: input.tags,
+          ownerId: ctx.user.id,
+        }, ctx.user.id);
       }),
 
     update: protectedProcedure
       .input(z.object({
         id: z.number().int().positive(),
         title: z.string().min(1).max(255).optional(),
-        description: z.string().optional(),
-        category: z.string().optional(),
+        description: z.string().nullable().optional(),
+        category: z.enum(['equipamento', 'obra', 'insumo', 'processo', 'comercial', 'outro']).optional(),
         priority: z.enum(['baixa', 'media', 'alta', 'critica']).optional(),
-        status: z.enum(['planejamento', 'andamento', 'concluido', 'cancelado']).optional(),
-        budgetPlanned: z.number().nonnegative().optional(),
-        dueDate: z.date().optional()
+        status: z.enum(['planejamento', 'em_andamento', 'pausado', 'concluido', 'cancelado']).optional(),
+        budgetPlanned: z.string().nullable().optional(),
+        startDate: z.string().nullable().optional(),
+        targetEndDate: z.string().nullable().optional(),
+        photoUrl: z.string().nullable().optional(),
+        tags: z.array(z.string()).nullable().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const service = new StrategicProjectService();
@@ -90,16 +112,79 @@ export const strategicRouter = router({
   }),
 
   // ============================================================================
+  // FASES
+  // ============================================================================
+  phases: router({
+    list: protectedProcedure
+      .input(z.object({ projectId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        const repo = getStrategicProjectRepository();
+        return repo.findPhasesByProject(input.projectId);
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        projectId: z.number().int().positive(),
+        title: z.string().min(1).max(255),
+        description: z.string().optional(),
+        orderIndex: z.number().int().nonnegative().default(0),
+        status: z.enum(['pendente', 'em_andamento', 'concluida']).default('pendente'),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const repo = getStrategicProjectRepository();
+        return repo.createPhase(input);
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        title: z.string().min(1).max(255).optional(),
+        description: z.string().nullable().optional(),
+        orderIndex: z.number().int().nonnegative().optional(),
+        status: z.enum(['pendente', 'em_andamento', 'concluida']).optional(),
+        startDate: z.string().nullable().optional(),
+        endDate: z.string().nullable().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const repo = getStrategicProjectRepository();
+        const { id, ...data } = input;
+        return repo.updatePhase(id, data as any);
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ input }) => {
+        const repo = getStrategicProjectRepository();
+        await repo.deletePhase(input.id);
+        return { success: true };
+      }),
+  }),
+
+  // ============================================================================
+  // MEMBROS
+  // ============================================================================
+  members: router({
+    list: protectedProcedure
+      .input(z.object({ projectId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        const repo = getStrategicProjectRepository();
+        return repo.findMembersByProject(input.projectId);
+      }),
+  }),
+
+  // ============================================================================
   // TAREFAS
   // ============================================================================
   tasks: router({
     list: protectedProcedure
       .input(z.object({
         projectId: z.number().int().positive(),
-        status: z.enum(['pendente', 'em_andamento', 'concluida', 'cancelada']).optional(),
+        status: z.enum(['a_fazer', 'em_andamento', 'aguardando', 'concluida', 'cancelada']).optional(),
         phaseId: z.number().int().positive().optional(),
         page: z.number().int().positive().default(1),
-        limit: z.number().int().positive().default(50)
+        limit: z.number().int().positive().default(200)
       }))
       .query(async ({ input, ctx }) => {
         const service = new StrategicTaskService();
@@ -122,13 +207,17 @@ export const strategicRouter = router({
     create: protectedProcedure
       .input(z.object({
         projectId: z.number().int().positive(),
-        phaseId: z.number().int().positive(),
+        phaseId: z.number().int().positive().optional(),
+        parentTaskId: z.number().int().positive().optional(),
         title: z.string().min(1).max(255),
         description: z.string().optional(),
         priority: z.enum(['baixa', 'media', 'alta', 'critica']).default('media'),
-        estimatedCost: z.number().nonnegative().default(0),
-        dueDate: z.date().optional(),
-        assignedTo: z.number().int().positive().optional()
+        estimatedCost: z.string().optional(),
+        estimatedHours: z.string().optional(),
+        dueDate: z.string().optional(),
+        startDate: z.string().optional(),
+        assigneeId: z.number().int().positive().optional(),
+        assigneeName: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const service = new StrategicTaskService();
@@ -139,13 +228,18 @@ export const strategicRouter = router({
       .input(z.object({
         id: z.number().int().positive(),
         title: z.string().min(1).max(255).optional(),
-        description: z.string().optional(),
+        description: z.string().nullable().optional(),
         priority: z.enum(['baixa', 'media', 'alta', 'critica']).optional(),
-        status: z.enum(['pendente', 'em_andamento', 'concluida', 'cancelada']).optional(),
-        estimatedCost: z.number().nonnegative().optional(),
-        actualCost: z.number().nonnegative().optional(),
-        dueDate: z.date().optional(),
-        assignedTo: z.number().int().positive().optional()
+        status: z.enum(['a_fazer', 'em_andamento', 'aguardando', 'concluida', 'cancelada']).optional(),
+        estimatedCost: z.string().nullable().optional(),
+        actualCost: z.string().nullable().optional(),
+        estimatedHours: z.string().nullable().optional(),
+        actualHours: z.string().nullable().optional(),
+        dueDate: z.string().nullable().optional(),
+        startDate: z.string().nullable().optional(),
+        assigneeId: z.number().int().positive().nullable().optional(),
+        assigneeName: z.string().nullable().optional(),
+        phaseId: z.number().int().positive().nullable().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const service = new StrategicTaskService();
@@ -188,13 +282,49 @@ export const strategicRouter = router({
     bulkUpdateStatus: protectedProcedure
       .input(z.object({
         taskIds: z.array(z.number().int().positive()),
-        newStatus: z.enum(['pendente', 'em_andamento', 'concluida', 'cancelada'])
+        newStatus: z.enum(['a_fazer', 'em_andamento', 'aguardando', 'concluida', 'cancelada'])
       }))
       .mutation(async ({ input, ctx }) => {
         const service = new StrategicTaskService();
         await service.bulkUpdateStatus(input.taskIds, input.newStatus, ctx.user.id);
         return { success: true };
-      })
+      }),
+
+    // --- Notas (Diário de Bordo) ---
+    getNotes: protectedProcedure
+      .input(z.object({ taskId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        const { getStrategicTaskRepository } = await import('../repositories');
+        const repo = getStrategicTaskRepository();
+        return repo.findNotesByTask(input.taskId);
+      }),
+
+    createNote: protectedProcedure
+      .input(z.object({
+        taskId: z.number().int().positive(),
+        projectId: z.number().int().positive(),
+        content: z.string().min(1),
+        noteType: z.enum(['observacao', 'decisao', 'problema', 'mudanca', 'valor']).default('observacao'),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { getStrategicTaskRepository } = await import('../repositories');
+        const repo = getStrategicTaskRepository();
+        return repo.createNote({
+          ...input,
+          createdBy: ctx.user.id,
+          createdByName: ctx.user.name || 'Usuário',
+        });
+      }),
+
+    // --- Subtarefas ---
+    getSubtasks: protectedProcedure
+      .input(z.object({ parentTaskId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        const { getStrategicTaskRepository } = await import('../repositories');
+        const repo = getStrategicTaskRepository();
+        const result = await repo.findAll({ parentTaskId: input.parentTaskId }, { page: 1, limit: 100 });
+        return result.data;
+      }),
   })
 });
 

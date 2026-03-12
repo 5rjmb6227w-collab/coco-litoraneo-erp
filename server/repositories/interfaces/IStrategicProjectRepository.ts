@@ -26,8 +26,8 @@ export interface CreateStrategicProjectDTO {
   category: 'equipamento' | 'obra' | 'insumo' | 'processo' | 'comercial' | 'outro';
   priority: 'critica' | 'alta' | 'media' | 'baixa';
   status?: 'planejamento' | 'em_andamento' | 'pausado' | 'concluido' | 'cancelado';
-  startDate?: string;
-  targetEndDate?: string;
+  startDate?: string | Date;
+  targetEndDate?: string | Date;
   budgetPlanned?: string;
   ownerId: number;
   photoUrl?: string;
@@ -41,9 +41,9 @@ export interface UpdateStrategicProjectDTO {
   category?: 'equipamento' | 'obra' | 'insumo' | 'processo' | 'comercial' | 'outro';
   priority?: 'critica' | 'alta' | 'media' | 'baixa';
   status?: 'planejamento' | 'em_andamento' | 'pausado' | 'concluido' | 'cancelado';
-  startDate?: string | null;
-  targetEndDate?: string | null;
-  actualEndDate?: string | null;
+  startDate?: string | Date | null;
+  targetEndDate?: string | Date | null;
+  actualEndDate?: string | Date | null;
   budgetPlanned?: string | null;
   budgetActual?: string | null;
   progress?: number;
@@ -63,9 +63,9 @@ export interface StrategicProject {
   category: 'equipamento' | 'obra' | 'insumo' | 'processo' | 'comercial' | 'outro';
   priority: 'critica' | 'alta' | 'media' | 'baixa';
   status: 'planejamento' | 'em_andamento' | 'pausado' | 'concluido' | 'cancelado';
-  startDate: string | null;
-  targetEndDate: string | null;
-  actualEndDate: string | null;
+  startDate: Date | null;
+  targetEndDate: Date | null;
+  actualEndDate: Date | null;
   budgetPlanned: string | null;
   budgetActual: string | null;
   progress: number;
@@ -88,8 +88,8 @@ export interface StrategicPhaseDTO {
   description?: string;
   orderIndex: number;
   status?: 'pendente' | 'em_andamento' | 'concluida';
-  startDate?: string;
-  endDate?: string;
+  startDate?: string | Date;
+  endDate?: string | Date;
 }
 
 export interface StrategicPhase {
@@ -99,8 +99,8 @@ export interface StrategicPhase {
   description: string | null;
   orderIndex: number;
   status: 'pendente' | 'em_andamento' | 'concluida';
-  startDate: string | null;
-  endDate: string | null;
+  startDate: Date | null;
+  endDate: Date | null;
   createdAt: Date;
   updatedAt: Date | null;
 }

@@ -16,16 +16,17 @@ import type {
 } from '../repositories/interfaces';
 import type { IStrategicTaskService } from './interfaces/IStrategicTaskService';
 import { getStrategicTaskRepository, getStrategicProjectRepository } from '../repositories';
+import type { IStrategicProjectRepository } from '../repositories/interfaces';
 import { NotFoundError, ValidationError, ForbiddenError } from '../errors';
 import { emitEvent, EVENT_TYPES } from '../ai/eventEmitter';
 
 export class StrategicTaskService implements IStrategicTaskService {
   private repository: IStrategicTaskRepository;
-  private projectRepository = getStrategicProjectRepository();
+  private projectRepository: IStrategicProjectRepository;
 
-  constructor(repository?: IStrategicTaskRepository) {
-    // Dependency Injection - permite injetar mock para testes
+  constructor(repository?: IStrategicTaskRepository, projectRepository?: IStrategicProjectRepository) {
     this.repository = repository || getStrategicTaskRepository();
+    this.projectRepository = projectRepository || getStrategicProjectRepository();
   }
 
   async list(
@@ -35,20 +36,10 @@ export class StrategicTaskService implements IStrategicTaskService {
     userId: number
   ): Promise<PaginatedResult<StrategicTask>> {
     // Verificar acesso ao projeto
-    const project = await this.projectRepository.findById(projectId);
-    if (!project) {
-      throw new NotFoundError('Projeto Estratégico', projectId);
-    }
+    await this.checkProjectAccess(projectId, userId);
 
-    const hasAccess = project.ownerId === userId || 
-      (project.members && project.members.some(m => m.userId === userId));
-    
-    if (!hasAccess) {
-      throw new ForbiddenError('Você não tem acesso a este projeto');
-    }
-
-    // Listar tarefas
-    return this.repository.findAll(projectId, filters, pagination);
+    // Listar tarefas com projectId no filtro
+    return this.repository.findAll({ ...filters, projectId }, pagination);
   }
 
   async getById(id: number, userId: number): Promise<StrategicTask> {
@@ -58,17 +49,7 @@ export class StrategicTaskService implements IStrategicTaskService {
     }
 
     // Verificar acesso ao projeto
-    const project = await this.projectRepository.findById(task.projectId);
-    if (!project) {
-      throw new NotFoundError('Projeto Estratégico', task.projectId);
-    }
-
-    const hasAccess = project.ownerId === userId || 
-      (project.members && project.members.some(m => m.userId === userId));
-    
-    if (!hasAccess) {
-      throw new ForbiddenError('Você não tem acesso a esta tarefa');
-    }
+    await this.checkProjectAccess(task.projectId, userId);
 
     return task;
   }
@@ -84,42 +65,34 @@ export class StrategicTaskService implements IStrategicTaskService {
     }
 
     // Verificar acesso ao projeto
-    const project = await this.projectRepository.findById(data.projectId);
-    if (!project) {
-      throw new NotFoundError('Projeto Estratégico', data.projectId);
-    }
-
-    const hasAccess = project.ownerId === userId || 
-      (project.members && project.members.some(m => m.userId === userId));
-    
-    if (!hasAccess) {
-      throw new ForbiddenError('Você não tem acesso a este projeto');
-    }
-
-    // Gerar código automático
-    const code = await this.generateTaskCode(data.projectId);
+    await this.checkProjectAccess(data.projectId, userId);
 
     // Criar tarefa
     const task = await this.repository.create({
       ...data,
-      code,
-      status: 'pendente',
-      progress: 0,
-      completedAt: null
+      status: data.status || 'a_fazer',
+      createdBy: userId,
     });
 
     // Recalcular progress do projeto
     await this.recalculateProjectProgress(data.projectId);
 
     // Emitir evento para Copiloto IA
-    await emitEvent(EVENT_TYPES.STRATEGIC_TASK_CREATED, {
-      taskId: task.id,
-      taskCode: task.code,
-      taskTitle: task.title,
-      projectId: data.projectId,
-      dueDate: task.dueDate,
-      estimatedCost: task.estimatedCost
-    });
+    try {
+      await emitEvent({
+        eventType: EVENT_TYPES.STRATEGIC_TASK_CREATED,
+        entityType: 'strategic_task',
+        entityId: task.id,
+        userId,
+        payload: {
+          taskCode: task.code,
+          taskTitle: task.title,
+          projectId: data.projectId,
+          dueDate: task.dueDate,
+          estimatedCost: task.estimatedCost
+        }
+      });
+    } catch (e) { /* fire-and-forget */ }
 
     return task;
   }
@@ -132,17 +105,7 @@ export class StrategicTaskService implements IStrategicTaskService {
     }
 
     // Verificar acesso ao projeto
-    const project = await this.projectRepository.findById(existing.projectId);
-    if (!project) {
-      throw new NotFoundError('Projeto Estratégico', existing.projectId);
-    }
-
-    const hasAccess = project.ownerId === userId || 
-      (project.members && project.members.some(m => m.userId === userId));
-    
-    if (!hasAccess) {
-      throw new ForbiddenError('Você não tem acesso a esta tarefa');
-    }
+    await this.checkProjectAccess(existing.projectId, userId);
 
     // Se status mudou para "concluida": preencher completedAt automaticamente
     if (data.status === 'concluida' && existing.status !== 'concluida') {
@@ -155,7 +118,7 @@ export class StrategicTaskService implements IStrategicTaskService {
     }
 
     // Atualizar tarefa
-    const updated = await this.repository.update(id, data);
+    const updated = await this.repository.update(id, { ...data, updatedBy: userId });
 
     // Se estimatedCost ou actualCost mudou: recalcular budgetActual do projeto
     if ((data.estimatedCost !== undefined && data.estimatedCost !== existing.estimatedCost) ||
@@ -169,48 +132,51 @@ export class StrategicTaskService implements IStrategicTaskService {
     // Se tarefa ficou atrasada
     if (updated.dueDate && new Date(updated.dueDate) < new Date() && 
         updated.status !== 'concluida' && updated.status !== 'cancelada') {
-      await emitEvent(EVENT_TYPES.STRATEGIC_TASK_OVERDUE, {
-        taskId: id,
-        taskCode: updated.code,
-        taskTitle: updated.title,
-        projectId: existing.projectId,
-        dueDate: updated.dueDate
-      });
+      try {
+        await emitEvent({
+          eventType: EVENT_TYPES.STRATEGIC_TASK_OVERDUE,
+          entityType: 'strategic_task',
+          entityId: id,
+          userId,
+          payload: {
+            taskCode: updated.code,
+            taskTitle: updated.title,
+            projectId: existing.projectId,
+            dueDate: updated.dueDate
+          }
+        });
+      } catch (e) { /* fire-and-forget */ }
     }
 
     // Se tarefa foi concluída
     if (data.status === 'concluida') {
-      await emitEvent(EVENT_TYPES.STRATEGIC_TASK_COMPLETED, {
-        taskId: id,
-        taskCode: updated.code,
-        taskTitle: updated.title,
-        projectId: existing.projectId,
-        completedAt: data.completedAt
-      });
+      try {
+        await emitEvent({
+          eventType: EVENT_TYPES.STRATEGIC_TASK_COMPLETED,
+          entityType: 'strategic_task',
+          entityId: id,
+          userId,
+          payload: {
+            taskCode: updated.code,
+            taskTitle: updated.title,
+            projectId: existing.projectId,
+            completedAt: data.completedAt
+          }
+        });
+      } catch (e) { /* fire-and-forget */ }
     }
 
     return updated;
   }
 
   async delete(id: number, userId: number): Promise<void> {
-    // Verificar se existe
     const task = await this.repository.findById(id);
     if (!task) {
       throw new NotFoundError('Tarefa Estratégica', id);
     }
 
     // Verificar acesso ao projeto
-    const project = await this.projectRepository.findById(task.projectId);
-    if (!project) {
-      throw new NotFoundError('Projeto Estratégico', task.projectId);
-    }
-
-    const hasAccess = project.ownerId === userId || 
-      (project.members && project.members.some(m => m.userId === userId));
-    
-    if (!hasAccess) {
-      throw new ForbiddenError('Você não tem acesso a esta tarefa');
-    }
+    await this.checkProjectAccess(task.projectId, userId);
 
     // Deletar tarefa
     await this.repository.delete(id);
@@ -221,44 +187,23 @@ export class StrategicTaskService implements IStrategicTaskService {
 
   async reorder(projectId: number, phaseId: number, taskIds: number[], userId: number): Promise<void> {
     // Verificar acesso ao projeto
-    const project = await this.projectRepository.findById(projectId);
-    if (!project) {
-      throw new NotFoundError('Projeto Estratégico', projectId);
-    }
-
-    const hasAccess = project.ownerId === userId || 
-      (project.members && project.members.some(m => m.userId === userId));
-    
-    if (!hasAccess) {
-      throw new ForbiddenError('Você não tem acesso a este projeto');
-    }
+    await this.checkProjectAccess(projectId, userId);
 
     // Reordenar tarefas
-    await this.repository.reorder(phaseId, taskIds);
+    await this.repository.reorder(projectId, phaseId, taskIds);
   }
 
   async getTodayTasks(userId: number): Promise<StrategicTask[]> {
-    // Buscar tarefas com dueDate = hoje
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    return this.repository.findByDateRange(today, tomorrow, userId);
+    return this.repository.findDueToday(userId);
   }
 
   async getOverdueTasks(userId: number): Promise<StrategicTask[]> {
-    // Buscar tarefas com dueDate < hoje
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return this.repository.findOverdue(today, userId);
+    return this.repository.findOverdue(userId);
   }
 
   async bulkUpdateStatus(taskIds: number[], newStatus: string, userId: number): Promise<void> {
     // Validar status
-    const validStatuses = ['pendente', 'em_andamento', 'concluida', 'cancelada'];
+    const validStatuses = ['a_fazer', 'em_andamento', 'aguardando', 'concluida', 'cancelada'];
     if (!validStatuses.includes(newStatus)) {
       throw new ValidationError(`Status inválido: ${newStatus}`);
     }
@@ -267,7 +212,9 @@ export class StrategicTaskService implements IStrategicTaskService {
     for (const taskId of taskIds) {
       const task = await this.repository.findById(taskId);
       if (task) {
-        const updateData: UpdateStrategicTaskDTO = { status: newStatus };
+        const updateData: UpdateStrategicTaskDTO = { 
+          status: newStatus as UpdateStrategicTaskDTO['status']
+        };
         
         // Se mudando para concluida, preencher completedAt
         if (newStatus === 'concluida') {
@@ -284,19 +231,32 @@ export class StrategicTaskService implements IStrategicTaskService {
   // ============================================================================
 
   /**
+   * Verifica se o usuário tem acesso ao projeto
+   */
+  private async checkProjectAccess(projectId: number, userId: number): Promise<void> {
+    const project = await this.projectRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundError('Projeto Estratégico', projectId);
+    }
+
+    if (project.ownerId === userId) return;
+
+    const isMember = await this.projectRepository.isMember(projectId, userId);
+    if (!isMember) {
+      throw new ForbiddenError('Você não tem acesso a este projeto');
+    }
+  }
+
+  /**
    * Recalcula o progress (%) do projeto
    * progress = (tarefas_concluidas / total_tarefas) * 100
    */
   private async recalculateProjectProgress(projectId: number): Promise<void> {
-    // Buscar todas as tarefas do projeto (excluindo canceladas)
-    const tasks = await this.repository.findAll(
-      projectId,
-      { status: 'não_cancelada' },
-      { page: 1, limit: 10000 }
-    );
-
-    const totalTasks = tasks.data.filter(t => t.status !== 'cancelada').length;
-    const completedTasks = tasks.data.filter(t => t.status === 'concluida').length;
+    const counts = await this.repository.countByProjectAndStatus(projectId);
+    
+    const totalTasks = counts.a_fazer + counts.em_andamento + counts.aguardando + counts.concluida;
+    // Excluímos canceladas do total
+    const completedTasks = counts.concluida;
 
     const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
@@ -304,20 +264,26 @@ export class StrategicTaskService implements IStrategicTaskService {
     await this.projectRepository.update(projectId, { progress });
 
     // Se projeto ficou 100% concluído
-    if (progress === 100) {
+    if (progress === 100 && totalTasks > 0) {
       const project = await this.projectRepository.findById(projectId);
       if (project && project.status !== 'concluido') {
         await this.projectRepository.update(projectId, { 
           status: 'concluido',
-          completedAt: new Date()
+          actualEndDate: new Date().toISOString().split('T')[0],
         });
 
-        await emitEvent(EVENT_TYPES.STRATEGIC_PROJECT_COMPLETED, {
-          projectId,
-          projectCode: project.code,
-          projectTitle: project.title,
-          completedAt: new Date()
-        });
+        try {
+          await emitEvent({
+            eventType: EVENT_TYPES.STRATEGIC_PROJECT_COMPLETED,
+            entityType: 'strategic_project',
+            entityId: projectId,
+            payload: {
+              projectCode: project.code,
+              projectTitle: project.title,
+              completedAt: new Date().toISOString()
+            }
+          });
+        } catch (e) { /* fire-and-forget */ }
       }
     }
   }
@@ -327,60 +293,40 @@ export class StrategicTaskService implements IStrategicTaskService {
    * Soma actualCost de todas as tarefas
    */
   private async recalculateProjectBudget(projectId: number): Promise<void> {
-    // Buscar todas as tarefas do projeto
     const tasks = await this.repository.findAll(
-      projectId,
-      {},
+      { projectId },
       { page: 1, limit: 10000 }
     );
 
-    // Somar actualCost
-    const totalActualCost = tasks.data.reduce((sum, task) => sum + (task.actualCost || 0), 0);
+    // Somar actualCost (string -> number)
+    const totalActualCost = tasks.data.reduce((sum: number, task) => {
+      return sum + parseFloat(String(task.actualCost || '0'));
+    }, 0);
 
     // Atualizar projeto
-    await this.projectRepository.update(projectId, { budgetActual: totalActualCost });
+    await this.projectRepository.update(projectId, { budgetActual: String(totalActualCost) });
 
     // Verificar se orçamento foi estourado
     const project = await this.projectRepository.findById(projectId);
-    if (project && project.budgetActual > (project.budgetPlanned * 1.1)) {
-      await emitEvent(EVENT_TYPES.STRATEGIC_BUDGET_EXCEEDED, {
-        projectId,
-        projectCode: project.code,
-        budgetPlanned: project.budgetPlanned,
-        budgetActual: project.budgetActual,
-        percentage: Math.round((project.budgetActual / project.budgetPlanned) * 100)
-      });
+    if (project) {
+      const budgetActual = parseFloat(String(project.budgetActual || '0'));
+      const budgetPlanned = parseFloat(String(project.budgetPlanned || '0'));
+      if (budgetPlanned > 0 && budgetActual > (budgetPlanned * 1.1)) {
+        try {
+          await emitEvent({
+            eventType: EVENT_TYPES.STRATEGIC_BUDGET_EXCEEDED,
+            entityType: 'strategic_project',
+            entityId: projectId,
+            payload: {
+              projectCode: project.code,
+              budgetPlanned: project.budgetPlanned,
+              budgetActual: project.budgetActual,
+              percentage: Math.round((budgetActual / budgetPlanned) * 100)
+            }
+          });
+        } catch (e) { /* fire-and-forget */ }
+      }
     }
-  }
-
-  /**
-   * Gera código automático da tarefa
-   * Formato: PROJ-XXX-T01, PROJ-XXX-T02, etc.
-   */
-  private async generateTaskCode(projectId: number): Promise<string> {
-    const project = await this.projectRepository.findById(projectId);
-    if (!project) {
-      throw new NotFoundError('Projeto Estratégico', projectId);
-    }
-
-    const tasks = await this.repository.findAll(
-      projectId,
-      {},
-      { page: 1, limit: 10000 }
-    );
-
-    const codes = tasks.data
-      .map(t => t.code)
-      .filter(code => code.includes('-T'))
-      .map(code => {
-        const match = code.match(/-T(\d+)$/);
-        return match ? parseInt(match[1], 10) : 0;
-      })
-      .filter(num => !isNaN(num))
-      .sort((a, b) => b - a);
-
-    const nextNumber = (codes[0] || 0) + 1;
-    return `${project.code}-T${String(nextNumber).padStart(2, '0')}`;
   }
 }
 

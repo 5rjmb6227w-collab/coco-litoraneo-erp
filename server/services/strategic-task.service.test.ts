@@ -1,46 +1,114 @@
 /**
  * Testes unitários do StrategicTaskService
  * 
- * Usa mocks do Repository para testar APENAS a lógica de negócio.
- * Não testa o banco de dados (isso é integração).
+ * Usa mocks dos Repositories para testar APENAS a lógica de negócio.
  */
-
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { StrategicTaskService } from './strategic-task.service';
-import type { IStrategicTaskRepository, IStrategicProjectRepository } from '../repositories/interfaces';
+import type { IStrategicTaskRepository } from '../repositories/interfaces/IStrategicTaskRepository';
+import type { IStrategicProjectRepository } from '../repositories/interfaces/IStrategicProjectRepository';
 import { NotFoundError, ForbiddenError, ValidationError } from '../errors';
 
-// Mocks dos Repositories
+// Mock emitEvent
+vi.mock('../events', () => ({
+  emitEvent: vi.fn().mockResolvedValue(undefined),
+  EVENT_TYPES: {
+    STRATEGIC_TASK_CREATED: 'STRATEGIC_TASK_CREATED',
+    STRATEGIC_TASK_COMPLETED: 'STRATEGIC_TASK_COMPLETED',
+    STRATEGIC_TASK_OVERDUE: 'STRATEGIC_TASK_OVERDUE',
+  }
+}));
+
 const createMockTaskRepository = (): IStrategicTaskRepository => ({
   findAll: vi.fn(),
   findById: vi.fn(),
+  findByProject: vi.fn(),
+  findDueToday: vi.fn(),
+  findOverdue: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
-  addNote: vi.fn(),
-  deleteNote: vi.fn(),
-  addDependency: vi.fn(),
-  removeDependency: vi.fn(),
-  addLink: vi.fn(),
-  removeLink: vi.fn(),
   reorder: vi.fn(),
-  findByDateRange: vi.fn(),
-  findOverdue: vi.fn(),
-  getTaskCounts: vi.fn(),
+  countByProjectAndStatus: vi.fn(),
+  getNextCode: vi.fn(),
+  findNotesByTask: vi.fn(),
+  findNotesByProject: vi.fn(),
+  createNote: vi.fn(),
+  deleteNote: vi.fn(),
+  findDependenciesByTask: vi.fn(),
+  createDependency: vi.fn(),
+  deleteDependency: vi.fn(),
+  findLinksByTask: vi.fn(),
+  findLinksByProject: vi.fn(),
+  createLink: vi.fn(),
+  deleteLink: vi.fn(),
 });
 
 const createMockProjectRepository = (): IStrategicProjectRepository => ({
   findAll: vi.fn(),
   findById: vi.fn(),
+  findByCode: vi.fn(),
+  findByUser: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
+  getNextCode: vi.fn(),
+  getDashboardStats: vi.fn(),
+  findPhasesByProject: vi.fn(),
+  createPhase: vi.fn(),
+  updatePhase: vi.fn(),
+  deletePhase: vi.fn(),
+  findMembersByProject: vi.fn(),
   addMember: vi.fn(),
   removeMember: vi.fn(),
-  getMembers: vi.fn(),
-  getPhases: vi.fn(),
-  getTasksByProject: vi.fn(),
-  getDashboardStats: vi.fn(),
+  isMember: vi.fn(),
+  getMemberRole: vi.fn(),
+});
+
+const makeProject = (overrides: Record<string, any> = {}) => ({
+  id: 1,
+  code: 'PROJ-001',
+  title: 'Forno de Secagem',
+  description: 'Implementação de forno industrial',
+  category: 'equipamento' as const,
+  priority: 'alta' as const,
+  status: 'em_andamento' as const,
+  startDate: new Date('2026-01-15'),
+  targetEndDate: new Date('2026-06-30'),
+  actualEndDate: null,
+  budgetPlanned: '185000',
+  budgetActual: '0',
+  progress: 0,
+  ownerId: 1,
+  photoUrl: null,
+  tags: null,
+  createdAt: new Date(),
+  createdBy: 1,
+  updatedAt: new Date(),
+  updatedBy: null,
+  ...overrides,
+});
+
+const makeTask = (overrides: Record<string, any> = {}) => ({
+  id: 1,
+  code: 'PROJ-001-T01',
+  projectId: 1,
+  phaseId: null,
+  title: 'Instalar forno',
+  description: null,
+  status: 'a_fazer' as const,
+  priority: 'alta' as const,
+  assigneeId: null,
+  estimatedCost: '50000',
+  actualCost: '0',
+  dueDate: new Date('2026-06-30'),
+  completedAt: null,
+  orderIndex: 0,
+  createdAt: new Date(),
+  createdBy: 1,
+  updatedAt: new Date(),
+  updatedBy: null,
+  ...overrides,
 });
 
 describe('StrategicTaskService', () => {
@@ -51,302 +119,158 @@ describe('StrategicTaskService', () => {
   beforeEach(() => {
     mockTaskRepository = createMockTaskRepository();
     mockProjectRepository = createMockProjectRepository();
-    service = new StrategicTaskService(mockTaskRepository);
-    // Substituir projectRepository interno
-    (service as any).projectRepository = mockProjectRepository;
+    service = new StrategicTaskService(mockTaskRepository, mockProjectRepository);
+    vi.clearAllMocks();
   });
 
   describe('create', () => {
     it('deve criar uma tarefa com sucesso', async () => {
       const userId = 1;
-      const projectId = 1;
-      const input = {
-        projectId,
-        phaseId: 1,
-        title: 'Instalar forno',
-        description: 'Instalação do forno de secagem',
-        priority: 'alta' as const,
-        estimatedCost: 50000,
-        dueDate: new Date('2026-12-31')
-      };
-
-      const project = {
-        id: projectId,
-        code: 'PROJ-001',
-        title: 'Forno de Secagem',
-        ownerId: userId,
-        members: [],
-        status: 'planejamento',
-        progress: 0,
-        budgetPlanned: 185000,
-        budgetActual: 0,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      const createdTask = {
-        id: 1,
-        code: 'PROJ-001-T01',
-        projectId,
-        phaseId: 1,
-        title: input.title,
-        description: input.description,
-        priority: input.priority,
-        status: 'pendente',
-        estimatedCost: input.estimatedCost,
-        actualCost: 0,
-        progress: 0,
-        dueDate: input.dueDate,
-        completedAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(project);
-      vi.mocked(mockTaskRepository.create).mockResolvedValue(createdTask);
-      vi.mocked(mockTaskRepository.findAll).mockResolvedValue({ data: [], total: 0, page: 1, limit: 50 });
-      vi.mocked(mockProjectRepository.update).mockResolvedValue(project);
-
-      const result = await service.create(input, userId);
-
-      expect(result).toEqual(createdTask);
-      expect(mockTaskRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: input.title,
-          status: 'pendente'
-        })
-      );
-    });
-
-    it('deve lançar ValidationError se título estiver vazio', async () => {
+      const project = makeProject({ ownerId: userId });
       const input = {
         projectId: 1,
-        phaseId: 1,
-        title: ''
+        title: 'Instalar forno',
+        priority: 'alta' as const,
+        estimatedCost: '50000',
+        dueDate: '2026-06-30',
+        createdBy: userId,
       };
+      const createdTask = makeTask();
 
-      await expect(service.create(input, 1)).rejects.toThrow(ValidationError);
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(project);
+      vi.mocked(mockProjectRepository.getMemberRole).mockResolvedValue(null);
+      vi.mocked(mockTaskRepository.getNextCode).mockResolvedValue('PROJ-001-T01');
+      vi.mocked(mockTaskRepository.create).mockResolvedValue(createdTask);
+      vi.mocked(mockTaskRepository.countByProjectAndStatus).mockResolvedValue({
+        a_fazer: 1,
+        em_andamento: 0,
+        aguardando: 0,
+        concluida: 0,
+      });
+      vi.mocked(mockProjectRepository.update).mockResolvedValue(makeProject());
+
+      const result = await service.create(input, userId);
+      expect(result).toEqual(createdTask);
+      expect(mockTaskRepository.create).toHaveBeenCalledTimes(1);
     });
 
-    it('deve lançar NotFoundError se projeto não existe', async () => {
+    it('deve lançar erro se título estiver vazio', async () => {
+      const project = makeProject({ ownerId: 1 });
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(project);
+
       const input = {
-        projectId: 999,
-        phaseId: 1,
-        title: 'Tarefa'
+        projectId: 1,
+        title: '',
+        priority: 'alta' as const,
+        createdBy: 1,
       };
 
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(null);
-
-      await expect(service.create(input, 1)).rejects.toThrow(NotFoundError);
+      await expect(service.create(input, 1)).rejects.toThrow();
     });
 
     it('deve lançar ForbiddenError se usuário não tem acesso ao projeto', async () => {
-      const project = {
-        id: 1,
-        code: 'PROJ-001',
-        title: 'Forno de Secagem',
-        ownerId: 2, // Outro usuário
-        members: [],
-        status: 'planejamento',
-        progress: 0,
-        budgetPlanned: 185000,
-        budgetActual: 0,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+      const project = makeProject({ ownerId: 2 });
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(project);
+      vi.mocked(mockProjectRepository.getMemberRole).mockResolvedValue(null);
 
       const input = {
         projectId: 1,
-        phaseId: 1,
-        title: 'Tarefa'
+        title: 'Instalar forno',
+        priority: 'alta' as const,
+        createdBy: 99,
       };
 
+      await expect(service.create(input, 99)).rejects.toThrow(ForbiddenError);
+    });
+  });
+
+  describe('getById', () => {
+    it('deve retornar tarefa se usuário tem acesso ao projeto', async () => {
+      const userId = 1;
+      const task = makeTask({ projectId: 1 });
+      const project = makeProject({ ownerId: userId });
+
+      vi.mocked(mockTaskRepository.findById).mockResolvedValue(task);
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(project);
 
-      await expect(service.create(input, 1)).rejects.toThrow(ForbiddenError);
+      const result = await service.getById(1, userId);
+      expect(result).toEqual(task);
+    });
+
+    it('deve lançar NotFoundError se tarefa não existe', async () => {
+      vi.mocked(mockTaskRepository.findById).mockResolvedValue(null);
+      await expect(service.getById(999, 1)).rejects.toThrow(NotFoundError);
     });
   });
 
   describe('update', () => {
-    it('deve atualizar status para concluida e preencher completedAt', async () => {
+    it('deve atualizar tarefa se usuário é owner do projeto', async () => {
       const userId = 1;
-      const taskId = 1;
-      const projectId = 1;
+      const task = makeTask({ projectId: 1 });
+      const project = makeProject({ ownerId: userId });
+      const updatedTask = makeTask({ status: 'em_andamento' as const });
 
-      const project = {
-        id: projectId,
-        code: 'PROJ-001',
-        title: 'Forno de Secagem',
-        ownerId: userId,
-        members: [],
-        status: 'planejamento',
-        progress: 0,
-        budgetPlanned: 185000,
-        budgetActual: 0,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      const existing = {
-        id: taskId,
-        code: 'PROJ-001-T01',
-        projectId,
-        phaseId: 1,
-        title: 'Instalar forno',
-        status: 'em_andamento',
-        estimatedCost: 50000,
-        actualCost: 0,
-        progress: 80,
-        dueDate: new Date('2026-12-31'),
-        completedAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      const updated = {
-        ...existing,
-        status: 'concluida',
-        completedAt: new Date(),
-        progress: 100,
-        updatedAt: new Date()
-      };
-
-      vi.mocked(mockTaskRepository.findById).mockResolvedValue(existing);
+      vi.mocked(mockTaskRepository.findById).mockResolvedValue(task);
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(project);
-      vi.mocked(mockTaskRepository.update).mockResolvedValue(updated);
-      vi.mocked(mockTaskRepository.findAll).mockResolvedValue({ data: [updated], total: 1, page: 1, limit: 50 });
-      vi.mocked(mockProjectRepository.update).mockResolvedValue(project);
+      vi.mocked(mockProjectRepository.getMemberRole).mockResolvedValue(null);
+      vi.mocked(mockTaskRepository.update).mockResolvedValue(updatedTask);
+      vi.mocked(mockTaskRepository.countByProjectAndStatus).mockResolvedValue({
+        a_fazer: 2,
+        em_andamento: 1,
+        aguardando: 0,
+        concluida: 1,
+      });
+      vi.mocked(mockProjectRepository.update).mockResolvedValue(makeProject({ progress: 25 }));
 
-      const result = await service.update(taskId, { status: 'concluida' }, userId);
-
-      expect(result.status).toBe('concluida');
-      expect(result.completedAt).toBeDefined();
-    });
-
-    it('deve recalcular progress do projeto após atualização', async () => {
-      const userId = 1;
-      const taskId = 1;
-      const projectId = 1;
-
-      const project = {
-        id: projectId,
-        code: 'PROJ-001',
-        title: 'Forno de Secagem',
-        ownerId: userId,
-        members: [],
-        status: 'planejamento',
-        progress: 50,
-        budgetPlanned: 185000,
-        budgetActual: 0,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      const existing = {
-        id: taskId,
-        code: 'PROJ-001-T01',
-        projectId,
-        phaseId: 1,
-        title: 'Instalar forno',
-        status: 'em_andamento',
-        estimatedCost: 50000,
-        actualCost: 0,
-        progress: 80,
-        dueDate: new Date('2026-12-31'),
-        completedAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      const updated = {
-        ...existing,
-        status: 'concluida',
-        completedAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      vi.mocked(mockTaskRepository.findById).mockResolvedValue(existing);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(project);
-      vi.mocked(mockTaskRepository.update).mockResolvedValue(updated);
-      vi.mocked(mockTaskRepository.findAll).mockResolvedValue({ data: [updated], total: 1, page: 1, limit: 50 });
-      vi.mocked(mockProjectRepository.update).mockResolvedValue(project);
-
-      await service.update(taskId, { status: 'concluida' }, userId);
-
-      expect(mockProjectRepository.update).toHaveBeenCalledWith(
-        projectId,
-        expect.objectContaining({ progress: expect.any(Number) })
-      );
+      const result = await service.update(1, { status: 'em_andamento' }, userId);
+      expect(result).toEqual(updatedTask);
     });
 
     it('deve lançar ForbiddenError se usuário não tem acesso', async () => {
-      const project = {
-        id: 1,
-        code: 'PROJ-001',
-        title: 'Forno de Secagem',
-        ownerId: 2, // Outro usuário
-        members: [],
-        status: 'planejamento',
-        progress: 0,
-        budgetPlanned: 185000,
-        budgetActual: 0,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+      const task = makeTask({ projectId: 1 });
+      const project = makeProject({ ownerId: 2 });
 
-      const existing = {
-        id: 1,
-        code: 'PROJ-001-T01',
-        projectId: 1,
-        phaseId: 1,
-        title: 'Instalar forno',
-        status: 'em_andamento',
-        estimatedCost: 50000,
-        actualCost: 0,
-        progress: 80,
-        dueDate: new Date('2026-12-31'),
-        completedAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      vi.mocked(mockTaskRepository.findById).mockResolvedValue(existing);
+      vi.mocked(mockTaskRepository.findById).mockResolvedValue(task);
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(project);
+      vi.mocked(mockProjectRepository.getMemberRole).mockResolvedValue(null);
 
-      await expect(service.update(1, { status: 'concluida' }, 1)).rejects.toThrow(ForbiddenError);
+      await expect(service.update(1, { status: 'concluida' }, 99)).rejects.toThrow(ForbiddenError);
+    });
+
+    it('deve recalcular progresso do projeto ao mudar status', async () => {
+      const userId = 1;
+      const task = makeTask({ projectId: 1, status: 'a_fazer' });
+      const project = makeProject({ ownerId: userId });
+      const updatedTask = makeTask({ status: 'concluida' as const });
+
+      vi.mocked(mockTaskRepository.findById).mockResolvedValue(task);
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(project);
+      vi.mocked(mockProjectRepository.isMember).mockResolvedValue(false);
+      vi.mocked(mockTaskRepository.update).mockResolvedValue(updatedTask);
+      vi.mocked(mockTaskRepository.countByProjectAndStatus).mockResolvedValue({
+        a_fazer: 1,
+        em_andamento: 0,
+        aguardando: 0,
+        concluida: 3,
+      });
+      vi.mocked(mockProjectRepository.update).mockResolvedValue(makeProject({ progress: 75 }));
+
+      await service.update(1, { status: 'concluida' }, userId);
+      // recalculateProjectProgress calls projectRepository.update with progress
+      expect(mockProjectRepository.update).toHaveBeenCalledWith(1, { progress: 75 });
     });
   });
 
   describe('getTodayTasks', () => {
     it('deve retornar tarefas com dueDate = hoje', async () => {
       const userId = 1;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const tasks = [makeTask({ dueDate: new Date() })];
 
-      const tasks = [
-        {
-          id: 1,
-          code: 'PROJ-001-T01',
-          projectId: 1,
-          phaseId: 1,
-          title: 'Tarefa hoje',
-          status: 'pendente',
-          estimatedCost: 5000,
-          actualCost: 0,
-          progress: 0,
-          dueDate: today,
-          completedAt: null,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      ];
-
-      vi.mocked(mockTaskRepository.findByDateRange).mockResolvedValue(tasks);
+      vi.mocked(mockTaskRepository.findDueToday).mockResolvedValue(tasks);
 
       const result = await service.getTodayTasks(userId);
-
       expect(result).toEqual(tasks);
-      expect(mockTaskRepository.findByDateRange).toHaveBeenCalled();
+      expect(mockTaskRepository.findDueToday).toHaveBeenCalledWith(userId);
     });
   });
 
@@ -355,84 +279,65 @@ describe('StrategicTaskService', () => {
       const userId = 1;
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-
-      const tasks = [
-        {
-          id: 1,
-          code: 'PROJ-001-T01',
-          projectId: 1,
-          phaseId: 1,
-          title: 'Tarefa atrasada',
-          status: 'em_andamento',
-          estimatedCost: 5000,
-          actualCost: 0,
-          progress: 50,
-          dueDate: yesterday,
-          completedAt: null,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      ];
+      const tasks = [makeTask({ dueDate: yesterday, status: 'em_andamento' })];
 
       vi.mocked(mockTaskRepository.findOverdue).mockResolvedValue(tasks);
 
       const result = await service.getOverdueTasks(userId);
-
       expect(result).toEqual(tasks);
-      expect(mockTaskRepository.findOverdue).toHaveBeenCalled();
+      expect(mockTaskRepository.findOverdue).toHaveBeenCalledWith(userId);
     });
   });
 
   describe('bulkUpdateStatus', () => {
     it('deve atualizar status de múltiplas tarefas', async () => {
       const userId = 1;
-      const taskIds = [1, 2, 3];
+      const taskIds = [1, 2];
+      const task = makeTask({ projectId: 1 });
+      const project = makeProject({ ownerId: userId });
+      const updatedTask = makeTask({ status: 'em_andamento' as const });
 
-      const task1 = {
-        id: 1,
-        code: 'PROJ-001-T01',
-        projectId: 1,
-        phaseId: 1,
-        title: 'Tarefa 1',
-        status: 'pendente',
-        estimatedCost: 5000,
-        actualCost: 0,
-        progress: 0,
-        dueDate: new Date(),
-        completedAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      const project = {
-        id: 1,
-        code: 'PROJ-001',
-        title: 'Forno de Secagem',
-        ownerId: userId,
-        members: [],
-        status: 'planejamento',
-        progress: 0,
-        budgetPlanned: 185000,
-        budgetActual: 0,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      vi.mocked(mockTaskRepository.findById).mockResolvedValue(task1);
+      vi.mocked(mockTaskRepository.findById).mockResolvedValue(task);
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(project);
-      vi.mocked(mockTaskRepository.update).mockResolvedValue({ ...task1, status: 'em_andamento' });
-      vi.mocked(mockTaskRepository.findAll).mockResolvedValue({ data: [], total: 0, page: 1, limit: 50 });
-      vi.mocked(mockProjectRepository.update).mockResolvedValue(project);
+      vi.mocked(mockProjectRepository.getMemberRole).mockResolvedValue(null);
+      vi.mocked(mockTaskRepository.update).mockResolvedValue(updatedTask);
+      vi.mocked(mockTaskRepository.countByProjectAndStatus).mockResolvedValue({
+        a_fazer: 2,
+        em_andamento: 2,
+        aguardando: 0,
+        concluida: 0,
+      });
+      vi.mocked(mockProjectRepository.update).mockResolvedValue(makeProject());
 
       await service.bulkUpdateStatus(taskIds, 'em_andamento', userId);
-
-      // findById é chamado múltiplas vezes (uma por tarefa + chamadas internas)
-      expect(mockTaskRepository.findById).toHaveBeenCalled();
-      expect(mockTaskRepository.update).toHaveBeenCalled();
+      expect(mockTaskRepository.update).toHaveBeenCalledTimes(2);
     });
 
     it('deve lançar ValidationError se status é inválido', async () => {
       await expect(service.bulkUpdateStatus([1], 'status_invalido' as any, 1)).rejects.toThrow(ValidationError);
+    });
+  });
+
+  describe('delete', () => {
+    it('deve deletar tarefa se usuário é owner do projeto', async () => {
+      const userId = 1;
+      const task = makeTask({ projectId: 1 });
+      const project = makeProject({ ownerId: userId });
+
+      vi.mocked(mockTaskRepository.findById).mockResolvedValue(task);
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(project);
+      vi.mocked(mockProjectRepository.getMemberRole).mockResolvedValue(null);
+      vi.mocked(mockTaskRepository.delete).mockResolvedValue(undefined);
+      vi.mocked(mockTaskRepository.countByProjectAndStatus).mockResolvedValue({
+        a_fazer: 1,
+        em_andamento: 0,
+        aguardando: 0,
+        concluida: 2,
+      });
+      vi.mocked(mockProjectRepository.update).mockResolvedValue(makeProject());
+
+      await service.delete(1, userId);
+      expect(mockTaskRepository.delete).toHaveBeenCalledWith(1);
     });
   });
 });

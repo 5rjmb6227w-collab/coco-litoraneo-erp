@@ -16,14 +16,13 @@ import type {
 } from '../repositories/interfaces';
 import type { IStrategicProjectService, StrategicProjectDashboard } from './interfaces/IStrategicProjectService';
 import { getStrategicProjectRepository } from '../repositories';
-import { NotFoundError, ValidationError, ForbiddenError, BusinessError } from '../errors';
+import { NotFoundError, ValidationError, ForbiddenError } from '../errors';
 import { emitEvent, EVENT_TYPES } from '../ai/eventEmitter';
 
 export class StrategicProjectService implements IStrategicProjectService {
   private repository: IStrategicProjectRepository;
 
   constructor(repository?: IStrategicProjectRepository) {
-    // Dependency Injection - permite injetar mock para testes
     this.repository = repository || getStrategicProjectRepository();
   }
 
@@ -32,14 +31,16 @@ export class StrategicProjectService implements IStrategicProjectService {
     filters: StrategicProjectFilters,
     pagination: PaginationOptions
   ): Promise<PaginatedResult<StrategicProject>> {
-    // Adicionar filtro de acesso: apenas projetos onde o usuário é owner ou membro
     const result = await this.repository.findAll(filters, pagination);
     
-    // Filtrar apenas projetos acessíveis ao usuário
-    const accessibleProjects = result.data.filter(project => 
-      project.ownerId === userId || 
-      (project.members && project.members.some(m => m.userId === userId))
+    // Filtrar apenas projetos acessíveis ao usuário (owner ou membro)
+    const memberChecks = await Promise.all(
+      result.data.map(async (project) => {
+        if (project.ownerId === userId) return true;
+        return this.repository.isMember(project.id, userId);
+      })
     );
+    const accessibleProjects = result.data.filter((_, i) => memberChecks[i]);
 
     return {
       ...result,
@@ -66,37 +67,37 @@ export class StrategicProjectService implements IStrategicProjectService {
       throw new ValidationError('Título do projeto é obrigatório');
     }
 
-    // Gerar código automático
-    const code = await this.generateProjectCode();
-
     // Criar projeto
     const project = await this.repository.create({
       ...data,
-      code,
       ownerId: userId,
       status: 'planejamento',
-      progress: 0,
-      budgetActual: 0
+      createdBy: userId,
     });
 
-    // Adicionar criador como owner nos members automaticamente
-    await this.repository.addMember(project.id, userId, 'owner');
+    // Nota: repository.create já adiciona o criador como owner nos members
 
     // Emitir evento para Copiloto IA
-    await emitEvent(EVENT_TYPES.STRATEGIC_PROJECT_CREATED, {
-      projectId: project.id,
-      projectCode: project.code,
-      projectTitle: project.title,
-      ownerId: userId,
-      budgetPlanned: project.budgetPlanned,
-      dueDate: project.dueDate
-    });
+    try {
+      await emitEvent({
+        eventType: EVENT_TYPES.STRATEGIC_PROJECT_CREATED,
+        entityType: 'strategic_project',
+        entityId: project.id,
+        userId,
+        payload: {
+          projectCode: project.code,
+          projectTitle: project.title,
+          budgetPlanned: project.budgetPlanned,
+        }
+      });
+    } catch (e) {
+      // fire-and-forget
+    }
 
     return project;
   }
 
   async update(id: number, data: UpdateStrategicProjectDTO, userId: number): Promise<StrategicProject> {
-    // Verificar se existe
     const existing = await this.repository.findById(id);
     if (!existing) {
       throw new NotFoundError('Projeto Estratégico', id);
@@ -106,45 +107,55 @@ export class StrategicProjectService implements IStrategicProjectService {
     await this.checkAccess(id, userId, 'editor');
 
     // Atualizar projeto
-    const updated = await this.repository.update(id, data);
+    const updated = await this.repository.update(id, { ...data, updatedBy: userId });
 
-    // Se budgetPlanned mudou, recalcular budgetActual
-    if (data.budgetPlanned !== undefined && data.budgetPlanned !== existing.budgetPlanned) {
-      await this.recalculateBudget(id);
-    }
-
-    // Se dueDate mudou e passou, detectar atraso
-    if (data.dueDate && new Date(data.dueDate) < new Date() && updated.status !== 'concluido' && updated.status !== 'cancelado') {
-      await emitEvent(EVENT_TYPES.STRATEGIC_PROJECT_OVERDUE, {
-        projectId: id,
-        projectCode: updated.code,
-        projectTitle: updated.title,
-        dueDate: data.dueDate
-      });
+    // Se targetEndDate mudou e passou, detectar atraso
+    if (data.targetEndDate && new Date(data.targetEndDate) < new Date() && updated.status !== 'concluido' && updated.status !== 'cancelado') {
+      try {
+        await emitEvent({
+          eventType: EVENT_TYPES.STRATEGIC_PROJECT_OVERDUE,
+          entityType: 'strategic_project',
+          entityId: id,
+          userId,
+          payload: {
+            projectCode: updated.code,
+            projectTitle: updated.title,
+            targetEndDate: data.targetEndDate
+          }
+        });
+      } catch (e) { /* fire-and-forget */ }
     }
 
     // Se orçamento estourado
-    if (updated.budgetActual > (updated.budgetPlanned * 1.1)) {
-      await emitEvent(EVENT_TYPES.STRATEGIC_BUDGET_EXCEEDED, {
-        projectId: id,
-        projectCode: updated.code,
-        budgetPlanned: updated.budgetPlanned,
-        budgetActual: updated.budgetActual,
-        percentage: Math.round((updated.budgetActual / updated.budgetPlanned) * 100)
-      });
+    const budgetActual = parseFloat(String(updated.budgetActual || '0'));
+    const budgetPlanned = parseFloat(String(updated.budgetPlanned || '0'));
+    if (budgetPlanned > 0 && budgetActual > (budgetPlanned * 1.1)) {
+      try {
+        await emitEvent({
+          eventType: EVENT_TYPES.STRATEGIC_BUDGET_EXCEEDED,
+          entityType: 'strategic_project',
+          entityId: id,
+          userId,
+          payload: {
+            projectCode: updated.code,
+            budgetPlanned: updated.budgetPlanned,
+            budgetActual: updated.budgetActual,
+            percentage: Math.round((budgetActual / budgetPlanned) * 100)
+          }
+        });
+      } catch (e) { /* fire-and-forget */ }
     }
 
     return updated;
   }
 
   async delete(id: number, userId: number): Promise<void> {
-    // Verificar se existe
     const project = await this.repository.findById(id);
     if (!project) {
       throw new NotFoundError('Projeto Estratégico', id);
     }
 
-    // Apenas owner ou admin pode excluir
+    // Apenas owner pode excluir
     if (project.ownerId !== userId) {
       throw new ForbiddenError('Apenas o owner pode excluir o projeto');
     }
@@ -157,19 +168,23 @@ export class StrategicProjectService implements IStrategicProjectService {
     const projects = await this.repository.findAll({}, { page: 1, limit: 1000 });
     
     // Filtrar apenas projetos acessíveis ao usuário
-    const accessibleProjects = projects.data.filter(project => 
-      project.ownerId === userId || 
-      (project.members && project.members.some(m => m.userId === userId))
+    const memberChecks = await Promise.all(
+      projects.data.map(async (project) => {
+        if (project.ownerId === userId) return true;
+        return this.repository.isMember(project.id, userId);
+      })
     );
+    const accessibleProjects = projects.data.filter((_, i) => memberChecks[i]);
 
-    const inProgress = accessibleProjects.filter(p => p.status === 'andamento').length;
+    const inProgress = accessibleProjects.filter(p => p.status === 'em_andamento').length;
     const completed = accessibleProjects.filter(p => p.status === 'concluido').length;
-    const overdue = accessibleProjects.filter(p => 
-      new Date(p.dueDate) < new Date() && p.status !== 'concluido' && p.status !== 'cancelado'
-    ).length;
+    const overdue = accessibleProjects.filter(p => {
+      if (!p.targetEndDate) return false;
+      return new Date(p.targetEndDate) < new Date() && p.status !== 'concluido' && p.status !== 'cancelado';
+    }).length;
 
-    const totalBudgetPlanned = accessibleProjects.reduce((sum, p) => sum + (p.budgetPlanned || 0), 0);
-    const totalBudgetActual = accessibleProjects.reduce((sum, p) => sum + (p.budgetActual || 0), 0);
+    const totalBudgetPlanned = accessibleProjects.reduce((sum, p) => sum + parseFloat(String(p.budgetPlanned || '0')), 0);
+    const totalBudgetActual = accessibleProjects.reduce((sum, p) => sum + parseFloat(String(p.budgetActual || '0')), 0);
     const averageProgress = accessibleProjects.length > 0 
       ? Math.round(accessibleProjects.reduce((sum, p) => sum + (p.progress || 0), 0) / accessibleProjects.length)
       : 0;
@@ -204,49 +219,17 @@ export class StrategicProjectService implements IStrategicProjectService {
       return;
     }
 
-    // Buscar membro
-    const member = project.members?.find(m => m.userId === userId);
-    if (!member) {
+    // Buscar role do membro
+    const memberRole = await this.repository.getMemberRole(projectId, userId);
+    if (!memberRole) {
       throw new ForbiddenError('Você não tem acesso a este projeto');
     }
 
     // Verificar hierarquia
-    const roleHierarchy = { viewer: 0, editor: 1, owner: 2 };
-    if (roleHierarchy[member.role as keyof typeof roleHierarchy] < roleHierarchy[requiredRole]) {
+    const roleHierarchy: Record<string, number> = { viewer: 0, editor: 1, owner: 2 };
+    if ((roleHierarchy[memberRole] ?? 0) < (roleHierarchy[requiredRole] ?? 0)) {
       throw new ForbiddenError(`Você precisa ser ${requiredRole} para realizar esta ação`);
     }
-  }
-
-  /**
-   * Gera código automático do projeto
-   * Formato: PROJ-001, PROJ-002, etc.
-   */
-  private async generateProjectCode(): Promise<string> {
-    const projects = await this.repository.findAll({}, { page: 1, limit: 1000 });
-    const codes = projects.data
-      .map(p => p.code)
-      .filter(code => code.startsWith('PROJ-'))
-      .map(code => parseInt(code.replace('PROJ-', ''), 10))
-      .filter(num => !isNaN(num))
-      .sort((a, b) => b - a);
-
-    const nextNumber = (codes[0] || 0) + 1;
-    return `PROJ-${String(nextNumber).padStart(3, '0')}`;
-  }
-
-  /**
-   * Recalcula o orçamento real do projeto
-   * Soma actualCost de todas as tarefas
-   */
-  private async recalculateBudget(projectId: number): Promise<void> {
-    // Buscar todas as tarefas do projeto
-    const tasks = await this.repository.getTasksByProject(projectId);
-    
-    // Somar actualCost
-    const totalActualCost = tasks.reduce((sum, task) => sum + (task.actualCost || 0), 0);
-
-    // Atualizar projeto
-    await this.repository.update(projectId, { budgetActual: totalActualCost });
   }
 }
 

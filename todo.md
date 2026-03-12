@@ -1169,16 +1169,34 @@
 - [x] NÃO criou Frontend ✔️ (Tarefa 3)
 
 
-## Módulo Meus Projetos — Tarefa 2 (Services + Router)
-- [ ] PASSO 1: IStrategicProjectService.ts criado com 6 métodos
-- [ ] PASSO 1: IStrategicTaskService.ts criado com 10 métodos
-- [ ] PASSO 1: interfaces/index.ts atualizado
-- [ ] PASSO 2: strategic-project.service.ts implementado com DI e lógica de negócio
-- [ ] PASSO 2: strategic-task.service.ts implementado com DI e lógica de negócio
-- [ ] PASSO 2: services/index.ts atualizado com getters
-- [ ] PASSO 2: EVENT_TYPES adicionados em eventEmitter.ts
-- [ ] PASSO 3: strategicRouter.ts criado como router modular enxuto
-- [ ] PASSO 4: strategicRouter registrado no appRouter
-- [ ] PASSO 5: Testes unitários dos Services passando (com mocks)
-- [ ] Router NÃO contém lógica de negócio (apenas Zod + Service)
-- [ ] NÃO criar Frontend (isso é Tarefa 3)
+## Módulo Meus Projetos — Tarefa 2 (Services + Router) ✅
+- [x] PASSO 1: IStrategicProjectService.ts criado com 6 métodos
+- [x] PASSO 1: IStrategicTaskService.ts criado com 10 métodos
+- [x] PASSO 1: interfaces/index.ts atualizado
+- [x] PASSO 2: strategic-project.service.ts implementado com DI e lógica de negócio
+- [x] PASSO 2: strategic-task.service.ts implementado com DI e lógica de negócio
+- [x] PASSO 2: services/index.ts atualizado com getters
+- [x] PASSO 2: EVENT_TYPES adicionados em eventEmitter.ts
+- [x] PASSO 3: strategicRouter.ts criado como router modular enxuto
+- [x] PASSO 4: strategicRouter registrado no appRouter
+- [x] PASSO 5: Testes unitários dos Services passando (com mocks)
+- [x] Router NÃO contém lógica de negócio (apenas Zod + Service)
+- [x] NÃO criar Frontend (isso é Tarefa 3)
+
+
+## Módulo Meus Projetos — Tarefa 3 (Frontend + Correções)
+- [x] PASSO 8: Corrigir enums de status no Router (planejamento/em_andamento/concluido/cancelado)
+- [x] PASSO 8: Adicionar CRUD de Fases no Router (createPhase, updatePhase, deletePhase)
+- [x] PASSO 8: Corrigir StrategicProjectService (tipos Date, emitEvent, checkAccess)
+- [x] PASSO 8: Corrigir StrategicTaskService (tipos Date, emitEvent, checkProjectAccess, constructor DI)
+- [x] PASSO 8: Corrigir StrategicProjectRepository (Set iteration, date conversion)
+- [x] PASSO 8: Corrigir StrategicTaskRepository (date comparisons, date conversion)
+- [x] PASSO 8: Zero erros TypeScript no servidor
+- [x] PASSO 9: EditProjectModal.tsx reescrito com campos corretos
+- [x] PASSO 9: TaskSidebar.tsx reescrito com tipos corretos (number IDs, correct trpc calls)
+- [x] PASSO 9: MeusProjetosDetalhe.tsx reescrito com dados corretos (fases/membros separados)
+- [x] PASSO 9: MeusProjetosDashboard.tsx corrigido (field names, create mutation)
+- [x] PASSO 9: MeusProjetosLista.tsx corrigido (status enums, field names)
+- [x] PASSO 10: Testes unitários strategic-project.service.test.ts (14 testes passando)
+- [x] PASSO 10: Testes unitários strategic-task.service.test.ts (13 testes passando)
+- [x] PASSO 10: Total: 27 novos testes passando

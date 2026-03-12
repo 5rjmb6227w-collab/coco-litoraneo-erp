@@ -34,8 +34,8 @@ export interface CreateStrategicTaskDTO {
   status?: 'a_fazer' | 'em_andamento' | 'aguardando' | 'concluida' | 'cancelada';
   assigneeId?: number;
   assigneeName?: string;
-  startDate?: string;
-  dueDate?: string;
+  startDate?: string | Date;
+  dueDate?: string | Date;
   estimatedHours?: string;
   estimatedCost?: string;
   orderIndex?: number;
@@ -52,8 +52,8 @@ export interface UpdateStrategicTaskDTO {
   status?: 'a_fazer' | 'em_andamento' | 'aguardando' | 'concluida' | 'cancelada';
   assigneeId?: number | null;
   assigneeName?: string | null;
-  startDate?: string | null;
-  dueDate?: string | null;
+  startDate?: string | Date | null;
+  dueDate?: string | Date | null;
   completedAt?: Date | null;
   estimatedHours?: string | null;
   actualHours?: string | null;
@@ -79,8 +79,8 @@ export interface StrategicTask {
   status: 'a_fazer' | 'em_andamento' | 'aguardando' | 'concluida' | 'cancelada';
   assigneeId: number | null;
   assigneeName: string | null;
-  startDate: string | null;
-  dueDate: string | null;
+  startDate: Date | null;
+  dueDate: Date | null;
   completedAt: Date | null;
   estimatedHours: string | null;
   actualHours: string | null;

@@ -83,9 +83,12 @@ import CustoConfigCategorias from "./pages/CustoConfigCategorias";
 import FinancePlanoContas from "./pages/FinancePlanoContas";
 import FinanceBancos from "./pages/FinanceBancos";
 import EstoqueReconciliacao from "./pages/EstoqueReconciliacao";
-import { lazy } from "react";
+import { lazy, Suspense } from "react";
 
-
+// Meus Projetos (lazy loaded)
+const MeusProjetosDashboard = lazy(() => import("./pages/MeusProjetosDashboard"));
+const MeusProjetosLista = lazy(() => import("./pages/MeusProjetosLista"));
+const MeusProjetosDetalhe = lazy(() => import("./pages/MeusProjetosDetalhe"));
 
 function Router() {
   return (
@@ -194,7 +197,9 @@ function Router() {
         <Route path="/qualidade/dashboard" component={DashboardQualidade} />
         
         {/* Meus Projetos */}
-
+        <Route path="/projetos/dashboard">{() => <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B7355]"></div></div>}><MeusProjetosDashboard /></Suspense>}</Route>
+        <Route path="/projetos/:id">{(params: any) => <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B7355]"></div></div>}><MeusProjetosDetalhe /></Suspense>}</Route>
+        <Route path="/projetos">{() => <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B7355]"></div></div>}><MeusProjetosLista /></Suspense>}</Route>
         
         {/* Segurança e Autenticação */}
         <Route path="/seguranca/2fa" component={Setup2FA} />
