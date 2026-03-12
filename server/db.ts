@@ -2475,6 +2475,104 @@ export async function getDashboardAlerts(limit: number = 10) {
     });
   });
 
+  // 6. Projetos estratégicos atrasados
+  try {
+    const { strategicProjects: sp } = await import("../drizzle/schema");
+    const overdueProjects = await db.select({
+      id: sp.id,
+      title: sp.title,
+      code: sp.code,
+      targetEndDate: sp.targetEndDate,
+      priority: sp.priority,
+    }).from(sp)
+      .where(and(
+        sql`${sp.status} IN ('planejamento', 'em_andamento', 'pausado')`,
+        sql`${sp.targetEndDate} < NOW()`
+      ))
+      .limit(3);
+
+    overdueProjects.forEach(project => {
+      alerts.push({
+        id: project.id + 90000,
+        type: 'project_overdue',
+        severity: project.priority === 'critica' || project.priority === 'alta' ? 'critical' : 'warning',
+        title: 'Projeto Atrasado',
+        message: `${project.code || 'Projeto'} "${project.title}" ultrapassou o prazo (${project.targetEndDate ? new Date(project.targetEndDate).toLocaleDateString('pt-BR') : '-'})`,
+        timestamp: project.targetEndDate || new Date(),
+        module: 'projetos',
+      });
+    });
+  } catch (e) {
+    // Tabela pode não existir ainda
+  }
+
+  // 7. Tarefas estratégicas atrasadas
+  try {
+    const { strategicTasks: st } = await import("../drizzle/schema");
+    const overdueTasks = await db.select({
+      id: st.id,
+      title: st.title,
+      code: st.code,
+      dueDate: st.dueDate,
+      priority: st.priority,
+      projectId: st.projectId,
+    }).from(st)
+      .where(and(
+        sql`${st.status} IN ('a_fazer', 'em_andamento', 'aguardando')`,
+        sql`${st.dueDate} < NOW()`
+      ))
+      .limit(3);
+
+    overdueTasks.forEach(task => {
+      alerts.push({
+        id: task.id + 80000,
+        type: 'task_overdue',
+        severity: task.priority === 'critica' || task.priority === 'alta' ? 'critical' : 'warning',
+        title: 'Tarefa Atrasada',
+        message: `${task.code || 'Tarefa'} "${task.title}" está atrasada (prazo: ${task.dueDate ? new Date(task.dueDate).toLocaleDateString('pt-BR') : '-'})`,
+        timestamp: task.dueDate || new Date(),
+        module: 'projetos',
+      });
+    });
+  } catch (e) {
+    // Tabela pode não existir ainda
+  }
+
+  // 8. Orçamento estourado em projetos
+  try {
+    const { strategicProjects: sp } = await import("../drizzle/schema");
+    const overBudgetProjects = await db.select({
+      id: sp.id,
+      title: sp.title,
+      code: sp.code,
+      budgetPlanned: sp.budgetPlanned,
+      budgetActual: sp.budgetActual,
+    }).from(sp)
+      .where(and(
+        sql`${sp.status} IN ('planejamento', 'em_andamento', 'pausado')`,
+        sql`${sp.budgetActual} > ${sp.budgetPlanned}`,
+        sql`${sp.budgetPlanned} > 0`
+      ))
+      .limit(3);
+
+    overBudgetProjects.forEach(project => {
+      const planned = Number(project.budgetPlanned) || 0;
+      const actual = Number(project.budgetActual) || 0;
+      const pct = planned > 0 ? Math.round((actual / planned) * 100) : 0;
+      alerts.push({
+        id: project.id + 70000,
+        type: 'budget_overrun',
+        severity: pct > 120 ? 'critical' : 'warning',
+        title: 'Orçamento Estourado',
+        message: `${project.code || 'Projeto'} "${project.title}" está ${pct}% do orçamento (R$ ${actual.toLocaleString('pt-BR')} / R$ ${planned.toLocaleString('pt-BR')})`,
+        timestamp: new Date(),
+        module: 'projetos',
+      });
+    });
+  } catch (e) {
+    // Tabela pode não existir ainda
+  }
+
   // Ordenar por timestamp (mais recentes primeiro) e limitar
   return alerts
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())

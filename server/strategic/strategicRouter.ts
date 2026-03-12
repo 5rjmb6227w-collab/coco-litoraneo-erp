@@ -183,6 +183,7 @@ export const strategicRouter = router({
         projectId: z.number().int().positive(),
         status: z.enum(['a_fazer', 'em_andamento', 'aguardando', 'concluida', 'cancelada']).optional(),
         phaseId: z.number().int().positive().optional(),
+        search: z.string().optional(),
         page: z.number().int().positive().default(1),
         limit: z.number().int().positive().default(200)
       }))
@@ -190,11 +191,24 @@ export const strategicRouter = router({
         const service = new StrategicTaskService();
         return service.list(input.projectId, {
           status: input.status,
-          phaseId: input.phaseId
+          phaseId: input.phaseId,
+          search: input.search,
         }, {
           page: input.page,
           limit: input.limit
         }, ctx.user.id);
+      }),
+
+    search: protectedProcedure
+      .input(z.object({
+        search: z.string().min(2),
+        page: z.number().int().positive().default(1),
+        limit: z.number().int().positive().default(5),
+      }))
+      .query(async ({ input }) => {
+        const { getStrategicTaskRepository } = await import('../repositories');
+        const repo = getStrategicTaskRepository();
+        return repo.findAll({ search: input.search }, { page: input.page, limit: input.limit });
       }),
 
     getById: protectedProcedure

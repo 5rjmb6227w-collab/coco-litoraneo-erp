@@ -25,6 +25,8 @@ import {
   nonConformities,
   purchaseRequests,
   users,
+  strategicProjects,
+  strategicTasks,
 } from "../../drizzle/schema";
 import { eq, and, lte, sql, count, desc } from "drizzle-orm";
 
@@ -471,16 +473,232 @@ export async function checkPendingPurchaseRequests(daysThreshold: number = 3): P
 // EXECUÇÃO DE TODOS OS INSIGHTS
 // ============================================================================
 
+
+// ============================================================================
+// INSIGHT 8: PROJETOS ESTRATÉGICOS ATRASADOS
+// ============================================================================
+
+export async function checkStrategicProjectsOverdue(): Promise<InsightResult> {
+  const db = await getDb();
+  if (!db) return { created: 0, skipped: 0, errors: ["Database not available"] };
+
+  const result: InsightResult = { created: 0, skipped: 0, errors: [] };
+  const now = new Date();
+
+  try {
+    // Busca projetos em andamento com targetEndDate no passado
+    const overdueProjects = await db
+      .select()
+      .from(strategicProjects)
+      .where(and(
+        sql`${strategicProjects.status} IN ('planejamento', 'em_andamento', 'pausado')`,
+        lte(strategicProjects.targetEndDate, now)
+      ));
+
+    for (const project of overdueProjects) {
+      // Verifica se já existe insight ativo
+      const existing = await db
+        .select()
+        .from(aiInsights)
+        .where(and(
+          eq(aiInsights.insightType, "strategic_project_overdue"),
+          eq(aiInsights.entityType, "strategic_project"),
+          eq(aiInsights.entityId, project.id),
+          eq(aiInsights.status, "active")
+        ))
+        .limit(1);
+
+      if (existing.length > 0) {
+        result.skipped++;
+        continue;
+      }
+
+      const targetDate = project.targetEndDate ? new Date(project.targetEndDate) : now;
+      const daysOverdue = Math.ceil((now.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      await db.insert(aiInsights).values({
+        insightType: "strategic_project_overdue",
+        severity: daysOverdue > 30 ? "critical" : "warning",
+        title: `Projeto "${project.title}" atrasado há ${daysOverdue} dias`,
+        summary: `O projeto ${project.code} - "${project.title}" deveria ter sido concluído em ${targetDate.toLocaleDateString("pt-BR")} mas está com status "${project.status}". Progresso atual: ${project.progress}%.`,
+        details: {
+          projectId: project.id,
+          projectCode: project.code,
+          projectTitle: project.title,
+          status: project.status,
+          progress: project.progress,
+          targetEndDate: project.targetEndDate,
+          daysOverdue,
+          budgetPlanned: Number(project.budgetPlanned),
+          budgetActual: Number(project.budgetActual),
+        },
+        module: "projetos",
+        entityType: "strategic_project",
+        entityId: project.id,
+      });
+      result.created++;
+    }
+  } catch (error) {
+    result.errors.push(`Erro ao verificar projetos estratégicos atrasados: ${error}`);
+  }
+
+  return result;
+}
+
+// ============================================================================
+// INSIGHT 9: TAREFAS ESTRATÉGICAS ATRASADAS
+// ============================================================================
+
+export async function checkStrategicTasksOverdue(): Promise<InsightResult> {
+  const db = await getDb();
+  if (!db) return { created: 0, skipped: 0, errors: ["Database not available"] };
+
+  const result: InsightResult = { created: 0, skipped: 0, errors: [] };
+  const now = new Date();
+
+  try {
+    // Busca tarefas não concluídas com dueDate no passado
+    const overdueTasks = await db
+      .select()
+      .from(strategicTasks)
+      .where(and(
+        sql`${strategicTasks.status} IN ('a_fazer', 'em_andamento', 'aguardando')`,
+        lte(strategicTasks.dueDate, now)
+      ));
+
+    for (const task of overdueTasks) {
+      const existing = await db
+        .select()
+        .from(aiInsights)
+        .where(and(
+          eq(aiInsights.insightType, "strategic_task_overdue"),
+          eq(aiInsights.entityType, "strategic_task"),
+          eq(aiInsights.entityId, task.id),
+          eq(aiInsights.status, "active")
+        ))
+        .limit(1);
+
+      if (existing.length > 0) {
+        result.skipped++;
+        continue;
+      }
+
+      const dueDate = task.dueDate ? new Date(task.dueDate) : now;
+      const daysOverdue = Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      await db.insert(aiInsights).values({
+        insightType: "strategic_task_overdue",
+        severity: daysOverdue > 14 ? "critical" : "warning",
+        title: `Tarefa "${task.title}" atrasada há ${daysOverdue} dias`,
+        summary: `A tarefa ${task.code || ''} - "${task.title}" deveria ter sido concluída em ${dueDate.toLocaleDateString("pt-BR")}. Status atual: "${task.status}".`,
+        details: {
+          taskId: task.id,
+          taskCode: task.code,
+          taskTitle: task.title,
+          projectId: task.projectId,
+          status: task.status,
+          priority: task.priority,
+          dueDate: task.dueDate,
+          daysOverdue,
+          assigneeId: task.assigneeId,
+          estimatedCost: Number(task.estimatedCost),
+        },
+        module: "projetos",
+        entityType: "strategic_task",
+        entityId: task.id,
+      });
+      result.created++;
+    }
+  } catch (error) {
+    result.errors.push(`Erro ao verificar tarefas estratégicas atrasadas: ${error}`);
+  }
+
+  return result;
+}
+
+// ============================================================================
+// INSIGHT 10: ORÇAMENTO DE PROJETO ESTOURADO
+// ============================================================================
+
+export async function checkStrategicBudgetExceeded(): Promise<InsightResult> {
+  const db = await getDb();
+  if (!db) return { created: 0, skipped: 0, errors: ["Database not available"] };
+
+  const result: InsightResult = { created: 0, skipped: 0, errors: [] };
+
+  try {
+    // Busca projetos onde budgetActual > budgetPlanned * 1.1 (10% de tolerância)
+    const overBudgetProjects = await db
+      .select()
+      .from(strategicProjects)
+      .where(and(
+        sql`${strategicProjects.status} IN ('planejamento', 'em_andamento', 'pausado')`,
+        sql`CAST(${strategicProjects.budgetActual} AS DECIMAL) > CAST(${strategicProjects.budgetPlanned} AS DECIMAL) * 1.1`,
+        sql`CAST(${strategicProjects.budgetPlanned} AS DECIMAL) > 0`
+      ));
+
+    for (const project of overBudgetProjects) {
+      const existing = await db
+        .select()
+        .from(aiInsights)
+        .where(and(
+          eq(aiInsights.insightType, "strategic_budget_exceeded"),
+          eq(aiInsights.entityType, "strategic_project"),
+          eq(aiInsights.entityId, project.id),
+          eq(aiInsights.status, "active")
+        ))
+        .limit(1);
+
+      if (existing.length > 0) {
+        result.skipped++;
+        continue;
+      }
+
+      const planned = Number(project.budgetPlanned);
+      const actual = Number(project.budgetActual);
+      const percentage = Math.round((actual / planned) * 100);
+
+      await db.insert(aiInsights).values({
+        insightType: "strategic_budget_exceeded",
+        severity: percentage > 150 ? "critical" : "warning",
+        title: `Orçamento do projeto "${project.title}" estourado (${percentage}%)`,
+        summary: `O projeto ${project.code} - "${project.title}" está com orçamento ${percentage}% do planejado. Planejado: R$ ${planned.toLocaleString("pt-BR")}, Realizado: R$ ${actual.toLocaleString("pt-BR")}.`,
+        details: {
+          projectId: project.id,
+          projectCode: project.code,
+          projectTitle: project.title,
+          budgetPlanned: planned,
+          budgetActual: actual,
+          percentage,
+          overBudgetAmount: actual - planned,
+        },
+        module: "projetos",
+        entityType: "strategic_project",
+        entityId: project.id,
+      });
+      result.created++;
+    }
+  } catch (error) {
+    result.errors.push(`Erro ao verificar orçamento de projetos: ${error}`);
+  }
+
+  return result;
+}
+
+// ============================================================================
+// EXECUÇÃO DE TODOS OS INSIGHTS
+// ============================================================================
 export async function runAllInsightChecks(): Promise<Record<string, InsightResult>> {
   const results: Record<string, InsightResult> = {};
-
   results.criticalStock = await checkCriticalStock();
   results.overdueProducerPayments = await checkOverdueProducerPayments();
   results.expiringProducts = await checkExpiringProducts();
   results.overduePayables = await checkOverduePayables();
   results.openNCs = await checkOpenNCs();
   results.pendingPurchaseRequests = await checkPendingPurchaseRequests();
-
+  results.strategicProjectsOverdue = await checkStrategicProjectsOverdue();
+  results.strategicTasksOverdue = await checkStrategicTasksOverdue();
+  results.strategicBudgetExceeded = await checkStrategicBudgetExceeded();
   return results;
 }
 

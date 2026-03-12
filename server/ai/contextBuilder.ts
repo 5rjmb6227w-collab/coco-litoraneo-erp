@@ -26,6 +26,9 @@ import {
   qualityAnalyses,
   nonConformities,
   employees,
+  strategicProjects,
+  strategicTasks,
+  strategicPhases,
 } from "../../drizzle/schema";
 import { desc, eq, gte, lte, and, sql, count, sum, avg } from "drizzle-orm";
 
@@ -423,18 +426,103 @@ export async function getSourcesByIds(ids: number[]): Promise<Record<string, unk
 }
 
 // ============================================================================
-// CONSTRUTOR DE CONTEXTO PRINCIPAL
+// RESUMO DE PROJETOS ESTRATÉGICOS
 // ============================================================================
 
-/**
- * Constrói o contexto completo para o LLM
- */
+export async function getStrategicSummary(): Promise<Record<string, unknown>> {
+  const db = await getDb();
+  if (!db) return {};
+
+  try {
+    // Total de projetos por status
+    const projectsByStatus = await db
+      .select({
+        status: strategicProjects.status,
+        count: count(),
+      })
+      .from(strategicProjects)
+      .groupBy(strategicProjects.status);
+
+    // Orçamento total planejado e realizado
+    const budgetResult = await db
+      .select({
+        totalPlanned: sum(strategicProjects.budgetPlanned),
+        totalActual: sum(strategicProjects.budgetActual),
+        avgProgress: avg(strategicProjects.progress),
+      })
+      .from(strategicProjects)
+      .where(
+        sql`${strategicProjects.status} IN ('planejamento', 'em_andamento', 'pausado')`
+      );
+
+    // Tarefas por status
+    const tasksByStatus = await db
+      .select({
+        status: strategicTasks.status,
+        count: count(),
+      })
+      .from(strategicTasks)
+      .groupBy(strategicTasks.status);
+
+    // Tarefas atrasadas
+    const now = new Date();
+    const overdueTasksResult = await db
+      .select({ count: count() })
+      .from(strategicTasks)
+      .where(and(
+        sql`${strategicTasks.status} IN ('a_fazer', 'em_andamento', 'aguardando')`,
+        lte(strategicTasks.dueDate, now)
+      ));
+
+    // Projetos atrasados
+    const overdueProjectsResult = await db
+      .select({ count: count() })
+      .from(strategicProjects)
+      .where(and(
+        sql`${strategicProjects.status} IN ('planejamento', 'em_andamento', 'pausado')`,
+        lte(strategicProjects.targetEndDate, now)
+      ));
+
+    const statusMap: Record<string, number> = {};
+    for (const row of projectsByStatus) {
+      statusMap[row.status] = row.count;
+    }
+
+    const taskStatusMap: Record<string, number> = {};
+    for (const row of tasksByStatus) {
+      taskStatusMap[row.status] = row.count;
+    }
+
+    return {
+      projetos: {
+        porStatus: statusMap,
+        totalAtivos: (statusMap['planejamento'] || 0) + (statusMap['em_andamento'] || 0) + (statusMap['pausado'] || 0),
+        concluidos: statusMap['concluido'] || 0,
+        atrasados: overdueProjectsResult[0]?.count || 0,
+      },
+      orcamento: {
+        totalPlanejado: Number(budgetResult[0]?.totalPlanned) || 0,
+        totalRealizado: Number(budgetResult[0]?.totalActual) || 0,
+        progressoMedio: Math.round(Number(budgetResult[0]?.avgProgress) || 0),
+      },
+      tarefas: {
+        porStatus: taskStatusMap,
+        atrasadas: overdueTasksResult[0]?.count || 0,
+      },
+    };
+  } catch (error) {
+    console.error("[Context Builder] Erro ao gerar resumo estratégico:", error);
+    return {};
+  }
+}
+
 export async function buildContext(
   options: {
     includeSummary?: boolean;
     includeProduction?: boolean;
     includeFinancial?: boolean;
     includeQuality?: boolean;
+    includeStrategic?: boolean;
     includeEvents?: boolean;
     includeInsights?: boolean;
     eventLimit?: number;
@@ -491,6 +579,16 @@ export async function buildContext(
     layers.push({
       type: "events",
       data: { eventosRecentes: events },
+      timestamp: now,
+    });
+  }
+
+  // Resumo estratégico
+  if (options.includeStrategic) {
+    const strategic = await getStrategicSummary();
+    layers.push({
+      type: "summary",
+      data: { resumoEstrategico: strategic },
       timestamp: now,
     });
   }

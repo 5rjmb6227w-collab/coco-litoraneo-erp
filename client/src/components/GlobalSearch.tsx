@@ -25,12 +25,14 @@ import {
   BarChart3,
   Calendar,
   Bot,
-  Loader2
+  Loader2,
+  FolderKanban,
+  CheckSquare,
 } from "lucide-react";
 
 interface SearchResult {
   id: string;
-  type: "page" | "producer" | "load" | "product" | "payment" | "employee" | "nc";
+  type: "page" | "producer" | "load" | "product" | "payment" | "employee" | "nc" | "project" | "task";
   title: string;
   subtitle?: string;
   path: string;
@@ -73,6 +75,9 @@ const systemPages: SearchResult[] = [
   { id: "alertas", type: "page", title: "Central de Alertas", path: "/alertas", icon: <AlertTriangle className="h-4 w-4" /> },
   { id: "configuracoes", type: "page", title: "Configurações", path: "/configuracoes", icon: <Settings className="h-4 w-4" /> },
   { id: "copiloto", type: "page", title: "Copiloto IA", path: "/copiloto", icon: <Bot className="h-4 w-4" /> },
+  // Páginas de Projetos Estratégicos
+  { id: "projetos-dashboard", type: "page", title: "Projetos — Dashboard", path: "/projetos/dashboard", icon: <FolderKanban className="h-4 w-4" /> },
+  { id: "projetos-lista", type: "page", title: "Projetos — Lista", path: "/projetos", icon: <FolderKanban className="h-4 w-4" /> },
 ];
 
 export function GlobalSearch() {
@@ -89,6 +94,18 @@ export function GlobalSearch() {
 
   const { data: employees, isLoading: loadingEmployees } = trpc.employees.list.useQuery(
     { search: query },
+    { enabled: open && query.length >= 2 }
+  );
+
+  // Busca de projetos estratégicos
+  const { data: projectsData, isLoading: loadingProjects } = trpc.strategic.projects.list.useQuery(
+    { page: 1, limit: 5, search: query },
+    { enabled: open && query.length >= 2 }
+  );
+
+  // Busca de tarefas estratégicas
+  const { data: tasksData, isLoading: loadingTasks } = trpc.strategic.tasks.search.useQuery(
+    { search: query, page: 1, limit: 5 },
     { enabled: open && query.length >= 2 }
   );
 
@@ -115,6 +132,32 @@ export function GlobalSearch() {
       page => page.title.toLowerCase().includes(lowerQuery)
     );
     results.push(...filteredPages.slice(0, 5));
+
+    // Adicionar projetos estratégicos
+    if (projectsData?.data && query.length >= 2) {
+      const projectResults: SearchResult[] = projectsData.data.slice(0, 5).map((p: any) => ({
+        id: `project-${p.id}`,
+        type: "project" as const,
+        title: `${p.code} — ${p.title}`,
+        subtitle: `${p.status === 'em_andamento' ? 'Em andamento' : p.status === 'planejamento' ? 'Planejamento' : p.status === 'concluido' ? 'Concluído' : p.status === 'pausado' ? 'Pausado' : 'Cancelado'} · ${p.progress}%`,
+        path: `/projetos/${p.id}`,
+        icon: <FolderKanban className="h-4 w-4" />,
+      }));
+      results.push(...projectResults);
+    }
+
+    // Adicionar tarefas estratégicas
+    if (tasksData?.data && query.length >= 2) {
+      const taskResults: SearchResult[] = tasksData.data.slice(0, 5).map((t: any) => ({
+        id: `task-${t.id}`,
+        type: "task" as const,
+        title: `${t.code || ''} ${t.title}`.trim(),
+        subtitle: `${t.status === 'a_fazer' ? 'A fazer' : t.status === 'em_andamento' ? 'Em andamento' : t.status === 'concluida' ? 'Concluída' : t.status === 'aguardando' ? 'Aguardando' : 'Cancelada'} · ${t.priority}`,
+        path: `/projetos/${t.projectId}?tab=tarefas`,
+        icon: <CheckSquare className="h-4 w-4" />,
+      }));
+      results.push(...taskResults);
+    }
 
     // Adicionar produtores
     if (producers && query.length >= 2) {
@@ -143,10 +186,10 @@ export function GlobalSearch() {
     }
 
     return results;
-  }, [query, producers, employees]);
+  }, [query, producers, employees, projectsData, tasksData]);
 
   const results = getResults();
-  const isLoading = loadingProducers || loadingEmployees;
+  const isLoading = loadingProducers || loadingEmployees || loadingProjects || loadingTasks;
 
   // Navegação por teclado
   useEffect(() => {
@@ -193,6 +236,8 @@ export function GlobalSearch() {
       payment: { label: "Pagamento", variant: "outline" },
       employee: { label: "Colaborador", variant: "secondary" },
       nc: { label: "NC", variant: "outline" },
+      project: { label: "Projeto", variant: "secondary" },
+      task: { label: "Tarefa", variant: "outline" },
     };
     return badges[type];
   };
@@ -218,7 +263,7 @@ export function GlobalSearch() {
           <div className="flex items-center border-b px-3">
             <Search className="h-4 w-4 text-muted-foreground mr-2" />
             <Input
-              placeholder="Buscar páginas, produtores, colaboradores..."
+              placeholder="Buscar páginas, projetos, tarefas, produtores..."
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -234,7 +279,7 @@ export function GlobalSearch() {
           <div className="max-h-[400px] overflow-y-auto p-2">
             {query.length === 0 ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
-                <p>Digite para buscar páginas, produtores, colaboradores...</p>
+                <p>Digite para buscar páginas, projetos, tarefas, produtores...</p>
                 <p className="mt-2 text-xs">
                   Use <kbd className="px-1 py-0.5 bg-muted rounded text-xs">↑</kbd>{" "}
                   <kbd className="px-1 py-0.5 bg-muted rounded text-xs">↓</kbd> para navegar e{" "}

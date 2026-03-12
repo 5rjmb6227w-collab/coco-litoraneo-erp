@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, PlayCircle, AlertTriangle, DollarSign, CheckCircle, ThumbsUp, Plus } from "lucide-react";
+import { Briefcase, PlayCircle, AlertTriangle, DollarSign, CheckCircle, ThumbsUp, Plus, FolderKanban } from "lucide-react";
+import { toast } from "sonner";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from "chart.js";
 import { Doughnut, Bar } from "react-chartjs-2";
 
@@ -37,6 +38,18 @@ export default function MeusProjetosDashboard() {
     endDate: "",
     budgetPlanned: "",
   });
+
+  // 7c) Atalhos de teclado - Ctrl+N abre novo projeto
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+        e.preventDefault();
+        setIsDialogOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const dashboardQuery = trpc.strategic.projects.dashboard.useQuery();
   const todayTasksQuery = trpc.strategic.tasks.todayTasks.useQuery();
@@ -75,9 +88,11 @@ export default function MeusProjetosDashboard() {
         budgetPlanned: "",
       });
       
+      toast.success("Projeto criado com sucesso!");
       await dashboardQuery.refetch();
       navigate(`/projetos/${newProject.id}`);
     } catch (error) {
+      toast.error("Erro ao criar projeto");
       console.error("Erro ao criar projeto:", error);
     }
   };
@@ -259,7 +274,7 @@ export default function MeusProjetosDashboard() {
                       <p className="text-sm font-medium truncate">{task.title}</p>
                       <div className="flex gap-2 mt-1">
                         <Badge variant="secondary" className="text-xs">
-                          {task.projectTitle?.substring(0, 15)}
+                          Projeto #{task.projectId}
                         </Badge>
                         <Badge variant="outline" className={`text-xs ${getPriorityColor(task.priority)}`}>
                           {task.priority}
@@ -296,7 +311,7 @@ export default function MeusProjetosDashboard() {
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{task.title}</p>
-                        <p className="text-xs text-muted-foreground">{task.projectTitle?.substring(0, 20)}</p>
+                        <p className="text-xs text-muted-foreground">Projeto #{task.projectId}</p>
                       </div>
                       <Badge variant="destructive" className="text-xs ml-2">
                         {daysOverdue}d atraso
@@ -316,6 +331,16 @@ export default function MeusProjetosDashboard() {
           <CardTitle className="text-base">Projetos Recentes</CardTitle>
         </CardHeader>
         <CardContent>
+          {recentProjects.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <FolderKanban className="w-12 h-12 text-muted-foreground/30 mb-3" />
+              <h4 className="font-medium mb-1">Crie seu primeiro projeto</h4>
+              <p className="text-sm text-muted-foreground mb-4">Organize suas iniciativas estratégicas em projetos com fases, tarefas e orçamento.</p>
+              <Button onClick={() => setIsDialogOpen(true)} className="bg-[#8B7355] hover:bg-[#5D4E37]">
+                <Plus className="w-4 h-4 mr-2" />Novo Projeto
+              </Button>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {recentProjects.map((project) => (
               <div
@@ -346,6 +371,7 @@ export default function MeusProjetosDashboard() {
               </div>
             ))}
           </div>
+          )}
         </CardContent>
       </Card>
 

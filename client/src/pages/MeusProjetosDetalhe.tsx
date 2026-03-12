@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,8 @@ import {
 import TaskSidebar from "@/components/TaskSidebar";
 import EditProjectModal from "@/components/EditProjectModal";
 import { toast } from "sonner";
+import { generatePDFReport, downloadPDF } from "@/lib/pdfExport";
+import { Download, GripVertical, BarChart3, FolderOpen, ClipboardList, BookOpen, Link2 } from "lucide-react";
 
 // Helpers
 const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString("pt-BR") : "—";
@@ -190,6 +192,66 @@ export default function MeusProjetosDetalhe() {
 
   const tasksList = Array.isArray(tasks) ? tasks : [];
 
+  // 7c) Atalhos de teclado
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+N: nova tarefa (se em detalhe)
+      if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+        e.preventDefault();
+        if (phases.length > 0) setNewTaskForm(prev => ({ ...prev, phaseId: phases[0].id }));
+        setIsNewTaskOpen(true);
+      }
+      // Escape: fechar modais/sidebar
+      if (e.key === "Escape") {
+        if (selectedTaskId) setSelectedTaskId(null);
+        else if (isNewTaskOpen) setIsNewTaskOpen(false);
+        else if (isNewPhaseOpen) setIsNewPhaseOpen(false);
+        else if (isEditProjectOpen) setIsEditProjectOpen(false);
+        else if (isDeleteConfirmOpen) setIsDeleteConfirmOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [phases, selectedTaskId, isNewTaskOpen, isNewPhaseOpen, isEditProjectOpen, isDeleteConfirmOpen]);
+
+  // 7a) Drag-and-drop state
+  const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
+
+  const handleTaskDragStart = (e: React.DragEvent, taskId: number) => {
+    setDraggedTaskId(taskId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleTaskDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleTaskDropOnStatus = async (e: React.DragEvent, newStatus: string) => {
+    e.preventDefault();
+    if (!draggedTaskId) return;
+    try {
+      await updateTaskMutation.mutateAsync({ id: draggedTaskId, status: newStatus as any });
+      utils.strategic.tasks.list.invalidate({ projectId });
+      utils.strategic.projects.getById.invalidate({ id: projectId });
+      toast.success(`Tarefa movida para ${taskStatusLabels[newStatus] || newStatus}`);
+    } catch {
+      toast.error("Erro ao mover tarefa");
+    }
+    setDraggedTaskId(null);
+  };
+
+  // 7b) Gantt timeline helper
+  const ganttData = useMemo(() => {
+    if (!phases.length) return null;
+    const allDates = [...phases.map((p: any) => p.startDate), ...phases.map((p: any) => p.endDate)].filter(Boolean).map((d: any) => new Date(d).getTime());
+    if (!allDates.length) return null;
+    const minDate = Math.min(...allDates);
+    const maxDate = Math.max(...allDates);
+    const range = maxDate - minDate || 1;
+    return { minDate, maxDate, range };
+  }, [phases]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -214,6 +276,60 @@ export default function MeusProjetosDetalhe() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => {
+            const phasesData = Array.isArray(phases) ? phases : [];
+            const doc = generatePDFReport({
+              title: `Projeto: ${project.title}`,
+              subtitle: `${project.code} — ${statusLabels[project.status] || project.status} — Prioridade ${priorityLabels[project.priority] || project.priority}`,
+              metrics: [
+                { title: 'Progresso', value: `${project.progress || 0}%` },
+                { title: 'Orçamento Previsto', value: `R$ ${fmtCurrency(project.budgetPlanned)}` },
+                { title: 'Orçamento Realizado', value: `R$ ${fmtCurrency(project.budgetActual)}` },
+                { title: 'Total de Tarefas', value: tasksList.length },
+                { title: 'Concluídas', value: tasksList.filter((t: any) => t.status === 'concluida').length },
+                { title: 'Membros', value: members.length },
+              ],
+              tables: [
+                ...(phasesData.length > 0 ? [{
+                  title: 'Fases do Projeto',
+                  data: {
+                    headers: ['Fase', 'Status', 'Início', 'Término', 'Progresso'],
+                    rows: phasesData.map((p: any) => [
+                      p.title || '-',
+                      statusLabels[p.status] || p.status || '-',
+                      fmtDate(p.startDate),
+                      fmtDate(p.endDate),
+                      `${p.progress || 0}%`,
+                    ]),
+                  },
+                }] : []),
+                ...(tasksList.length > 0 ? [{
+                  title: 'Tarefas',
+                  data: {
+                    headers: ['Tarefa', 'Status', 'Prioridade', 'Responsável', 'Prazo', 'Custo Est.'],
+                    rows: tasksList.slice(0, 50).map((t: any) => [
+                      t.title || '-',
+                      taskStatusLabels[t.status] || t.status || '-',
+                      priorityLabels[t.priority] || t.priority || '-',
+                      t.assigneeName || '-',
+                      fmtDate(t.dueDate),
+                      t.estimatedCost ? `R$ ${fmtCurrency(t.estimatedCost)}` : '-',
+                    ]),
+                  },
+                }] : []),
+              ],
+              notes: [
+                `Prazo: ${fmtDate(project.startDate)} a ${fmtDate(project.targetEndDate)}`,
+                `Categoria: ${project.category || 'N/A'}`,
+                project.description || '',
+              ].filter(Boolean),
+              footer: `Relatório gerado pelo Coco Litorâneo ERP`,
+            });
+            downloadPDF(doc, `projeto-${project.code || project.id}`);
+            toast.success('PDF exportado com sucesso');
+          }}>
+            <Download className="w-4 h-4 mr-1" />PDF
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setIsEditProjectOpen(true)}>
             <Edit className="w-4 h-4 mr-1" />Editar
           </Button>
@@ -332,11 +448,57 @@ export default function MeusProjetosDetalhe() {
               <Plus className="w-4 h-4 mr-1" />Nova Fase
             </Button>
           </div>
+          {/* 7b) Gantt Timeline */}
+          {ganttData && phases.length > 0 && (
+            <Card className="mb-4">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><BarChart3 className="w-4 h-4" />Timeline das Fases</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {phases.map((phase: any, idx: number) => {
+                    const start = phase.startDate ? new Date(phase.startDate).getTime() : ganttData.minDate;
+                    const end = phase.endDate ? new Date(phase.endDate).getTime() : ganttData.maxDate;
+                    const leftPct = ((start - ganttData.minDate) / ganttData.range) * 100;
+                    const widthPct = Math.max(5, ((end - start) / ganttData.range) * 100);
+                    const phaseTasks = tasksList.filter((t: any) => t.phaseId === phase.id);
+                    const completedTasks = phaseTasks.filter((t: any) => t.status === "concluida").length;
+                    const phaseProgress = phaseTasks.length > 0 ? Math.round((completedTasks / phaseTasks.length) * 100) : 0;
+                    return (
+                      <div key={phase.id} className="flex items-center gap-3">
+                        <span className="text-xs w-28 truncate text-muted-foreground" title={phase.title}>{phase.title}</span>
+                        <div className="flex-1 h-6 bg-gray-100 rounded relative">
+                          <div
+                            className="h-6 rounded bg-[#8B7355]/20 absolute top-0"
+                            style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                          >
+                            <div
+                              className={`h-6 rounded ${phase.status === 'concluida' ? 'bg-green-500' : 'bg-[#8B7355]'}`}
+                              style={{ width: `${phaseProgress}%` }}
+                            />
+                          </div>
+                        </div>
+                        <span className="text-xs w-10 text-right font-medium">{phaseProgress}%</span>
+                      </div>
+                    );
+                  })}
+                  <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                    <span>{new Date(ganttData.minDate).toLocaleDateString("pt-BR")}</span>
+                    <span>{new Date(ganttData.maxDate).toLocaleDateString("pt-BR")}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="space-y-3">
             {phases.length === 0 ? (
               <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">
-                  Nenhuma fase cadastrada. Clique em "Nova Fase" para começar.
+                <CardContent className="py-12 text-center">
+                  <Layers className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+                  <h4 className="font-medium mb-1">Nenhuma fase cadastrada</h4>
+                  <p className="text-sm text-muted-foreground mb-4">Organize seu projeto em fases para melhor acompanhamento.</p>
+                  <Button size="sm" onClick={() => setIsNewPhaseOpen(true)} className="bg-[#8B7355] hover:bg-[#5D4E37]">
+                    <Plus className="w-4 h-4 mr-1" />Criar Primeira Fase
+                  </Button>
                 </CardContent>
               </Card>
             ) : phases.map((phase: any, idx: number) => {
@@ -391,15 +553,51 @@ export default function MeusProjetosDetalhe() {
               <Plus className="w-4 h-4 mr-1" />Nova Tarefa
             </Button>
           </div>
+          {/* 7a) Kanban mini-view */}
+          {tasksList.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
+              {["a_fazer", "em_andamento", "aguardando", "concluida", "cancelada"].map(status => (
+                <div
+                  key={status}
+                  className={`p-2 rounded border-2 border-dashed text-center text-xs transition ${
+                    draggedTaskId ? "border-[#8B7355]/50 bg-[#8B7355]/5" : "border-transparent"
+                  }`}
+                  onDragOver={handleTaskDragOver}
+                  onDrop={(e) => handleTaskDropOnStatus(e, status)}
+                >
+                  <Badge className={`text-[10px] ${taskStatusColors[status] || "bg-gray-100"}`}>
+                    {taskStatusLabels[status]}
+                  </Badge>
+                  <p className="mt-1 font-medium">{tasksList.filter((t: any) => t.status === status).length}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="space-y-2">
             {tasksList.length === 0 ? (
               <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">
-                  Nenhuma tarefa cadastrada. Adicione tarefas ao projeto.
+                <CardContent className="py-12 text-center">
+                  <ClipboardList className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+                  <h4 className="font-medium mb-1">Nenhuma tarefa cadastrada</h4>
+                  <p className="text-sm text-muted-foreground mb-4">Adicione a primeira tarefa ao projeto para começar o acompanhamento.</p>
+                  <Button size="sm" onClick={() => {
+                    if (phases.length > 0) setNewTaskForm(prev => ({ ...prev, phaseId: phases[0].id }));
+                    setIsNewTaskOpen(true);
+                  }} className="bg-[#8B7355] hover:bg-[#5D4E37]">
+                    <Plus className="w-4 h-4 mr-1" />Criar Primeira Tarefa
+                  </Button>
                 </CardContent>
               </Card>
             ) : tasksList.map((task: any) => (
-              <Card key={task.id} className="hover:border-[#8B7355]/30 transition cursor-pointer" onClick={() => setSelectedTaskId(task.id)}>
+              <Card
+                key={task.id}
+                className="hover:border-[#8B7355]/30 transition cursor-pointer"
+                draggable
+                onDragStart={(e) => handleTaskDragStart(e, task.id)}
+                onDragEnd={() => setDraggedTaskId(null)}
+                onClick={() => setSelectedTaskId(task.id)}
+              >
                 <CardContent className="py-3 px-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1">
@@ -510,7 +708,10 @@ export default function MeusProjetosDetalhe() {
                       );
                     })}
                     {tasksList.filter((t: any) => parseFloat(String(t.estimatedCost || "0")) > 0 || parseFloat(String(t.actualCost || "0")) > 0).length === 0 && (
-                      <tr><td colSpan={4} className="px-3 py-8 text-center text-muted-foreground">Nenhuma tarefa com orçamento definido</td></tr>
+                      <tr><td colSpan={4} className="px-3 py-12 text-center">
+                        <DollarSign className="w-8 h-8 mx-auto text-muted-foreground/40 mb-2" />
+                        <p className="text-sm text-muted-foreground">Preencha os custos estimados e realizados nas tarefas para acompanhar o orçamento.</p>
+                      </td></tr>
                     )}
                   </tbody>
                 </table>
@@ -523,7 +724,7 @@ export default function MeusProjetosDetalhe() {
         <TabsContent value="documentos">
           <Card>
             <CardContent className="py-12 text-center">
-              <FileText className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+              <FolderOpen className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
               <h3 className="font-semibold text-lg mb-2">Documentos do Projeto</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Funcionalidade em desenvolvimento. Em breve você poderá anexar documentos, fotos, PDFs e outros arquivos ao projeto.
@@ -588,7 +789,7 @@ export default function MeusProjetosDetalhe() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-[#8B7355] text-white flex items-center justify-center text-sm font-medium">
-                        U
+                        {(member.role || "M")[0].toUpperCase()}
                       </div>
                       <div>
                         <p className="text-sm font-medium">Usuário #{member.userId}</p>
@@ -601,9 +802,13 @@ export default function MeusProjetosDetalhe() {
               </Card>
             )) : (
               <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">
-                  <Users className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
-                  <p>Nenhum membro adicionado além do proprietário.</p>
+                <CardContent className="py-12 text-center">
+                  <Users className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
+                  <h4 className="font-medium mb-1">Apenas você tem acesso</h4>
+                  <p className="text-sm text-muted-foreground mb-4">Adicione membros para colaborar no projeto.</p>
+                  <Button size="sm" variant="outline" onClick={() => toast.info("Funcionalidade em breve")}>
+                    <UserPlus className="w-4 h-4 mr-1" />Convidar Membro
+                  </Button>
                 </CardContent>
               </Card>
             )}

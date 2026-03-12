@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Download, Search, X, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
+import { Plus, Download, Search, X, ChevronLeft, ChevronRight, ArrowUpDown, FolderKanban } from "lucide-react";
+import { toast } from "sonner";
 
 const STATUS_OPTIONS = [
   { value: "all", label: "Todos os Status" },
@@ -51,7 +52,7 @@ export default function MeusProjetosLista() {
 
   const projectsQuery = trpc.strategic.projects.list.useQuery({
     status: statusFilter !== "all" ? statusFilter as any : undefined,
-    category: categoryFilter !== "all" ? categoryFilter : undefined,
+    category: categoryFilter !== "all" ? categoryFilter as any : undefined,
     priority: priorityFilter !== "all" ? priorityFilter as any : undefined,
     search: searchText || undefined,
   });
@@ -91,13 +92,26 @@ export default function MeusProjetosLista() {
     const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "projetos-estrategicos.csv"; a.click(); URL.revokeObjectURL(url);
   };
 
+  // 7c) Atalhos de teclado - Ctrl+N abre novo projeto
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+        e.preventDefault();
+        setIsDialogOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const handleCreate = async () => {
     if (!formData.title.trim()) return;
     try {
       const p = await createMutation.mutateAsync({ title: formData.title, description: formData.description || undefined, category: formData.category as any, priority: formData.priority as any, budgetPlanned: formData.budgetPlanned || undefined });
       setIsDialogOpen(false); setFormData({ title: "", description: "", category: "equipamento", priority: "media", budgetPlanned: "" });
+      toast.success("Projeto criado com sucesso!");
       await projectsQuery.refetch(); navigate(`/projetos/${p.id}`);
-    } catch (e) { console.error(e); }
+    } catch (e) { toast.error("Erro ao criar projeto"); console.error(e); }
   };
 
   const getStatusColor = (s: string) => ({ planejamento: "bg-slate-100 text-slate-800", andamento: "bg-blue-100 text-blue-800", em_andamento: "bg-blue-100 text-blue-800", pausado: "bg-amber-100 text-amber-800", concluido: "bg-green-100 text-green-800", cancelado: "bg-red-100 text-red-800" }[s] || "bg-gray-100 text-gray-800");
@@ -146,7 +160,14 @@ export default function MeusProjetosLista() {
             </tr></thead>
             <tbody className="divide-y">
               {paginatedProjects.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">Nenhum projeto encontrado</td></tr>
+                <tr><td colSpan={7} className="px-4 py-16 text-center">
+                  <FolderKanban className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
+                  <h4 className="font-medium mb-1">Nenhum projeto encontrado</h4>
+                  <p className="text-sm text-muted-foreground mb-4">Crie um novo projeto ou ajuste os filtros de busca.</p>
+                  <Button size="sm" onClick={() => setIsDialogOpen(true)} className="bg-[#8B7355] hover:bg-[#5D4E37]">
+                    <Plus className="w-4 h-4 mr-1" />Novo Projeto
+                  </Button>
+                </td></tr>
               ) : paginatedProjects.map(project => (
                 <tr key={project.id} onClick={() => navigate(`/projetos/${project.id}`)} className="hover:bg-accent/50 cursor-pointer transition">
                   <td className="px-4 py-3"><span className="text-xs text-muted-foreground">{project.code}</span><p className="font-medium text-sm">{project.title}</p></td>
