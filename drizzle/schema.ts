@@ -2890,3 +2890,18 @@ export const strategicTaskComments = mysqlTable("strategic_task_comments", {
 });
 export type StrategicTaskComment = typeof strategicTaskComments.$inferSelect;
 export type InsertStrategicTaskComment = typeof strategicTaskComments.$inferInsert;
+
+
+// ============================================================================
+// MAGIC MOMENTS USER CONFIG (Configurações por usuário dos Momentos Mágicos)
+// ============================================================================
+export const magicMomentsConfig = mysqlTable("magic_moments_config", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  momentType: varchar("momentType", { length: 50 }).notNull(), // e.g. 'ceo_greeting', 'production_record'
+  enabled: boolean("enabled").default(true).notNull(),
+  channels: json("channels"), // ['in_app', 'email']
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MagicMomentsConfig = typeof magicMomentsConfig.$inferSelect;
+export type InsertMagicMomentsConfig = typeof magicMomentsConfig.$inferInsert;

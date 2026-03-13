@@ -45,6 +45,7 @@ import {
   PendenciasWidget,
   CopilotoQuickAccessWidget
 } from "@/components/copilot/CopilotWidgets";
+import { GreetingBanner } from "@/components/GreetingBanner";
 
 const COLORS = ['#8B7355', '#D4C4B0', '#5D4E37', '#A89078', '#C4B4A0', '#6D5E47'];
 const STATUS_COLORS: Record<string, string> = {
@@ -198,6 +199,9 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Saudação Personalizada */}
+        <GreetingBanner />
+
         {/* Banner de Coqueiros */}
         <div className="relative w-full h-48 md:h-64 rounded-xl overflow-hidden shadow-lg">
           <img 

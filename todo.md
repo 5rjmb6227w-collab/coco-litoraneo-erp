@@ -1257,3 +1257,7 @@
 - [x] Item 3: Botões Editar/Excluir condicionais (só owner ou admin)
 - [x] Item 3: Testes unitários para controle de acesso (5 novos testes)
 - [x] 837 testes passando em 35 arquivos
+
+## Bugs Reportados — Momentos Mágicos e Saudação
+- [x] Bug 1: Botão de configurar na página Momentos Mágicos não retorna quando clicado — CORRIGIDO: botão agora abre dialog global de configuração com todos os 12 momentos, cada um com switch e gear icon para config individual
+- [x] Bug 2: Saudação de bom dia não aparece ao logar — CORRIGIDO: criado GreetingBanner component no Dashboard + endpoint tRPC ai.getGreeting com saudação personalizada por período do dia

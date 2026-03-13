@@ -16,7 +16,16 @@ import {
   aiFeedback,
   aiConfig,
   aiPredictions,
+  magicMoments,
+  magicMomentsConfig,
 } from "../../drizzle/schema";
+import {
+  runAllMagicMoments,
+  getUserMagicMoments,
+  dismissMagicMoment as dismissMagicMomentService,
+  persistMagicMoment as persistMagicMomentService,
+  checkCeoGreeting,
+} from "./magicMomentsService";
 import { 
   generatePrediction, 
   ModelType,
@@ -1374,6 +1383,127 @@ export const aiRouter = router({
     .query(async ({ ctx, input }) => {
       const { getLLMPromptConfig } = await import("./translationService");
       return getLLMPromptConfig(input.language);
+    }),
+
+  // ============================================================================
+  // MOMENTOS MÁGICOS
+  // ============================================================================
+
+  /**
+   * Busca momentos mágicos ativos para o usuário logado
+   */
+  getMagicMoments: protectedProcedure
+    .query(async ({ ctx }) => {
+      // Gera momentos em tempo real
+      const liveMoments = await runAllMagicMoments(ctx.user.id);
+      // Busca momentos persistidos não vistos
+      const persistedMoments = await getUserMagicMoments(ctx.user.id, ctx.user.role || 'user');
+      return { liveMoments, persistedMoments };
+    }),
+
+  /**
+   * Busca saudação personalizada do CEO/admin
+   */
+  getGreeting: protectedProcedure
+    .query(async ({ ctx }) => {
+      const greeting = await checkCeoGreeting(ctx.user.id);
+      if (!greeting) {
+        // Saudação genérica para não-CEO
+        const hour = new Date().getHours();
+        let period = 'Bom dia';
+        if (hour >= 12 && hour < 18) period = 'Boa tarde';
+        else if (hour >= 18) period = 'Boa noite';
+        const userName = ctx.user.name?.split(' ')[0] || 'Usuário';
+        return {
+          title: `${period}, ${userName}!`,
+          message: 'Bem-vindo ao sistema Coco Litorâneo. Tenha um excelente dia de trabalho!',
+          icon: '👋',
+          color: 'blue' as const,
+        };
+      }
+      return greeting;
+    }),
+
+  /**
+   * Dispensa (marca como visto) um momento mágico persistido
+   */
+  dismissMagicMoment: protectedProcedure
+    .input(z.object({ momentId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const success = await dismissMagicMomentService(input.momentId, ctx.user.id);
+      return { success };
+    }),
+
+  /**
+   * Busca configurações de momentos mágicos do usuário
+   */
+  getMagicMomentsConfig: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const configs = await db.select().from(magicMomentsConfig)
+        .where(eq(magicMomentsConfig.userId, ctx.user.id));
+      return configs;
+    }),
+
+  /**
+   * Salva configuração de um momento mágico
+   */
+  saveMagicMomentConfig: protectedProcedure
+    .input(z.object({
+      momentType: z.string(),
+      enabled: z.boolean(),
+      channels: z.array(z.string()).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      // Check if config exists
+      const existing = await db.select().from(magicMomentsConfig)
+        .where(and(
+          eq(magicMomentsConfig.userId, ctx.user.id),
+          eq(magicMomentsConfig.momentType, input.momentType)
+        ))
+        .limit(1);
+
+      if (existing.length > 0) {
+        await db.update(magicMomentsConfig)
+          .set({
+            enabled: input.enabled,
+            channels: input.channels || ['in_app'],
+          })
+          .where(eq(magicMomentsConfig.id, existing[0].id));
+      } else {
+        await db.insert(magicMomentsConfig).values({
+          userId: ctx.user.id,
+          momentType: input.momentType,
+          enabled: input.enabled,
+          channels: input.channels || ['in_app'],
+        });
+      }
+
+      return { success: true };
+    }),
+
+  /**
+   * Busca histórico de momentos mágicos do usuário
+   */
+  getMagicMomentsHistory: protectedProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const role = ctx.user.role || 'user';
+      const moments = await db.select().from(magicMoments)
+        .where(
+          sql`(${magicMoments.targetUserId} = ${ctx.user.id} OR ${magicMoments.targetRole} = ${role} OR (${magicMoments.targetUserId} IS NULL AND ${magicMoments.targetRole} IS NULL))`
+        )
+        .orderBy(desc(magicMoments.createdAt))
+        .limit(input?.limit || 20);
+      return moments;
     }),
 });
 
